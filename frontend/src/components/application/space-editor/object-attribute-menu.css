@@ -1,0 +1,17 @@
+.object-attribute-menu-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+  anchor-name: --object-menu-anchor;
+}
+
+.object-attribute-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: min(24rem, calc(100dvh - 1rem));
+  position-anchor: --object-menu-anchor;
+  position-area: block-end span-inline-end;
+  position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+}
