@@ -198,12 +198,14 @@ export function Carousel({
       {/* `tabIndex` makes the track focusable so it can be scrolled with the
           arrow keys, which is the browser's own behaviour once it has focus.
           The scrollbar is hidden inline rather than through a global class, so
-          the component stays self-contained. */}
+          the component stays self-contained. The track is padded and pulled back
+          by the same amount with negative margin so card rings and focus rings
+          aren't clipped by the scroll container. */}
       <div
         ref={trackRef}
         tabIndex={0}
         className={cx(
-          "relative flex w-full overflow-x-auto overscroll-x-contain outline-none",
+          "relative -m-1 flex overflow-x-auto overscroll-x-contain p-1 scroll-px-1 outline-none",
           "snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           "focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2",
           align === "center" && "[&>*]:snap-center",
