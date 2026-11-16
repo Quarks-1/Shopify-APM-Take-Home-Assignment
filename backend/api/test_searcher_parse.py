@@ -112,6 +112,20 @@ class DimensionPriorityTests(SimpleTestCase):
         p = product(specs=['Seat Dimensions: 23 in D x 20 in H', 'Package Dimensions: 50 x 30 x 10 in'])
         self.assertEqual(parse_dimensions(p), ({}, None, None))
 
+    def test_component_dimension_key_parses_when_overall_missing(self):
+        p = product(
+            title='101 Copenhagen AD Floor Lamp - Oxidized (UL N/A)',
+            specs=[
+                'Material: Aluminum, oxidized finish',
+                'Lampshade dimensions: 23.6 in W x 4.75 in D x 24.4 in H',
+                'Bulb type: LED (E26 socket, 40W recommended)',
+            ],
+        )
+        self.assertEqual(
+            parse_dimensions(p),
+            ({'x': 23.6, 'y': 4.75, 'z': 24.4}, None, 'tech_specs'),
+        )
+
     def test_separate_axis_specs(self):
         p = product(specs=['Width: 46 in', 'Depth: 24"', 'Height: 17 in'])
         self.assertEqual(parse_dimensions(p), ({'x': 46, 'y': 24, 'z': 17}, None, 'tech_specs'))

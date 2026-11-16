@@ -250,6 +250,11 @@ _DIM_KEY_RE = re.compile(
     r'(?:dimensions?|size)(?:\s*\([^)]*\))?$',
     re.IGNORECASE,
 )
+_DIM_TAIL_RE = re.compile(r'(?:dimensions?|size)(?:\s*\([^)]*\))?$', re.IGNORECASE)
+_DIM_KEY_EXCLUDE_RE = re.compile(
+    r'\b(?:package|packaging|shipping|carton|box|seat|cushion|cord|cable)\b',
+    re.IGNORECASE,
+)
 _AXIS_KEY_RE = re.compile(
     r'^(?:(?:overall|product|assembled|item|unit|finished|total)\s+)*'
     r'(width|depth|height|length|diameter)$',
@@ -279,6 +284,16 @@ def _from_specs(product):
     for entry in specs:
         key, val = _split_spec(entry)
         if key is None or not _DIM_KEY_RE.match(key):
+            continue
+        dims, longest = parse_dimensions_text(val, default_unit=1.0)
+        if dims or longest:
+            return dims, longest
+    # 1b. other dimension / size keys (e.g. lampshade), not sub-part or package lines
+    for entry in specs:
+        key, val = _split_spec(entry)
+        if key is None or _DIM_KEY_RE.match(key):
+            continue
+        if not _DIM_TAIL_RE.search(key) or _DIM_KEY_EXCLUDE_RE.search(key):
             continue
         dims, longest = parse_dimensions_text(val, default_unit=1.0)
         if dims or longest:
