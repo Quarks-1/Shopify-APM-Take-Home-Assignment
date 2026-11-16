@@ -108,9 +108,38 @@ def object_to_json(obj):
 SIZE_ORDER = {'fits': 0, 'unverified': 1, 'too_big': 2}
 
 
+def seller_group_key(c):
+    """Stable seller bucket for diversity ordering."""
+    domain = (c.seller_domain or '').strip().lower()
+    if domain:
+        return domain
+    name = (c.seller_name or '').strip().lower()
+    if name:
+        return name
+    return f'__{c.pk}'
+
+
 def candidate_sort_key(c):
-    """Verified fits first, then unverified, then cheapest."""
+    """Within a brand: verified fits first, then cheapest."""
     return (SIZE_ORDER.get(c.size_status, 3), c.price_cents, c.pk)
+
+
+def sort_accepted_brand_diverse(candidates):
+    """Round-robin accepted candidates across sellers for display."""
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for c in candidates:
+        groups[seller_group_key(c)].append(c)
+    for group in groups.values():
+        group.sort(key=candidate_sort_key)
+    order = sorted(groups, key=lambda k: candidate_sort_key(groups[k][0]))
+    out = []
+    while any(groups[k] for k in order):
+        for k in order:
+            if groups[k]:
+                out.append(groups[k].pop(0))
+    return out
 
 
 def _iso_or_none(dt):
@@ -176,7 +205,7 @@ def run_to_json(run, include_all=False):
         qs = qs.filter(verdict=Verdict.ACCEPTED)
     cands = list(qs)
     accepted = [c for c in cands if c.verdict == Verdict.ACCEPTED]
-    accepted.sort(key=candidate_sort_key)
+    accepted = sort_accepted_brand_diverse(accepted)
     rest = sorted((c for c in cands if c.verdict != Verdict.ACCEPTED), key=lambda c: c.pk)
 
     result = run.agent_result or {}

@@ -21,7 +21,7 @@ from .models import (
 from .searcher.runner import cancel_run
 from .serializers import (
     ValidationFailed,
-    candidate_sort_key,
+    sort_accepted_brand_diverse,
     candidate_to_json,
     generate_id,
     now,
@@ -94,9 +94,8 @@ def state_candidates(objects):
     for obj in objects:
         mine = by_object.get(obj.pk, [])
         run_id = newest.get(obj.pk)
-        accepted = sorted(
-            (c for c in mine if c.run_id == run_id and c.verdict == Verdict.ACCEPTED),
-            key=candidate_sort_key,
+        accepted = sort_accepted_brand_diverse(
+            [c for c in mine if c.run_id == run_id and c.verdict == Verdict.ACCEPTED]
         )
         ids = {c.pk for c in accepted}
         extra = [c for c in mine if c.pk == obj.selected_candidate_id and c.pk not in ids]

@@ -50,22 +50,30 @@ class FilterTests(SimpleTestCase):
 
     def test_single_axis(self):
         self.assertEqual(self.ev(prod(dims={'x': 47}))[2], 'unverified')
-        self.assertTrue(self.ev(prod(dims={'x': 47}))[0])
+        passes, reasons, size, _ = self.ev(prod(dims={'x': 47}))
+        self.assertFalse(passes)
+        self.assertIn('size unverified', reasons)
         passes, _, size, _ = self.ev(prod(dims={'y': 60}))
         self.assertEqual((passes, size), (False, 'too_big'))
 
     def test_longest(self):
-        self.assertEqual(self.ev(prod(dims_longest=48))[2:3], ('unverified',))
-        self.assertTrue(self.ev(prod(dims_longest=52.9))[0])
+        passes, reasons, size, _ = self.ev(prod(dims_longest=48))
+        self.assertEqual((passes, size), (False, 'unverified'))
+        self.assertIn('size unverified', reasons)
+        self.assertTrue(self.ev(prod(dims={'x': 40, 'y': 20, 'z': 15}))[0])
         passes, reasons, size, _ = self.ev(prod(dims_longest=60))
         self.assertEqual((passes, size), (False, 'too_big'))
         self.assertIn('longest side', reasons[0])
 
-    def test_unverified_passes(self):
-        self.assertEqual(self.ev(prod())[:1] + self.ev(prod())[2:], (True, 'unverified', 'unverified'))
+    def test_unverified_fails(self):
+        passes, reasons, size, weight = self.ev(prod())
+        self.assertEqual((passes, size, weight), (False, 'unverified', 'unverified'))
+        self.assertIn('size unverified', reasons)
 
     def test_fits_requires_z_when_object_has_z(self):
-        self.assertEqual(self.ev(prod(dims={'x': 40, 'y': 20}))[2], 'unverified')
+        passes, reasons, size, _ = self.ev(prod(dims={'x': 40, 'y': 20}))
+        self.assertEqual((passes, size), (False, 'unverified'))
+        self.assertIn('size unverified', reasons)
         flat = {'dims': {'x': 46, 'y': 24}}
         self.assertEqual(evaluate(prod(dims={'x': 40, 'y': 20}), flat, TOL)[2], 'fits')
         # z only compared when both sides have it
@@ -114,11 +122,17 @@ class WallModeTests(SimpleTestCase):
         self.assertEqual(self.ev({'x': 24, 'y': 6, 'z': 36})[2], 'fits')
 
     def test_single_and_longest(self):
-        self.assertEqual(self.ev({'x': 30})[:1] + self.ev({'x': 30})[2:3], (True, 'unverified'))
+        passes, reasons, size, _ = self.ev({'x': 30})
+        self.assertEqual((passes, size), (False, 'unverified'))
+        self.assertIn('size unverified', reasons)
         self.assertFalse(self.ev({'x': 50})[0])
-        self.assertTrue(self.ev(None, dims_longest=40)[0])
+        passes, reasons, size, _ = self.ev(None, dims_longest=40)
+        self.assertEqual((passes, size), (False, 'unverified'))
+        self.assertIn('size unverified', reasons)
         self.assertFalse(self.ev(None, dims_longest=50)[0])
-        self.assertEqual(self.ev(None)[2], 'unverified')
+        passes, reasons, size, _ = self.ev(None)
+        self.assertEqual((passes, size), (False, 'unverified'))
+        self.assertIn('size unverified', reasons)
 
     def test_wall_art_in_floor_space_uses_wall_mode(self):
         snap = dict(self.POSTER, space={'type': 'floor', 'dims': {'x': 100, 'y': 100}})

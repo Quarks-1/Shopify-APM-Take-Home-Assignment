@@ -5,6 +5,7 @@ records accept/reject verdicts; `run_deterministic` is the no-LLM fallback.
 The accepted count is always computed from Candidate rows.
 """
 import time
+from collections import defaultdict
 
 from django.conf import settings
 from django.db import transaction
@@ -18,7 +19,7 @@ from ..models import (
     SearchRun,
     Verdict,
 )
-from ..serializers import object_to_json
+from ..serializers import object_to_json, seller_group_key
 from . import filters, query_builder, ucp_client
 from .normalize import normalize_product
 from .object_state import sync_object_search
@@ -61,6 +62,17 @@ def available_strategies(run):
     prev = _previous_queries(run)
     used = [q['query'] for q in prev]
     return query_builder.strategies(run.object_snapshot, used, prev)
+
+
+def _default_strategy(run, available):
+    """After expand threshold, prefer broadening before more ladder steps."""
+    if _accepted(run) >= run.target:
+        return available[0]
+    if run.round_count >= settings.SEARCHER_EXPAND_AFTER:
+        for name in ('broad', 'more'):
+            if name in available:
+                return name
+    return available[0]
 
 
 def _set_step(run, step):
@@ -148,7 +160,7 @@ def next_round(run, strategy=None):
     if not available:
         return _stop('no strategies left', run)
     if strategy is None:
-        strategy = available[0]
+        strategy = _default_strategy(run, available)
     elif strategy not in available:
         raise SearcherError(
             f'unknown or unavailable strategy: {strategy}', available=available
@@ -301,6 +313,50 @@ def _rank_key(c):
     return (0 if c.size_status == 'fits' else 1, c.price_cents, c.pk)
 
 
+def _accepted_seller_keys(run):
+    return {
+        seller_group_key(c)
+        for c in run.candidates.filter(verdict=Verdict.ACCEPTED).only(
+            'seller_domain', 'seller_name', 'pk'
+        )
+    }
+
+
+def _pick_deterministic_accepts(run, candidate_ids, need):
+    """Prefer one new seller per round, then fill by price among verified fits."""
+    if need <= 0 or not candidate_ids:
+        return []
+    pending = list(
+        Candidate.objects.filter(pk__in=candidate_ids, passes_filters=True)
+    )
+    if not pending:
+        return []
+    accepted_sellers = _accepted_seller_keys(run)
+    by_seller = defaultdict(list)
+    for c in pending:
+        by_seller[seller_group_key(c)].append(c)
+    for group in by_seller.values():
+        group.sort(key=_rank_key)
+
+    picked, picked_ids = [], set()
+    newcomers = sorted(
+        ((sk, group[0]) for sk, group in by_seller.items() if sk not in accepted_sellers),
+        key=lambda t: _rank_key(t[1]),
+    )
+    for _sk, cand in newcomers:
+        if len(picked) >= need:
+            break
+        picked.append(cand)
+        picked_ids.add(cand.pk)
+
+    rest = sorted((c for c in pending if c.pk not in picked_ids), key=_rank_key)
+    for cand in rest:
+        if len(picked) >= need:
+            break
+        picked.append(cand)
+    return picked
+
+
 def run_deterministic(run):
     """No-LLM fallback: accept the best new passing candidates each round."""
     rounds, errors = [], 0
@@ -318,7 +374,7 @@ def run_deterministic(run):
                                            'new', 'passing', 'filtered_out')})
         need = run.target - _accepted(run)
         ids = [c['id'] for c in out['candidates']]
-        best = sorted(Candidate.objects.filter(pk__in=ids), key=_rank_key)[:max(need, 0)]
+        best = _pick_deterministic_accepts(run, ids, need)
         if best:
             judge(run, [c.pk for c in best])
 

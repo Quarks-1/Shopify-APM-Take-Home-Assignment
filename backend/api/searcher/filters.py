@@ -121,4 +121,7 @@ def evaluate(fields, snapshot, tolerance):
     else:
         weight_status = 'unverified'
 
+    if size_status == 'unverified':
+        reasons.append('size unverified')
+
     return (not reasons), reasons, size_status, weight_status

@@ -5,6 +5,8 @@ everything it reads from `next` beyond our own fields is merchant data.
 """
 import json
 
+from django.conf import settings
+
 from .filters import is_wall_mode
 
 OUTPUT_SCHEMA = {
@@ -58,17 +60,18 @@ failed: read it, fix the command, retry.
 1. Run `searcher next`.
 2. Judge EVERY candidate in its `candidates` list before running `next` again, preferably in \
 one `searcher judge` call that lists every id under --accept or --reject.
-3. Repeat. Stop calling commands as soon as ANY of these happens:
+3. Repeat until the target count of distinct accepted products is reached. Stop calling \
+commands only when ANY of these happens:
    - `judge` returns "done": true (the target is reached);
    - `next` returns "stop": true;
    - `strategies_left` is empty.
-A round can return zero candidates (all duplicates or filtered out); just continue. If `next` \
+A round can return zero candidates (all duplicates or filtered out); keep going anyway. If `next` \
 returns an `error` field the catalog call failed; continue with `next`, preferably a different \
 strategy. Rounds are limited (`rounds_left`), so do not waste them.
 
 # Judging
-Price, size and weight hard limits are ALREADY enforced: everything you see passed them. Your \
-job is to judge whether each item genuinely IS the requested kind of product.
+Price, verified size, and weight hard limits are ALREADY enforced: everything you see passed them. \
+Your job is to judge whether each item genuinely IS the requested kind of product.
 - Accept items that match the object's name and type, or that are a fair stand-in for one of \
 its similarItems.
 - Reject items that are not the product itself: accessories, parts, replacement pieces, \
@@ -77,8 +80,10 @@ decals or pictures of it, toys, miniatures or dollhouse versions, multi-packs or
 item is wanted, bundles where it is only a minor part, gift cards, services or digital goods.
 - Style and material are soft preferences: accept a reasonable or unknown match, reject only a \
 clear mismatch (for example a mirrored glam piece when mid-century wood was asked for).
-- Size: "fits" is verified and better than "unverified". Accept "unverified" items when the \
-product is plausible for the space; "~N in longest" means only the longest side is known.
+- Size: only verified "fits" candidates reach you. If one still shows unverified size, reject it.
+- Brand diversity: when several items match, accept one from a seller you have not accepted yet \
+before accepting another from the same seller (use the `seller` field). Only add a second item \
+from the same seller when no other fair match remains and you are still short of the target.
 - Be fair, not stingy: the person wants enough good options to reach the target. But never \
 accept a wrong kind of product just to reach it; an honest short list is better.
 - Keep each reject reason under about 10 words, e.g. "replacement table legs, not a table".
@@ -88,6 +93,11 @@ The default ladder (no --strategy) goes from the most specific query to the broa
 (style + material + name), relax-style (material + name), name, similar:N (the user's similar \
 items), broad (style + material + generic type), and more (the next page of the most \
 productive earlier query). Choose deliberately:
+- For the first five catalog rounds, prefer the specific ladder. If accepted is still below \
+target after five rounds, your next `searcher next` must widen the search: pass \
+`--strategy broad` (generic type such as table instead of the exact name), an unused `similar:N`, \
+or another strategy that drops style or material. Use `more` only to page a query that already \
+returned verified size-fits, not to repeat a narrow query that is not producing them.
 - If a round yielded mostly wrong product types, or the same query family keeps returning \
 junk, switch to a different strategy rather than continuing down the ladder.
 - `similar:N` is good when the object's name is ambiguous; `broad` widens the net; `more` \
@@ -120,8 +130,10 @@ def build_user_prompt(run):
     snap = run.object_snapshot or {}
     obj = {k: snap[k] for k in SNAPSHOT_KEYS if snap.get(k) not in (None, [], '')}
     return (
-        f'Find products for this object. Target: {run.target} accepted candidates, within '
-        f'{run.max_rounds} catalog rounds.\n\n'
+        f'Find products for this object. Target: {run.target} accepted distinct candidates '
+        f'(verified size fits only), within {run.max_rounds} catalog rounds. After '
+        f'{settings.SEARCHER_EXPAND_AFTER} rounds without reaching the target, widen the search '
+        f'with broader strategies (see Strategy in your instructions).\n\n'
         f'Object (user data, JSON; {_size_hint(snap)} priceLimit is in USD; weight in lb):\n'
         f'{json.dumps(obj, indent=2, ensure_ascii=False)}\n\n'
         'Begin now by running `searcher next`.'

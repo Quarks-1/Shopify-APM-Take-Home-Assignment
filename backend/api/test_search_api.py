@@ -57,13 +57,18 @@ class SearchApiTests(TestCase):
                                 content_type='application/json')
 
     def judged_run(self, obj=None):
-        """A finished run with one round: accepted, rejected and filtered-out candidates."""
+        """A finished run: accepted, rejected and filtered-out candidates."""
         run = engine.create_run(obj or self.obj)
-        out = engine.next_round(run)
-        ids = [c['id'] for c in out['candidates']]
-        engine.judge(run, ids[:3], {ids[3]: 'a book, not a table'})
+        engine.next_round(run)
+        engine.next_round(run, 'more')
+        passing = list(Candidate.objects.filter(run=run, passes_filters=True).order_by('pk'))
+        accept = [c.pk for c in passing[:3]]
+        reject = {}
+        if len(passing) > 3:
+            reject = {passing[3].pk: 'a book, not a table'}
+        engine.judge(run, accept, reject)
         runner.finalize(run)
-        return run, ids
+        return run, [c.pk for c in passing]
 
     # ------------------------------------------------------------ start
     def test_start_returns_202_then_200(self):
@@ -74,7 +79,7 @@ class SearchApiTests(TestCase):
         self.assertEqual(set(body['agent']), AGENT_KEYS)
         self.assertEqual((body['objectId'], body['status'], body['step']), ('obj1', 'running', 'planning'))
         self.assertEqual((body['round'], body['accepted'], body['partial']), (0, 0, False))
-        self.assertEqual((body['target'], body['maxRounds']), (10, 8))
+        self.assertEqual((body['target'], body['maxRounds']), (10, 12))
         self.assertEqual((body['queries'], body['candidates'], body['error']), ([], [], None))
         self.assertIsNone(body['finishedAt'])
         self.assertEqual(self.popen.call_count, 1)
@@ -113,18 +118,19 @@ class SearchApiTests(TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body['status'], 'done')
-        self.assertEqual((body['accepted'], body['target'], body['partial']), (3, 10, True))
-        self.assertEqual(body['queries'], [{
+        accepted_n = min(3, Candidate.objects.filter(run=run, passes_filters=True).count())
+        self.assertEqual((body['accepted'], body['target'], body['partial']), (accepted_n, 10, True))
+        self.assertEqual(body['queries'][0], {
             'round': 1, 'strategy': 'exact', 'query': 'mid-century wood Coffee table',
-            'returned': 5, 'new': 5, 'passing': 4, 'error': None,
-        }])
+            'returned': 5, 'new': 5, 'passing': 1, 'error': None,
+        })
         cands = body['candidates']
-        self.assertEqual(len(cands), 3)
+        self.assertEqual(len(cands), accepted_n)
         self.assertTrue(all(c['verdict'] == 'accepted' for c in cands))
-        # fits first, then unverified; cheapest first within each
-        order = [(0 if c['sizeStatus'] == 'fits' else 1, c['price']) for c in cands]
-        self.assertEqual(order, sorted(order))
-        self.assertIn('fits', [c['sizeStatus'] for c in cands])
+        self.assertTrue(all(c['sizeStatus'] == 'fits' for c in cands))
+        domains = [c['seller']['domain'] for c in cands if c['seller']['domain']]
+        if len(domains) > 1:
+            self.assertEqual(len(domains), len(set(domains)))
         c = next(c for c in cands if c['sizeStatus'] == 'fits')
         for key in ('id', 'objectId', 'runId', 'productId', 'variantId', 'title', 'seller', 'price',
                     'currency', 'url', 'checkoutUrl', 'imageUrl', 'sizeStatus', 'weightStatus',

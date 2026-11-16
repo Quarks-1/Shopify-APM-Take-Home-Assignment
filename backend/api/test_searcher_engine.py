@@ -38,7 +38,7 @@ class EngineTests(TestCase):
         r = self.run
         self.assertEqual((r.status, r.step), ('running', 'planning'))
         self.assertIsNotNone(r.started_at)
-        self.assertEqual((r.target, r.max_rounds), (10, 8))
+        self.assertEqual((r.target, r.max_rounds), (10, 12))
         self.assertEqual(r.object_snapshot['name'], 'Coffee table')
         self.assertEqual(r.object_snapshot['priceLimit'], 400)
         self.assertNotIn('space', r.object_snapshot)
@@ -63,7 +63,7 @@ class EngineTests(TestCase):
         self.assertEqual(out['query'], 'mid-century wood Coffee table')
         self.assertEqual((out['returned'], out['new']), (5, 5))
         self.assertEqual(out['passing'] + out['filtered_out'], 5)
-        self.assertEqual((out['accepted'], out['target'], out['rounds_left']), (0, 10, 7))
+        self.assertEqual((out['accepted'], out['target'], out['rounds_left']), (0, 10, 11))
         self.assertIn('more', out['strategies_left'])
         self.assertNotIn('exact', out['strategies_left'])
 
@@ -81,21 +81,20 @@ class EngineTests(TestCase):
 
     def test_compact_candidates(self):
         out = engine.next_round(self.run)
-        by_title = {c['title']: c for c in out['candidates']}
-        oval = by_title['39" Mid-Century Modern Oval Fluted Coffee Table with Curved Edges']
+        self.assertEqual(len(out['candidates']), 1)
+        oval = out['candidates'][0]
+        self.assertEqual(oval['title'], '39" Mid-Century Modern Oval Fluted Coffee Table with Curved Edges')
         self.assertEqual(oval['size'], '39.38 x 19.69 x 13.78 in (fits)')
         self.assertEqual(oval['price'], '$129.00')
         self.assertTrue(oval['seller'])
         self.assertIsInstance(oval['id'], int)
         self.assertLessEqual(len(oval['specs']), 6)
         self.assertLessEqual(len(oval['summary']), 200)
-        longest = by_title['Mid-Century Modern Coffee Table - 48"']
-        self.assertEqual(longest['size'], '~48 in longest (unverified)')
-        self.assertEqual(by_title['Onyx Mid Century Modern Wood Coffee Table with Storage']['size'],
-                         'unverified')
+        onyx = Candidate.objects.get(run=self.run, title__startswith='Onyx')
+        self.assertFalse(onyx.passes_filters)
+        self.assertIn('size unverified', onyx.filter_reasons)
         self.assertEqual(set(oval), {'id', 'title', 'seller', 'price', 'size', 'weight',
                                      'materials', 'specs', 'summary'})
-        # ids are real Candidate pks of this run
         self.assertEqual(Candidate.objects.filter(run=self.run, pk=oval['id']).count(), 1)
 
     def test_filter_reasons_stored_and_hidden_from_agent(self):
@@ -105,8 +104,8 @@ class EngineTests(TestCase):
         self.assertEqual(garvee.size_status, 'too_big')
         self.assertIn('too large', garvee.filter_reasons[0])
         self.assertNotIn(garvee.pk, [c['id'] for c in out['candidates']])
-        self.assertEqual(out['filtered_out'], 1)
-        self.assertEqual(len(out['candidates']), 4)
+        self.assertEqual(out['filtered_out'], 4)
+        self.assertEqual(len(out['candidates']), 1)
 
     def test_dedupe_across_rounds(self):
         engine.next_round(self.run)
@@ -115,6 +114,16 @@ class EngineTests(TestCase):
         self.assertEqual(out['candidates'], [])
         self.assertEqual(Candidate.objects.filter(run=self.run).count(), 5)
         self.assertEqual(Candidate.objects.filter(run=self.run, query__round=2).count(), 0)
+
+    def test_default_strategy_broad_after_expand_threshold(self):
+        for _ in range(5):
+            out = engine.next_round(self.run)
+            self.assertFalse(out.get('stop'))
+        self.run.refresh_from_db()
+        self.assertEqual(self.run.round_count, 5)
+        out = engine.next_round(self.run)
+        self.assertEqual(out['round'], 6)
+        self.assertIn(out['strategy'], ('broad', 'more'))
 
     def test_more_uses_cursor_and_finds_new_products(self):
         engine.next_round(self.run)
@@ -195,24 +204,35 @@ class EngineTests(TestCase):
 
     # ----------------------------------------------------------- judge
     def test_judge_accept_reject_rejudge(self):
-        out = engine.next_round(self.run)
-        a, b, c, d = [x['id'] for x in out['candidates']]
-        res = engine.judge(self.run, [a, b], {c: 'x' * 500})
-        self.assertEqual(res, {'accepted': 2, 'target': 10, 'done': False, 'pending': 1})
-        self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, 'x' * 200)
+        engine.next_round(self.run)
+        out = engine.next_round(self.run, 'more')
+        ids = [x['id'] for x in out['candidates']]
+        self.assertGreaterEqual(len(ids), 2, out)
+        a, b = ids[0], ids[1]
+        rejects = {ids[2]: 'x' * 500} if len(ids) > 2 else {}
+        res = engine.judge(self.run, [a, b], rejects)
+        self.assertEqual(
+            res,
+            {'accepted': 2, 'target': 10, 'done': False, 'pending': len(ids) - 2 - len(rejects)},
+        )
+        if rejects:
+            self.assertEqual(Candidate.objects.get(pk=ids[2]).verdict_reason, 'x' * 200)
         self.run.refresh_from_db()
         self.assertEqual(self.run.step, 'ranking')
-        res = engine.judge(self.run, [c], {a: 'changed my mind'})  # re-judging allowed
-        self.assertEqual((res['accepted'], res['pending']), (2, 1))
-        self.assertEqual(Candidate.objects.get(pk=a).verdict, 'rejected')
-        self.assertEqual(Candidate.objects.get(pk=c).verdict, 'accepted')
-        self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, '')
+        if len(ids) > 2:
+            c = ids[2]
+            res = engine.judge(self.run, [c], {a: 'changed my mind'})
+            self.assertEqual((res['accepted'], res['pending']), (2, 0))
+            self.assertEqual(Candidate.objects.get(pk=a).verdict, 'rejected')
+            self.assertEqual(Candidate.objects.get(pk=c).verdict, 'accepted')
+            self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, '')
 
     def test_judge_done_flag(self):
-        out = engine.next_round(self.run)
-        SearchRun.objects.filter(pk=self.run.pk).update(target=2)
+        engine.next_round(self.run)
+        out = engine.next_round(self.run, 'more')
+        SearchRun.objects.filter(pk=self.run.pk).update(target=1)
         self.run.refresh_from_db()
-        res = engine.judge(self.run, [x['id'] for x in out['candidates']][:2])
+        res = engine.judge(self.run, [out['candidates'][0]['id']])
         self.assertTrue(res['done'])
 
     def test_judge_rejects_foreign_ids_atomically(self):
@@ -248,32 +268,34 @@ class EngineTests(TestCase):
         engine.next_round(self.run)
         s = engine.status(self.run)
         self.assertEqual((s['status'], s['step'], s['round'], s['accepted'], s['target'], s['pending']),
-                         ('running', 'ranking', 1, 0, 10, 4))
+                         ('running', 'ranking', 1, 0, 10, 1))
         self.assertIn('relax-style', s['strategies_left'])
         self.assertEqual(s['object']['name'], 'Coffee table')
 
     # -------------------------------------------------- deterministic
     def test_deterministic_done(self):
-        SearchRun.objects.filter(pk=self.run.pk).update(target=3)
+        SearchRun.objects.filter(pk=self.run.pk).update(target=2)
         self.run.refresh_from_db()
         res = engine.run_deterministic(self.run)
-        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 3, 1))
-        self.assertEqual(res['fits'] + res['unverified'], 3)
+        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 2, 2))
+        self.assertEqual(res['unverified'], 0)
         self.run.refresh_from_db()
         self.assertEqual((self.run.status, self.run.step), ('done', None))
         self.assertIsNotNone(self.run.finished_at)
-        # best first: the one `fits` candidate (39.38 oval) is accepted, then cheapest
-        accepted = list(Candidate.objects.filter(run=self.run, verdict='accepted').order_by('price_cents'))
-        self.assertEqual(res['fits'], 1)  # the one verified fit is always taken first
-        self.assertEqual([a.price_cents for a in accepted], [9900, 12900, 14999])
+        accepted = list(Candidate.objects.filter(run=self.run, verdict='accepted'))
+        self.assertEqual(res['fits'], len(accepted))
+        sellers = {c.seller_domain or c.seller_name for c in accepted}
+        self.assertEqual(len(sellers), len(accepted))
         self.assertEqual(Candidate.objects.get(run=self.run, title__startswith='39"').verdict, 'accepted')
 
     def test_deterministic_runs_until_target_or_stop(self):
-        res = engine.run_deterministic(self.run)  # target 10, only 7 passing products exist
+        res = engine.run_deterministic(self.run)  # target 10, only verified fits in fixture
         self.assertEqual(res['status'], 'done')
-        self.assertEqual(res['accepted'], 7)
+        self.assertEqual(res['unverified'], 0)
+        self.assertGreaterEqual(res['accepted'], 2)
+        self.assertLess(res['accepted'], res['target'])
         self.assertEqual(res['stopped'], 'no strategies left')
-        self.assertLessEqual(res['rounds_used'], 8)
+        self.assertLessEqual(res['rounds_used'], 12)
 
     def test_deterministic_empty(self):
         run = engine.create_run(make_object(id='e', name='thing EMPTY', style=None, material=None, similar_items=[]))
