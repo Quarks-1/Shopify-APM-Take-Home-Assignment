@@ -1,3 +1,246 @@
+import uuid
+
 from django.db import models
 
-# Create your models here.
+
+class SpaceType(models.TextChoices):
+    FLOOR = 'floor'
+    SHELF = 'shelf'
+    WALL = 'wall'
+    OTHER = 'other'
+
+
+class LengthUnit(models.TextChoices):
+    IN = 'in'
+    FT = 'ft'
+    CM = 'cm'
+
+
+class ObjectType(models.TextChoices):
+    FURNITURE = 'furniture'
+    LIGHTING = 'lighting'
+    RUG = 'rug'
+    WALL_ART = 'wall-art'
+    STORAGE = 'storage'
+    DECOR = 'decor'
+
+
+class Material(models.TextChoices):
+    METAL = 'metal'
+    WOOD = 'wood'
+    FABRIC = 'fabric'
+    GLASS = 'glass'
+    CERAMIC = 'ceramic'
+    MIXED = 'mixed'
+
+
+class Style(models.TextChoices):
+    MODERN = 'modern'
+    VINTAGE = 'vintage'
+    BRUTALIST = 'brutalist'
+    SCANDINAVIAN = 'scandinavian'
+    INDUSTRIAL = 'industrial'
+    MID_CENTURY = 'mid-century'
+
+
+class ObjectSource(models.TextChoices):
+    SEARCH = 'search'
+    IMPORTED = 'imported'
+
+
+def default_search():
+    return {'status': 'idle'}
+
+
+class Space(models.Model):
+    """All lengths in inches, weights in lb."""
+
+    id = models.CharField(max_length=64, primary_key=True)
+    name = models.CharField(max_length=120)
+    type = models.CharField(max_length=16, choices=SpaceType.choices)
+    unit = models.CharField(max_length=4, choices=LengthUnit.choices)
+    dims = models.JSONField()
+    weight_limit = models.FloatField(null=True, blank=True)
+    position = models.IntegerField(default=0)
+    # Set explicitly (not auto_now) so imports keep client timestamps.
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['position', 'id']
+
+    def __str__(self):
+        return f'{self.name} ({self.id})'
+
+
+class SpaceObject(models.Model):
+    id = models.CharField(max_length=64, primary_key=True)
+    name = models.CharField(max_length=120)
+    dims = models.JSONField()
+    weight = models.FloatField(null=True, blank=True)
+    type = models.CharField(max_length=16, choices=ObjectType.choices)
+    material = models.CharField(max_length=16, choices=Material.choices, null=True, blank=True)
+    style = models.CharField(max_length=16, choices=Style.choices, null=True, blank=True)
+    price_limit = models.FloatField(null=True, blank=True)
+    similar_items = models.JSONField(default=list)
+    source = models.CharField(
+        max_length=16, choices=ObjectSource.choices, default=ObjectSource.SEARCH
+    )
+    owned = models.JSONField(null=True, blank=True)
+    position = models.IntegerField(default=0)
+    created_at = models.DateTimeField()
+
+    # Legacy mock-search fields, kept so imports round-trip losslessly.
+    # A later phase replaces them with real search runs.
+    candidate_ids = models.JSONField(default=list)
+    selected_product_id = models.CharField(max_length=128, null=True, blank=True)
+    search = models.JSONField(default=default_search)
+
+    class Meta:
+        ordering = ['position', 'id']
+
+    def __str__(self):
+        return f'{self.name} ({self.id})'
+
+
+class Placement(models.Model):
+    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='placements')
+    object = models.ForeignKey(
+        SpaceObject, on_delete=models.CASCADE, related_name='placements'
+    )
+    x = models.FloatField()
+    y = models.FloatField()
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [
+            models.UniqueConstraint(fields=['space', 'object'], name='unique_space_object')
+        ]
+
+
+class RunStatus(models.TextChoices):
+    QUEUED = 'queued'
+    RUNNING = 'running'
+    DONE = 'done'
+    EMPTY = 'empty'
+    FAILED = 'failed'
+    CANCELED = 'canceled'
+
+
+class RunStep(models.TextChoices):
+    PLANNING = 'planning'
+    BUILDING_QUERY = 'building-query'
+    QUERYING_CATALOG = 'querying-catalog'
+    RANKING = 'ranking'
+
+
+class SizeStatus(models.TextChoices):
+    FITS = 'fits'
+    UNVERIFIED = 'unverified'
+    TOO_BIG = 'too_big'
+
+
+class WeightStatus(models.TextChoices):
+    FITS = 'fits'
+    UNVERIFIED = 'unverified'
+    TOO_HEAVY = 'too_heavy'
+
+
+class Verdict(models.TextChoices):
+    PENDING = 'pending'
+    ACCEPTED = 'accepted'
+    REJECTED = 'rejected'
+
+
+class SearchRun(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    object = models.ForeignKey(
+        SpaceObject, on_delete=models.CASCADE, related_name='search_runs'
+    )
+    # object_to_json at creation plus "space": {type, dims}. The loop only ever
+    # reads constraints from here, never from the live object.
+    object_snapshot = models.JSONField()
+    status = models.CharField(
+        max_length=16, choices=RunStatus.choices, default=RunStatus.QUEUED
+    )
+    step = models.CharField(max_length=24, choices=RunStep.choices, null=True, blank=True)
+    target = models.IntegerField()
+    max_rounds = models.IntegerField()
+    round_count = models.IntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'run {self.id} ({self.status})'
+
+
+class CatalogQuery(models.Model):
+    run = models.ForeignKey(SearchRun, on_delete=models.CASCADE, related_name='queries')
+    round = models.IntegerField()
+    strategy = models.CharField(max_length=64)
+    payload = models.JSONField()
+    response_meta = models.JSONField(default=dict)
+    returned_count = models.IntegerField(default=0)
+    new_count = models.IntegerField(default=0)
+    passing_count = models.IntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+    duration_ms = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['round', 'pk']
+
+
+class Candidate(models.Model):
+    run = models.ForeignKey(SearchRun, on_delete=models.CASCADE, related_name='candidates')
+    # The query that first found it.
+    query = models.ForeignKey(
+        CatalogQuery, on_delete=models.CASCADE, related_name='candidates'
+    )
+    product_gid = models.CharField(max_length=255)
+    variant_gid = models.CharField(max_length=255, blank=True, default='')
+    title = models.CharField(max_length=300)
+    description = models.TextField(blank=True, default='')
+    seller_name = models.CharField(max_length=200, blank=True, default='')
+    seller_domain = models.CharField(max_length=200, blank=True, default='')
+    seller_url = models.TextField(blank=True, default='')
+    price_cents = models.IntegerField(default=0)
+    currency = models.CharField(max_length=8, blank=True, default='')
+    pdp_url = models.TextField(blank=True, default='')
+    checkout_url = models.TextField(blank=True, default='')
+    image_url = models.TextField(blank=True, default='')
+    rating_value = models.FloatField(null=True, blank=True)
+    rating_count = models.IntegerField(null=True, blank=True)
+    dims = models.JSONField(null=True, blank=True)
+    dims_longest = models.FloatField(null=True, blank=True)
+    dims_source = models.CharField(max_length=16, null=True, blank=True)
+    weight_lb = models.FloatField(null=True, blank=True)
+    materials = models.JSONField(default=list)
+    material_text = models.CharField(max_length=300, blank=True, default='')
+    specs = models.JSONField(default=list)
+    size_status = models.CharField(
+        max_length=16, choices=SizeStatus.choices, default=SizeStatus.UNVERIFIED
+    )
+    weight_status = models.CharField(
+        max_length=16, choices=WeightStatus.choices, default=WeightStatus.UNVERIFIED
+    )
+    passes_filters = models.BooleanField(default=True)
+    filter_reasons = models.JSONField(default=list)
+    verdict = models.CharField(
+        max_length=16, choices=Verdict.choices, default=Verdict.PENDING
+    )
+    verdict_reason = models.CharField(max_length=200, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['run', 'product_gid'], name='unique_run_product'
+            )
+        ]

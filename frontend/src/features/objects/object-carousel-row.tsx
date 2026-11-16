@@ -70,7 +70,86 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
     });
   };
 
+  // Clicking the header only highlights the row; its buttons keep their own actions.
+  const headerStart = (
+    <div
+      className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
+      onClick={() => onFocusRow?.(objectId)}
+      role="presentation"
+    >
+      <ProductTile type={selectedProduct?.type ?? object.type} size="sm" />
+      <h3 className="min-w-0 truncate text-headline-medium text-text-primary">{object.name}</h3>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Chip color="soft" variant="caption">
+          {formatDims(object.dims, unit)}
+        </Chip>
+        <Chip color="soft" variant="caption">
+          {typeLabel}
+        </Chip>
+        {object.priceLimit !== undefined ? (
+          <Chip color="soft" variant="caption">
+            <bdi>≤ {formatPrice(object.priceLimit)}</bdi>
+          </Chip>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const headerActions = (
+    <div
+      className="flex flex-wrap items-center gap-2"
+      onClick={() => onFocusRow?.(objectId)}
+      role="presentation"
+    >
+      <Button variant="ghost" size="small" onClick={() => drawer.open(objectId)}>
+        Details
+      </Button>
+      {owned ? (
+        <Chip color="orange">Owned</Chip>
+      ) : (
+        <>
+          {running ? (
+            <Button variant="secondary" size="small" onClick={() => search.cancel(objectId)}>
+              Cancel
+            </Button>
+          ) : (
+            <Button variant="secondary" size="small" leadingIcon={RiSearchLine} onClick={() => search.search(objectId)}>
+              Search
+            </Button>
+          )}
+          {cartLine ? (
+            <Button variant="secondary" size="small" leadingIcon={RiCheckLine} onClick={() => void navigate("/cart")}>
+              In cart
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="small"
+              leadingIcon={RiShoppingCart2Line}
+              disabled={!selectedProduct}
+              onClick={buy}
+            >
+              Buy
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const standaloneHeader = (
+    <div
+      className="flex flex-wrap items-center justify-between gap-3"
+      onClick={() => onFocusRow?.(objectId)}
+      role="presentation"
+    >
+      {headerStart}
+      {headerActions}
+    </div>
+  );
+
   let body;
+  let isCarousel = false;
   if (owned) {
     body = ownedProduct ? (
       <div className="flex flex-wrap items-end gap-4">
@@ -117,8 +196,16 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
       </div>
     );
   } else {
+    isCarousel = true;
     body = (
-      <Carousel aria-label={`${object.name} matches`} showDots={false} gap={12}>
+      <Carousel
+        aria-label={`${object.name} matches`}
+        header={headerStart}
+        actions={headerActions}
+        showDots={false}
+        gap={12}
+        scrollResetKey={object.selectedProductId}
+      >
         {candidates.map((product) => (
           <CarouselItem key={product.id} className={CARD_WIDTH}>
             {product.id === object.selectedProductId ? (
@@ -145,65 +232,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
         highlighted && "ring-2 ring-border-focus-ring",
       )}
     >
-      {/* Clicking the header only highlights the row; its buttons keep their own actions. */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3"
-        onClick={() => onFocusRow?.(objectId)}
-        role="presentation"
-      >
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-          <ProductTile type={selectedProduct?.type ?? object.type} size="sm" />
-          <h3 className="min-w-0 truncate text-headline-medium text-text-primary">{object.name}</h3>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Chip color="soft" variant="caption">
-              {formatDims(object.dims, unit)}
-            </Chip>
-            <Chip color="soft" variant="caption">
-              {typeLabel}
-            </Chip>
-            {object.priceLimit !== undefined ? (
-              <Chip color="soft" variant="caption">
-                <bdi>≤ {formatPrice(object.priceLimit)}</bdi>
-              </Chip>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="small" onClick={() => drawer.open(objectId)}>
-            Details
-          </Button>
-          {owned ? (
-            <Chip color="orange">Owned</Chip>
-          ) : (
-            <>
-              {running ? (
-                <Button variant="secondary" size="small" onClick={() => search.cancel(objectId)}>
-                  Cancel
-                </Button>
-              ) : (
-                <Button variant="secondary" size="small" leadingIcon={RiSearchLine} onClick={() => search.search(objectId)}>
-                  Search
-                </Button>
-              )}
-              {cartLine ? (
-                <Button variant="secondary" size="small" leadingIcon={RiCheckLine} onClick={() => void navigate("/cart")}>
-                  In cart
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="small"
-                  leadingIcon={RiShoppingCart2Line}
-                  disabled={!selectedProduct}
-                  onClick={buy}
-                >
-                  Buy
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      {isCarousel ? null : standaloneHeader}
       {body}
     </section>
   );

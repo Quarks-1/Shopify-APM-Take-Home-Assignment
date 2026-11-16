@@ -14,6 +14,30 @@ import { getImportedObjects, getSearchableObjects } from "@/state/selectors";
 
 const IMPORT_DELAY_MS = 1000;
 
+function SectionTitle({
+  id,
+  title,
+  count,
+  description,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  description?: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <h2 id={id} className="text-title-3-semibold text-text-primary">
+          {title}
+        </h2>
+        <Counter>{count}</Counter>
+      </div>
+      {description ? <p className="text-body-regular text-text-secondary">{description}</p> : null}
+    </div>
+  );
+}
+
 export function HomePage() {
   const state = useAppState();
   const { resetDemo, importFromShopify } = useAppActions();
@@ -42,6 +66,35 @@ export function HomePage() {
     }, IMPORT_DELAY_MS);
   };
 
+  const objectsHeader = <SectionTitle id="home-objects" title="Current objects" count={objects.length} />;
+  const objectsAction = (
+    <Button variant="ghost" size="small" onClick={() => navigate("/find")}>
+      Find new objects
+    </Button>
+  );
+  const importedHeader = (
+    <SectionTitle
+      id="home-imported"
+      title="Imported objects"
+      count={imported.length}
+      description="Things you already own, from your Shopify order history."
+    />
+  );
+  const importedAction = (
+    <Button
+      variant="secondary"
+      leadingIcon={RiDownloadCloud2Line}
+      disabled={importing || Boolean(state.importedAt)}
+      onClick={handleImport}
+    >
+      {state.importedAt
+        ? `Imported ${formatRelativeTime(state.importedAt)}`
+        : importing
+          ? "Importing…"
+          : "Import from Shopify"}
+    </Button>
+  );
+
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -65,13 +118,12 @@ export function HomePage() {
       </header>
 
       <section className="flex flex-col gap-4" aria-labelledby="home-spaces">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 id="home-spaces" className="text-title-3-semibold text-text-primary">
-            Current spaces
-          </h2>
-          <Counter>{state.spaces.length}</Counter>
-        </div>
-        <Carousel aria-label="Current spaces" showDots={false} gap={16}>
+        <Carousel
+          aria-label="Current spaces"
+          showDots={false}
+          gap={16}
+          header={<SectionTitle id="home-spaces" title="Current spaces" count={state.spaces.length} />}
+        >
           <CarouselItem className="w-72">
             <NewSpaceCard />
           </CarouselItem>
@@ -87,19 +139,14 @@ export function HomePage() {
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="home-objects">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 id="home-objects" className="text-title-3-semibold text-text-primary">
-              Current objects
-            </h2>
-            <Counter>{objects.length}</Counter>
-          </div>
-          <Button variant="ghost" size="small" onClick={() => navigate("/find")}>
-            Find new objects
-          </Button>
-        </div>
         {objects.length > 0 ? (
-          <Carousel aria-label="Current objects" showDots={false} gap={16}>
+          <Carousel
+            aria-label="Current objects"
+            showDots={false}
+            gap={16}
+            header={objectsHeader}
+            actions={objectsAction}
+          >
             {objects.map((o) => (
               <CarouselItem key={o.id} className="w-56">
                 <ObjectCard objectId={o.id} />
@@ -107,44 +154,31 @@ export function HomePage() {
             ))}
           </Carousel>
         ) : (
-          <div className="flex flex-col items-center gap-3 rounded-3xl border border-border-button-default bg-background-primary-default p-8 text-center">
-            <h3 className="text-headline-medium text-text-primary">No objects yet</h3>
-            <p className="text-body-regular text-text-secondary">Define an object and we'll search the catalog for it.</p>
-            <Button variant="secondary" leadingIcon={RiSearchLine} onClick={() => navigate("/find")}>
-              Find objects
-            </Button>
-          </div>
+          <>
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <div className="min-w-0">{objectsHeader}</div>
+              <div className="ms-auto flex items-center gap-2">{objectsAction}</div>
+            </div>
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-border-button-default bg-background-primary-default p-8 text-center">
+              <h3 className="text-headline-medium text-text-primary">No objects yet</h3>
+              <p className="text-body-regular text-text-secondary">Define an object and we'll search the catalog for it.</p>
+              <Button variant="secondary" leadingIcon={RiSearchLine} onClick={() => navigate("/find")}>
+                Find objects
+              </Button>
+            </div>
+          </>
         )}
       </section>
 
       <section className="flex flex-col gap-4" aria-labelledby="home-imported">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <h2 id="home-imported" className="text-title-3-semibold text-text-primary">
-                Imported objects
-              </h2>
-              <Counter>{imported.length}</Counter>
-            </div>
-            <p className="text-body-regular text-text-secondary">
-              Things you already own, from your Shopify order history.
-            </p>
-          </div>
-          <Button
-            variant="secondary"
-            leadingIcon={RiDownloadCloud2Line}
-            disabled={importing || Boolean(state.importedAt)}
-            onClick={handleImport}
-          >
-            {state.importedAt
-              ? `Imported ${formatRelativeTime(state.importedAt)}`
-              : importing
-                ? "Importing…"
-                : "Import from Shopify"}
-          </Button>
-        </div>
         {imported.length > 0 ? (
-          <Carousel aria-label="Imported objects" showDots={false} gap={16}>
+          <Carousel
+            aria-label="Imported objects"
+            showDots={false}
+            gap={16}
+            header={importedHeader}
+            actions={importedAction}
+          >
             {imported.map((o) => (
               <CarouselItem key={o.id} className="w-56">
                 <ObjectCard objectId={o.id} />
@@ -152,10 +186,16 @@ export function HomePage() {
             ))}
           </Carousel>
         ) : (
-          <div className="rounded-3xl border border-dashed border-border-button-default p-8 text-center text-body-regular text-text-secondary">
-            Importing pulls items you've already bought from Shopify, so you can place them in a space without
-            buying them again.
-          </div>
+          <>
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <div className="min-w-0">{importedHeader}</div>
+              <div className="ms-auto flex items-center gap-2">{importedAction}</div>
+            </div>
+            <div className="rounded-3xl border border-dashed border-border-button-default p-8 text-center text-body-regular text-text-secondary">
+              Importing pulls items you've already bought from Shopify, so you can place them in a space without
+              buying them again.
+            </div>
+          </>
         )}
       </section>
 

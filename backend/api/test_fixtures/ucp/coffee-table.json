@@ -1,0 +1,1284 @@
+{
+  "business": "https://catalog.shopify.com",
+  "endpoint": "https://catalog.shopify.com/api/ucp/mcp",
+  "transport": "mcp",
+  "ucp": {
+    "version": "2026-08-25",
+    "capabilities": {
+      "dev.ucp.shopping.catalog.search": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_search.json"
+        }
+      ],
+      "dev.ucp.shopping.catalog.lookup": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_lookup.json"
+        }
+      ],
+      "dev.shopify.catalog.global": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://shopify.dev/docs/agents/catalog/global-catalog",
+          "schema": "https://shopify.dev/ucp/schemas/2026-08-25/shopify_catalog_global.json",
+          "extends": [
+            "dev.ucp.shopping.catalog.search",
+            "dev.ucp.shopping.catalog.lookup"
+          ],
+          "requires": {
+            "protocol": {
+              "min": "2026-08-25"
+            }
+          }
+        }
+      ]
+    },
+    "status": "success"
+  },
+  "result": {
+    "products": [
+      {
+        "id": "gid://shopify/p/IKAjRltyX0rlkX0y47B7c",
+        "title": "Onyx Mid Century Modern Wood Coffee Table with Storage",
+        "description": {
+          "plain": "A rectangular wood coffee table with storage, combining mid-century modern design and practical organization."
+        },
+        "handle": "modern-wood-grain-coffee-table",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 6
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0785/3136/3132/files/image_1_473bd326-1f26-46ff-b47e-4f3b2590a577.jpg",
+            "alt_text": "Modern Wood Grain Coffee Table with Drawers-Natural Oak-Flat",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0785/3136/3132/files/image_1_473bd326-1f26-46ff-b47e-4f3b2590a577.jpg",
+              "width": 2000,
+              "height": 2000
+            },
+            "width": 2000,
+            "height": 2000
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Brown"
+              },
+              {
+                "label": "Natural Oak"
+              },
+              {
+                "label": "White"
+              }
+            ]
+          },
+          {
+            "name": "Style",
+            "values": [
+              {
+                "label": "Flat"
+              },
+              {
+                "label": "Fluted"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Features built-in storage drawers for added functionality in a stylish mid-century modern design."
+          ],
+          "top_features": [
+            "Rectangular solid wood construction provides durability and stability",
+            "Integrated storage drawers keep beverages and essentials organized",
+            "Lacquered finish protects wood and maintains a sleek appearance",
+            "Mid-century modern design adds timeless style to any room"
+          ],
+          "tech_specs": [
+            "Tabletop Material: Wood",
+            "Tabletop Color: Brown",
+            "Tabletop Pattern: Solid, Texture",
+            "Tabletop Shape: Rectangular",
+            "Finish: Lacquered/varnished"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/54016085262652",
+            "title": "Onyx Mid Century Modern Wood Coffee Table with Storage",
+            "description": {
+              "plain": "A rectangular wood coffee table with storage, combining mid-century modern design and practical organization."
+            },
+            "handle": "modern-wood-grain-coffee-table",
+            "url": "https://amerlifehome.com/products/modern-wood-grain-coffee-table?variant=54016085262652&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 14999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Style",
+                "label": "Flat"
+              },
+              {
+                "name": "Color",
+                "label": "Natural Oak"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0785/3136/3132/files/image_1_473bd326-1f26-46ff-b47e-4f3b2590a577.jpg",
+                "alt_text": "Modern Wood Grain Coffee Table with Drawers-Natural Oak-Flat",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0785/3136/3132/files/image_1_473bd326-1f26-46ff-b47e-4f3b2590a577.jpg",
+                  "width": 2000,
+                  "height": 2000
+                },
+                "width": 2000,
+                "height": 2000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/78531363132",
+              "name": "Amerlife",
+              "url": "https://amerlifehome.com",
+              "domain": "amerlife.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/78531363132/policies/35634381116.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/78531363132/policies/35634413884.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/78531363132/policies/35634348348.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/78531363132/policies/35634446652.html"
+                }
+              ]
+            },
+            "checkout_url": "https://amerlifehome.com/buy/54016085262652:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 14999,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 14999,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/4s7yXCGTJ0W6WDgwIYx1Sg",
+        "title": "Mid-Century Modern Coffee Table - 48\"",
+        "description": {
+          "plain": "<p>Create an eye-catching focal point for your living room with our Mid-Century Modern Coffee Table. Crafted with knot-free solid wood, this coffee table pairs quality craftsmanship with a sleek mid-century modern design for a piece that is as durable as it is beautiful. Hand-applied, low-VOC finishes are also non-toxic, contributing to a clean and healthy home. This table’s compact size is perfect for both small spaces and L-shaped seating. Its single-panel tabletop makes for easy assembly, and its variety of neutral finishes ensures a perfect fit for any personal style. Pair with one of our Mid-Century Modern Side Tables to create a sleek, cohesive look in your living room.</p>"
+        },
+        "handle": "mid-century-modern-coffee-table-48",
+        "rating": {
+          "value": 4.5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 32
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0451/0026/9730/files/2000507000-007__1_63b96987-d528-4e69-a150-0366c01b4ba5.jpg",
+            "alt_text": "Mid-Century Modern Coffee Table - 48\" Coffee Table Plank+Beam Pecan ",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0451/0026/9730/files/2000507000-007__1_63b96987-d528-4e69-a150-0366c01b4ba5.jpg",
+              "width": 2000,
+              "height": 2000
+            },
+            "width": 2000,
+            "height": 2000
+          }
+        ],
+        "options": [
+          {
+            "name": "Finish",
+            "values": [
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Pecan"
+              },
+              {
+                "label": "Walnut"
+              }
+            ]
+          },
+          {
+            "name": "Table size|cl",
+            "values": [
+              {
+                "label": "40\""
+              },
+              {
+                "label": "48\""
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Handcrafted from knot-free solid wood with non-toxic, low VOC finishes for a healthy, durable, and stylish living space."
+          ],
+          "top_features": [
+            "Knot-free solid wood construction ensures long-lasting durability",
+            "Hand-applied low VOC, non-toxic finishes create a healthier home environment",
+            "Sleek mid-century modern design complements a variety of interior styles",
+            "Single panel tabletop allows for easy assembly and flexible placement",
+            "Neutral color options provide a perfect fit for any decor"
+          ],
+          "tech_specs": [
+            "Tabletop Material: Solid wood",
+            "Tabletop Shape: Rectangular",
+            "Tabletop Color: Brown",
+            "Leg Material: Wood",
+            "Leg Color: Brown",
+            "Finish: Hand-applied, low VOC, non-toxic"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/44030728863906",
+            "title": "Mid-Century Modern Coffee Table - 48\"",
+            "description": {
+              "plain": "<p>Create an eye-catching focal point for your living room with our Mid-Century Modern Coffee Table. Crafted with knot-free solid wood, this coffee table pairs quality craftsmanship with a sleek mid-century modern design for a piece that is as durable as it is beautiful. Hand-applied, low-VOC finishes are also non-toxic, contributing to a clean and healthy home. This table’s compact size is perfect for both small spaces and L-shaped seating. Its single-panel tabletop makes for easy assembly, and its variety of neutral finishes ensures a perfect fit for any personal style. Pair with one of our Mid-Century Modern Side Tables to create a sleek, cohesive look in your living room.</p>"
+            },
+            "handle": "mid-century-modern-coffee-table-48",
+            "url": "https://plankandbeam.com/products/mid-century-modern-coffee-table-48?variant=44030728863906&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 9900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 21000,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Finish",
+                "label": "Pecan"
+              },
+              {
+                "name": "Table size|cl",
+                "label": "48\""
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0451/0026/9730/files/2000507000-007__1_63b96987-d528-4e69-a150-0366c01b4ba5.jpg",
+                "alt_text": "Mid-Century Modern Coffee Table - 48\" Coffee Table Plank+Beam Pecan ",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0451/0026/9730/files/2000507000-007__1_63b96987-d528-4e69-a150-0366c01b4ba5.jpg",
+                  "width": 2000,
+                  "height": 2000
+                },
+                "width": 2000,
+                "height": 2000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/45100269730",
+              "name": "Plank+Beam",
+              "url": "https://plankandbeam.com",
+              "domain": "plankbeam.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/45100269730/policies/22336012450.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/45100269730/policies/22336045218.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/45100269730/policies/22335979682.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/45100269730/policies/22336077986.html"
+                }
+              ]
+            },
+            "checkout_url": "https://plankandbeam.com/buy/44030728863906:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "rating": {
+              "value": 4.3,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 9
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 9900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 9900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/DshvK4BEGVLXboqGYROte",
+        "title": "39\" Mid-Century Modern Oval Fluted Coffee Table with Curved Edges",
+        "description": {
+          "plain": "<p><strong>Elegant Fluted Design:</strong> This oval coffee table blends mid-century character with a clean, contemporary silhouette. The smoothly curved tabletop is supported by two cylindrical fluted bases, adding texture, depth and a distinctive designer-inspired look to your living room. Its warm wood-grain finish complements modern, farmhouse, boho and minimalist interiors.</p>\n<p><strong>Smooth Oval Profile:</strong> The gently rounded tabletop edges soften the appearance of surrounding furniture and help reduce the inconvenience of sharp corners. Its elongated oval shape creates an inviting centerpiece while allowing people to move more comfortably around the table.</p>\n<p><strong>Compact Size for Smaller Spaces:</strong> Measuring 39.38\"W × 19.69\"D × 13.78\"H, this low-profile coffee table offers practical surface space without overwhelming the room. It fits comfortably in apartments, small to medium-sized living rooms, lounges and other spaces where a full-size coffee table may feel too bulky.</p>\n<p><strong>Stable Dual-Base Construction:</strong> Crafted from engineered wood, the tabletop is supported by two wide fluted cylindrical bases for balanced everyday stability. The spacious surface provides convenient room for beverages, books, remotes and decorative accents while maintaining a streamlined, uncluttered appearance.</p>\n<p><strong>Easy to Clean &amp; Assemble:</strong> The smooth finished surface can be wiped clean with a soft damp cloth to remove dust and everyday spills. Clearly labeled parts, included hardware and step-by-step instructions help make assembly straightforward. The table is also supported by GIRATREE’s one-year warranty.</p>\n<p><strong>Designed with Curves, Texture &amp; Everyday Versatility</strong></p>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/01-oval-fluted-coffee-table-hero_eef945ef-dd3f-48e1-863b-869a078efc52.jpg?v=1788508201\" alt=\"Walnut oval fluted coffee table with curved edges and dual cylindrical bases\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/02-material-and-fluted-details.jpg?v=1788508205\" alt=\"Engineered wood oval coffee table with thick tabletop and fluted cylindrical bases\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/03-oval-shape-top-view.jpg?v=1788508205\" alt=\"Top view of walnut oval coffee table with spacious curved tabletop\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/04-everyday-work-and-living.jpg?v=1788508205\" alt=\"Walnut fluted oval coffee table used with a laptop in a modern living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/05-modern-living-room.jpg?v=1788508205\" alt=\"Mid-century modern walnut oval coffee table with dual fluted bases in living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/06-warm-living-room-style.jpg?v=1788508205\" alt=\"Compact walnut oval fluted coffee table styled in a warm small living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/07-front-view-lifestyle.jpg?v=1788508205\" alt=\"Front view of walnut oval coffee table with two cylindrical fluted bases\" style=\"margin-bottom: 16px; float: none;\"></div>"
+        },
+        "handle": "mid-century-modern-oval-fluted-curved-round-wooden-coffee-table-with-fluted-legs",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0667/5965/5726/files/WalnutMidCenturyModernOvalFlutedCurvedRoundWoodenCoffeeTablewithFlutedLegs_4.jpg",
+            "alt_text": "Walnut Mid Century Modern Oval Fluted Curved Round Wooden Coffee Table with Fluted Legs",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0667/5965/5726/files/WalnutMidCenturyModernOvalFlutedCurvedRoundWoodenCoffeeTablewithFlutedLegs_4.jpg",
+              "width": 1000,
+              "height": 1000
+            },
+            "width": 1000,
+            "height": 1000
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Natural"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines timeless mid-century design with modern safety features and a sturdy, durable MDF construction."
+          ],
+          "top_features": [
+            "Fluted cylindrical legs add vintage charm and visual interest to any room",
+            "Smooth curved edges enhance safety, making it ideal for families and pets",
+            "Durable MDF construction ensures stability and long-lasting use",
+            "Vintage walnut finish provides a warm, sophisticated look",
+            "Easy assembly with included instructions and number-labeled tools"
+          ],
+          "tech_specs": [
+            "Dimensions: 39.38 x 19.69 x 13.78 in (L x W x H)",
+            "Tabletop Material: Medium density fiberboard (MDF)",
+            "Tabletop Shape: Oval",
+            "Leg Material: Medium density fiberboard (MDF)",
+            "Leg Color: Brown",
+            "Finish: Lacquered/varnished"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/50255437234478",
+            "title": "39\" Mid-Century Modern Oval Fluted Coffee Table with Curved Edges",
+            "description": {
+              "plain": "<p><strong>Elegant Fluted Design:</strong> This oval coffee table blends mid-century character with a clean, contemporary silhouette. The smoothly curved tabletop is supported by two cylindrical fluted bases, adding texture, depth and a distinctive designer-inspired look to your living room. Its warm wood-grain finish complements modern, farmhouse, boho and minimalist interiors.</p>\n<p><strong>Smooth Oval Profile:</strong> The gently rounded tabletop edges soften the appearance of surrounding furniture and help reduce the inconvenience of sharp corners. Its elongated oval shape creates an inviting centerpiece while allowing people to move more comfortably around the table.</p>\n<p><strong>Compact Size for Smaller Spaces:</strong> Measuring 39.38\"W × 19.69\"D × 13.78\"H, this low-profile coffee table offers practical surface space without overwhelming the room. It fits comfortably in apartments, small to medium-sized living rooms, lounges and other spaces where a full-size coffee table may feel too bulky.</p>\n<p><strong>Stable Dual-Base Construction:</strong> Crafted from engineered wood, the tabletop is supported by two wide fluted cylindrical bases for balanced everyday stability. The spacious surface provides convenient room for beverages, books, remotes and decorative accents while maintaining a streamlined, uncluttered appearance.</p>\n<p><strong>Easy to Clean &amp; Assemble:</strong> The smooth finished surface can be wiped clean with a soft damp cloth to remove dust and everyday spills. Clearly labeled parts, included hardware and step-by-step instructions help make assembly straightforward. The table is also supported by GIRATREE’s one-year warranty.</p>\n<p><strong>Designed with Curves, Texture &amp; Everyday Versatility</strong></p>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/01-oval-fluted-coffee-table-hero_eef945ef-dd3f-48e1-863b-869a078efc52.jpg?v=1788508201\" alt=\"Walnut oval fluted coffee table with curved edges and dual cylindrical bases\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/02-material-and-fluted-details.jpg?v=1788508205\" alt=\"Engineered wood oval coffee table with thick tabletop and fluted cylindrical bases\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/03-oval-shape-top-view.jpg?v=1788508205\" alt=\"Top view of walnut oval coffee table with spacious curved tabletop\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/04-everyday-work-and-living.jpg?v=1788508205\" alt=\"Walnut fluted oval coffee table used with a laptop in a modern living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/05-modern-living-room.jpg?v=1788508205\" alt=\"Mid-century modern walnut oval coffee table with dual fluted bases in living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/06-warm-living-room-style.jpg?v=1788508205\" alt=\"Compact walnut oval fluted coffee table styled in a warm small living room\" style=\"margin-bottom: 16px; float: none;\"></div>\n<div style=\"text-align: left;\"><img src=\"https://cdn.shopify.com/s/files/1/0667/5965/5726/files/07-front-view-lifestyle.jpg?v=1788508205\" alt=\"Front view of walnut oval coffee table with two cylindrical fluted bases\" style=\"margin-bottom: 16px; float: none;\"></div>"
+            },
+            "handle": "mid-century-modern-oval-fluted-curved-round-wooden-coffee-table-with-fluted-legs",
+            "url": "https://www.giratree.com/products/mid-century-modern-oval-fluted-curved-round-wooden-coffee-table-with-fluted-legs?variant=50255437234478&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 12900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 19900,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Walnut"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0667/5965/5726/files/WalnutMidCenturyModernOvalFlutedCurvedRoundWoodenCoffeeTablewithFlutedLegs_4.jpg",
+                "alt_text": "Walnut Mid Century Modern Oval Fluted Curved Round Wooden Coffee Table with Fluted Legs",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0667/5965/5726/files/WalnutMidCenturyModernOvalFlutedCurvedRoundWoodenCoffeeTablewithFlutedLegs_4.jpg",
+                  "width": 1000,
+                  "height": 1000
+                },
+                "width": 1000,
+                "height": 1000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/66759655726",
+              "name": "GiraTree",
+              "url": "https://www.giratree.com",
+              "domain": "c6e8c4-2.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/66759655726/policies/27710292270.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/66759655726/policies/27710325038.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/66759655726/policies/27710259502.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/66759655726/policies/27710357806.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.giratree.com/buy/50255437234478:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "rating": {
+              "value": 3,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 12900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 12900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/50laFPkQBOQ86tN7LBbgdk",
+        "title": "Garvee 31.5 in Round Lift Top Coffee Table with Storage, Fluted Drum Wood Center Table with Hidden Cabinets/Compartments, Modern Farmhouse/Mid-Century for Living Room & Small Spaces - Color: Walnut",
+        "description": {
+          "plain": "<p><strong>Round Lift-Top Coffee Table with Hidden Storage (31.5\")</strong></p><p>Bring clean mid-century style and everyday practicality to your space with this <strong>round coffee table with storage</strong>. The <strong>fluted farmhouse drum</strong> silhouette and natural textured wood-look surface add warmth and character, while the sleek lines blend easily with modern, minimalist, or classic living room decor.</p><p><strong>Lift Top Function:</strong> The liftable tabletop creates a flexible surface for daily life—use it as a <strong>living room</strong> tea table, a cozy window-side leisure table, or a convenient work-and-snack spot from the sofa.</p><p><strong>Hidden Storage &amp; Cabinets:</strong> Keep your space tidy with generous concealed storage inside. It’s ideal for organizing books, throws, cushions, and board games, helping reduce visible clutter in small spaces.</p><p><strong>Stable &amp; Safe Design:</strong> Built with a sturdy column-style frame and reinforced support legs, this <strong>wood center table</strong> stays stable and wobble-free for long-term use. Rounded edges help provide a safer, family-friendly feel.</p><p><strong>Easy Assembly, Easy Care:</strong> Simplified construction with clear instructions makes setup quick and straightforward. The smooth tabletop wipes clean easily for low-maintenance everyday use.</p>"
+        },
+        "handle": "garvee-31-5-in-round-lift-top-coffee-table-walnut-phk-39kpqlby",
+        "rating": {
+          "value": 4.6,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 30
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0724/6698/9369/files/91Cka4YTpdL._AC_SL1500.jpg",
+            "alt_text": "Garvee 31.5 in Round Lift Top Coffee Table with Storage, Fluted Drum Wood Center Table with Hidden Cabinets/Compartments, Modern Farmhouse/Mid-Century for Living Room & Small Spaces - Color: Walnut",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0724/6698/9369/files/91Cka4YTpdL._AC_SL1500.jpg",
+              "width": 1500,
+              "height": 1500
+            },
+            "width": 1500,
+            "height": 1500
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Walnut"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines a fluted drum wood design with a lift top and concealed storage for both style and functionality in compact living areas."
+          ],
+          "top_features": [
+            "Lift top function provides a flexible, easily accessible surface for daily use",
+            "Hidden storage cabinets keep items organized and reduce visible clutter",
+            "Fluted drum silhouette and natural wood surface add warmth and character",
+            "Stable column-style frame and reinforced support legs ensure durability",
+            "Rounded edges create a safer, family-friendly environment"
+          ],
+          "tech_specs": [
+            "Dimensions: 31.5 in diameter",
+            "Tabletop Material: Natural wood",
+            "Storage: Hidden cabinets",
+            "Frame: Column-style with reinforced support legs",
+            "Assembly: Required",
+            "Color: Walnut"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/54203088896313",
+            "title": "Garvee 31.5 in Round Lift Top Coffee Table with Storage, Fluted Drum Wood Center Table with Hidden Cabinets/Compartments, Modern Farmhouse/Mid-Century for Living Room & Small Spaces - Color: Walnut",
+            "description": {
+              "plain": "<p><strong>Round Lift-Top Coffee Table with Hidden Storage (31.5\")</strong></p><p>Bring clean mid-century style and everyday practicality to your space with this <strong>round coffee table with storage</strong>. The <strong>fluted farmhouse drum</strong> silhouette and natural textured wood-look surface add warmth and character, while the sleek lines blend easily with modern, minimalist, or classic living room decor.</p><p><strong>Lift Top Function:</strong> The liftable tabletop creates a flexible surface for daily life—use it as a <strong>living room</strong> tea table, a cozy window-side leisure table, or a convenient work-and-snack spot from the sofa.</p><p><strong>Hidden Storage &amp; Cabinets:</strong> Keep your space tidy with generous concealed storage inside. It’s ideal for organizing books, throws, cushions, and board games, helping reduce visible clutter in small spaces.</p><p><strong>Stable &amp; Safe Design:</strong> Built with a sturdy column-style frame and reinforced support legs, this <strong>wood center table</strong> stays stable and wobble-free for long-term use. Rounded edges help provide a safer, family-friendly feel.</p><p><strong>Easy Assembly, Easy Care:</strong> Simplified construction with clear instructions makes setup quick and straightforward. The smooth tabletop wipes clean easily for low-maintenance everyday use.</p>"
+            },
+            "handle": "garvee-31-5-in-round-lift-top-coffee-table-walnut-phk-39kpqlby",
+            "url": "https://www.garvee.com/products/garvee-31-5-in-round-lift-top-coffee-table-walnut-phk-39kpqlby?_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 14599,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 17699,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Walnut"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0724/6698/9369/files/91Cka4YTpdL._AC_SL1500.jpg",
+                "alt_text": "Garvee 31.5 in Round Lift Top Coffee Table with Storage, Fluted Drum Wood Center Table with Hidden Cabinets/Compartments, Modern Farmhouse/Mid-Century for Living Room & Small Spaces - Color: Walnut",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0724/6698/9369/files/91Cka4YTpdL._AC_SL1500.jpg",
+                  "width": 1500,
+                  "height": 1500
+                },
+                "width": 1500,
+                "height": 1500
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/72466989369",
+              "name": "GARVEE",
+              "url": "https://www.garvee.com",
+              "domain": "mygarvee.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/72466989369/policies/30681661753.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/72466989369/policies/30681694521.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/72466989369/policies/30681628985.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/72466989369/policies/30681727289.html"
+                }
+              ]
+            },
+            "checkout_url": "https://mygarvee.myshopify.com/buy/54203088896313:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&channel=headless&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 14599,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 14599,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/j4dgbM1YdkYZ12fZF1nbp",
+        "title": "Eric oak finish coffee table with storage",
+        "description": {
+          "plain": "<p><span>Combining practicality and sophisticated design, this coffee table is ideal for the modern home. The mid-century modern style subtly blends classic aesthetics with contemporary craftsmanship. The table is made of engineered wood with a rich oak finish, which is sturdy and durable. The wood-colored table surface shows the beauty of the natural smooth wood grain. The unique rounded leg design is aesthetically pleasing and provides stable support, and the rounded edges not only enhance aesthetics but also increase safety in use. The two side panels are higher than the tabletop to prevent accidental dropping of items from the tabletop. Every detail reflects fine control of design and a deep understanding of aesthetics. The table features an open space and a large drawer, respectively, providing ample storage space and the ability to display items. This coffee table will warm and elegant your living and family rooms, making it the perfect centerpiece for family and friend gatherings.</span></p>"
+        },
+        "handle": "luxenhome-summer-oak-engineered-wood-coffee-table-with-storage",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0772/0750/3146/files/61cb4330-5004-4535-afb7-67e81197dd8a.jpg",
+            "alt_text": "Eric oak finish coffee table with storage",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0772/0750/3146/files/61cb4330-5004-4535-afb7-67e81197dd8a.jpg",
+              "width": 2048,
+              "height": 2048
+            },
+            "width": 2048,
+            "height": 2048
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Features a unique rounded leg design and integrated storage drawer for both style and functionality."
+          ],
+          "top_features": [
+            "Rich oak finish provides a sturdy and durable surface for everyday use",
+            "Integrated storage drawer offers ample space for organizing items",
+            "Rounded leg design enhances aesthetics and increases stability",
+            "Raised side panels prevent accidental item drops for added safety",
+            "Natural wood grain and textured tabletop create a warm, elegant look"
+          ],
+          "tech_specs": [
+            "Tabletop Material: Engineered wood with oak finish",
+            "Tabletop Shape: Rectangular",
+            "Tabletop Pattern: Textured",
+            "Leg Material: Wood",
+            "Leg Color: Brown",
+            "Storage: 1 large drawer"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/49429807464746",
+            "title": "Eric oak finish coffee table with storage",
+            "description": {
+              "plain": "<p><span>Combining practicality and sophisticated design, this coffee table is ideal for the modern home. The mid-century modern style subtly blends classic aesthetics with contemporary craftsmanship. The table is made of engineered wood with a rich oak finish, which is sturdy and durable. The wood-colored table surface shows the beauty of the natural smooth wood grain. The unique rounded leg design is aesthetically pleasing and provides stable support, and the rounded edges not only enhance aesthetics but also increase safety in use. The two side panels are higher than the tabletop to prevent accidental dropping of items from the tabletop. Every detail reflects fine control of design and a deep understanding of aesthetics. The table features an open space and a large drawer, respectively, providing ample storage space and the ability to display items. This coffee table will warm and elegant your living and family rooms, making it the perfect centerpiece for family and friend gatherings.</span></p>"
+            },
+            "handle": "luxenhome-summer-oak-engineered-wood-coffee-table-with-storage",
+            "url": "https://luxenhome.com/products/luxenhome-summer-oak-engineered-wood-coffee-table-with-storage?variant=49429807464746&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 14999,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 23199,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0772/0750/3146/files/61cb4330-5004-4535-afb7-67e81197dd8a.jpg",
+                "alt_text": "Eric oak finish coffee table with storage",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0772/0750/3146/files/61cb4330-5004-4535-afb7-67e81197dd8a.jpg",
+                  "width": 2048,
+                  "height": 2048
+                },
+                "width": 2048,
+                "height": 2048
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/77207503146",
+              "name": "LuxenHome",
+              "url": "https://luxenhome.com",
+              "domain": "luxenhome-demo.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/77207503146/policies/35401695530.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/77207503146/policies/35401728298.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/77207503146/policies/35401662762.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/77207503146/policies/35401761066.html"
+                }
+              ]
+            },
+            "checkout_url": "https://luxenhome.com/buy/49429807464746:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 14999,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 14999,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/2sHUE7bYDAxfnyMWYTzK",
+        "title": "Retrovie Mid-Century Modern 47\" Storage Coffee Table",
+        "description": {
+          "plain": "<p><meta charset=\"utf-8\"><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">Crafted with </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"annotation-f7408496-306e-43d8-b24c-dc425f52b11f ContextualSpellingAndGrammarErrorZoomed SCXP200555825 BCX0\">mid-century</span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\"> modern design, the </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SpellingErrorZoomed SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"annotation-39bcd2f5-1a19-41a4-abc4-ef1c17366a05 SCXP200555825 BCX0\">Retrovie</span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\"> Drawer Coffee Table brings clean structure and quiet </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">sophistication to your living space. This coffee table with storage doubles beautifully as a sofa table, featuring </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">recessed-handle drawers that offer seamless storage while keeping everyday essentials neatly within reach.</span></span></p>"
+        },
+        "handle": "retrovie-storage-coffee-table-47-inch",
+        "rating": {
+          "value": 4.4,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 31
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0490/8482/5759/files/1_-_2-Drawer_Coffee_Table.png",
+            "alt_text": "Retrovie Mid-Century Modern 47\" Storage Coffee Table",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0490/8482/5759/files/1_-_2-Drawer_Coffee_Table.png",
+              "width": 1024,
+              "height": 1024
+            },
+            "width": 1024,
+            "height": 1024
+          },
+          {
+            "type": "video",
+            "url": "https://cdn.shopify.com/videos/c/vp/5ee96c2ef5254e6c8e0c4d8017c9b9c5/5ee96c2ef5254e6c8e0c4d8017c9b9c5.m3u8",
+            "alt_text": "Retrovie Mid-Century Modern 47\" Storage Coffee Table",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0490/8482/5759/files/preview_images/5ee96c2ef5254e6c8e0c4d8017c9b9c5.thumbnail.0000000000.jpg",
+              "width": 1500,
+              "height": 1500
+            },
+            "duration": 19,
+            "sources": [
+              {
+                "url": "https://cdn.shopify.com/videos/c/vp/5ee96c2ef5254e6c8e0c4d8017c9b9c5/5ee96c2ef5254e6c8e0c4d8017c9b9c5.m3u8",
+                "mime_type": "application/x-mpegURL",
+                "format": "m3u8",
+                "width": 1080,
+                "height": 1080
+              },
+              {
+                "url": "https://cdn.shopify.com/videos/c/vp/5ee96c2ef5254e6c8e0c4d8017c9b9c5/5ee96c2ef5254e6c8e0c4d8017c9b9c5.HD-1080p-7.2Mbps-79771015.mp4",
+                "mime_type": "video/mp4",
+                "format": "mp4",
+                "width": 1080,
+                "height": 1080
+              },
+              {
+                "url": "https://cdn.shopify.com/videos/c/vp/5ee96c2ef5254e6c8e0c4d8017c9b9c5/5ee96c2ef5254e6c8e0c4d8017c9b9c5.HD-720p-4.5Mbps-79771015.mp4",
+                "mime_type": "video/mp4",
+                "format": "mp4",
+                "width": 720,
+                "height": 720
+              },
+              {
+                "url": "https://cdn.shopify.com/videos/c/vp/5ee96c2ef5254e6c8e0c4d8017c9b9c5/5ee96c2ef5254e6c8e0c4d8017c9b9c5.SD-480p-1.5Mbps-79771015.mp4",
+                "mime_type": "video/mp4",
+                "format": "mp4",
+                "width": 480,
+                "height": 480
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines mid-century modern design with integrated recessed handle drawers for concealed storage."
+          ],
+          "top_features": [
+            "Mid-century modern design enhances contemporary interiors with timeless style",
+            "Recessed handle drawers provide discreet storage for everyday essentials",
+            "Doubles as a sofa table for versatile living space functionality",
+            "Clean structure and quiet sophistication suit a variety of decor styles"
+          ],
+          "tech_specs": [
+            "Dimensions: 47 inches (length)",
+            "Drawer Type: Recessed handle drawers",
+            "Tabletop Material: Not specified",
+            "Number of Drawers: 2",
+            "Tabletop Finish: Not specified"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/62706993365151",
+            "title": "Retrovie Mid-Century Modern 47\" Storage Coffee Table",
+            "description": {
+              "plain": "<p><meta charset=\"utf-8\"><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">Crafted with </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"annotation-f7408496-306e-43d8-b24c-dc425f52b11f ContextualSpellingAndGrammarErrorZoomed SCXP200555825 BCX0\">mid-century</span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\"> modern design, the </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SpellingErrorZoomed SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"annotation-39bcd2f5-1a19-41a4-abc4-ef1c17366a05 SCXP200555825 BCX0\">Retrovie</span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\"> Drawer Coffee Table brings clean structure and quiet </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">sophistication to your living space. This coffee table with storage doubles beautifully as a sofa table, featuring </span></span><span data-scheme-color=\"@3D0E08,,\" data-usefontface=\"false\" data-contrast=\"none\" class=\"TextRun SCXP200555825 BCX0\" lang=\"EN-SG\"><span class=\"NormalTextRun SCXP200555825 BCX0\">recessed-handle drawers that offer seamless storage while keeping everyday essentials neatly within reach.</span></span></p>"
+            },
+            "handle": "retrovie-storage-coffee-table-47-inch",
+            "url": "https://mopio.com/products/retrovie-storage-coffee-table-47-inch?variant=62706993365151&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 37900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 40900,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0490/8482/5759/files/1_-_2-Drawer_Coffee_Table.png",
+                "alt_text": "Retrovie Mid-Century Modern 47\" Storage Coffee Table",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0490/8482/5759/files/1_-_2-Drawer_Coffee_Table.png",
+                  "width": 1024,
+                  "height": 1024
+                },
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/49084825759",
+              "name": "Mopio",
+              "url": "https://mopio.com",
+              "domain": "mopioinc.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/49084825759/policies/21131788447.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/49084825759/policies/21131821215.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/49084825759/policies/21131755679.html"
+                }
+              ]
+            },
+            "checkout_url": "https://mopio.com/buy/62706993365151:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "rating": {
+              "value": 4.5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 2
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 37900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 37900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/76gV5a9ZH5XHRE9swGZqA1",
+        "title": "Wooden Mid-Century Modern Lift Top Coffee Table w/ Removable Shelf",
+        "description": {
+          "plain": "<li>MID-CENTURY MODERN: This coffee table combines clean lines with a natural wood grain and finely tapered legs to lend a functional, subtle elegance to your living space</li>\n<li>LIFT-TOP DESIGN: A modern twist on convenient lounging, this table features a lift-top to provide a floating work or dining surface, complete with soft-close hinges for a smooth transition</li>\n<li>HIDDEN COMPARTMENT: The open space under the lift top can accommodate anything from your favorite books and games to blanket or pillows for guests</li>\n<li>ADJUSTABLE &amp; REMOVABLE SHELF: A dedicated cubby partition can be maximized or divided by simply adjusting a removable shelf at your convenience</li>\n<li>DURABLE CONSTRUCTION: Set on durable pine wood legs, engineered wood panels are finished with a wood laminate for easy cleanup and can support up to 55 pounds of games and entertainment</li>\n"
+        },
+        "handle": "wooden-mid-century-modern-lift-top-coffee-table-w-removable-shelf",
+        "rating": {
+          "value": 4,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 5
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0636/7991/files/SKY6809LRG-1.jpg",
+            "alt_text": "Wooden Mid-Century Modern Lift Top Coffee Table w/ Removable Shelf",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0636/7991/files/SKY6809LRG-1.jpg",
+              "width": 2000,
+              "height": 2000
+            },
+            "width": 2000,
+            "height": 2000
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Brown"
+              },
+              {
+                "label": "Gray"
+              },
+              {
+                "label": "Walnut"
+              },
+              {
+                "label": "White/Brown"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Features a lift top design with a hidden compartment and adjustable removable shelf for flexible storage and use."
+          ],
+          "top_features": [
+            "Lift top design provides a floating work or dining surface for added convenience",
+            "Hidden compartment under the lift top offers discreet storage for books, games, or blankets",
+            "Adjustable removable shelf allows flexible organization and display options",
+            "Soft-close hinges ensure smooth and quiet operation",
+            "Durable pine wood legs and engineered wood panels support up to 55 pounds"
+          ],
+          "tech_specs": [
+            "Tabletop Material: Engineered wood with wood laminate finish",
+            "Tabletop Shape: Rectangular",
+            "Tabletop Color Options: Gray, Black, Brown",
+            "Leg Material: Pine wood or wood",
+            "Weight Capacity: 55 pounds",
+            "Hidden Compartment: Yes"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/42716172550330",
+            "title": "Wooden Mid-Century Modern Lift Top Coffee Table w/ Removable Shelf",
+            "description": {
+              "plain": "<li>MID-CENTURY MODERN: This coffee table combines clean lines with a natural wood grain and finely tapered legs to lend a functional, subtle elegance to your living space</li>\n<li>LIFT-TOP DESIGN: A modern twist on convenient lounging, this table features a lift-top to provide a floating work or dining surface, complete with soft-close hinges for a smooth transition</li>\n<li>HIDDEN COMPARTMENT: The open space under the lift top can accommodate anything from your favorite books and games to blanket or pillows for guests</li>\n<li>ADJUSTABLE &amp; REMOVABLE SHELF: A dedicated cubby partition can be maximized or divided by simply adjusting a removable shelf at your convenience</li>\n<li>DURABLE CONSTRUCTION: Set on durable pine wood legs, engineered wood panels are finished with a wood laminate for easy cleanup and can support up to 55 pounds of games and entertainment</li>\n"
+            },
+            "handle": "wooden-mid-century-modern-lift-top-coffee-table-w-removable-shelf",
+            "url": "https://bestchoiceproducts.com/products/wooden-mid-century-modern-lift-top-coffee-table-w-removable-shelf?variant=42716172550330&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 6999,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 13399,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Brown"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0636/7991/files/SKY6809LRG-1.jpg",
+                "alt_text": "Wooden Mid-Century Modern Lift Top Coffee Table w/ Removable Shelf",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0636/7991/files/SKY6809LRG-1.jpg",
+                  "width": 2000,
+                  "height": 2000
+                },
+                "width": 2000,
+                "height": 2000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/6367991",
+              "name": "Best Choice Products",
+              "url": "https://bestchoiceproducts.com",
+              "domain": "bestchoiceproducts.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/6367991/policies/1823715.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/6367991/policies/1823719.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/6367991/policies/1823711.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/6367991/policies/25057034426.html"
+                }
+              ]
+            },
+            "checkout_url": "https://bestchoiceproducts.com/buy/42716172550330:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "rating": {
+              "value": 4.6,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 5
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 6999,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 6999,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/6juFanhvLh9SDI1czmw1IU",
+        "title": "Oak Solid Wood Mid-Century Coffee Table with Shelf, 47.3 in",
+        "description": {
+          "plain": "<p>Light, natural oak with its grain on full display makes this rectangular coffee table feel calm and honest. It is all solid oak, sealed with a non-toxic spray coating that leaves no odor, and the corners are rounded so small children have nothing sharp to run into.</p><p>Storage comes on two open levels. The tabletop handles cups, a lamp and the TV remote, while the lower shelf keeps books, baskets and decor visible and reachable from every side. Overall width is 47.3 inches.</p><p>There is roughly 8 inches of clearance under the lower tier, so a broom or robot vacuum can get underneath. The manual and hardware make assembly simple, and the wood-grain top needs nothing more than a quick wipe.</p>\n<p>Construction: solid oak.</p>\n<ul>\n<li>Measures 47.3 in W x 22.1 in D x 17.3 in H</li>\n<li>Weighs 56 lbs</li>\n</ul>"
+        },
+        "handle": "coffee-table-rectangular-solid-wood-oak-47-3-in",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 4
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0666/3087/7237/files/1c3ffdb750914c8088a7a0aca4fd1dc6_1a8e32f7-7ac2-458d-b94f-e662c751f2e0.jpg",
+            "alt_text": "Oak Solid Wood Mid-Century Coffee Table with Shelf, 47.3 in",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0666/3087/7237/files/1c3ffdb750914c8088a7a0aca4fd1dc6_1a8e32f7-7ac2-458d-b94f-e662c751f2e0.jpg",
+              "width": 1600,
+              "height": 1600
+            },
+            "width": 1600,
+            "height": 1600
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Solid oak construction with a non-toxic, odorless finish and built-in storage shelf."
+          ],
+          "top_features": [
+            "Solid oak build ensures durability and longevity",
+            "Non-toxic spray coating provides a safe, odorless finish",
+            "Rounded corners enhance safety for children and pets",
+            "Built-in lower shelf offers convenient storage for decor and essentials",
+            "Open-level design allows easy access to items from all sides"
+          ],
+          "tech_specs": [
+            "Dimensions: 47.3 in W x 22.1 in D x 17.3 in H",
+            "Weight: 56 lbs",
+            "Material: Solid oak",
+            "Finish: Non-toxic spray coating",
+            "Tabletop shape: Rectangular",
+            "Storage: Lower shelf"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/45994386587701",
+            "title": "Oak Solid Wood Mid-Century Coffee Table with Shelf, 47.3 in",
+            "description": {
+              "plain": "<p>Light, natural oak with its grain on full display makes this rectangular coffee table feel calm and honest. It is all solid oak, sealed with a non-toxic spray coating that leaves no odor, and the corners are rounded so small children have nothing sharp to run into.</p><p>Storage comes on two open levels. The tabletop handles cups, a lamp and the TV remote, while the lower shelf keeps books, baskets and decor visible and reachable from every side. Overall width is 47.3 inches.</p><p>There is roughly 8 inches of clearance under the lower tier, so a broom or robot vacuum can get underneath. The manual and hardware make assembly simple, and the wood-grain top needs nothing more than a quick wipe.</p>\n<p>Construction: solid oak.</p>\n<ul>\n<li>Measures 47.3 in W x 22.1 in D x 17.3 in H</li>\n<li>Weighs 56 lbs</li>\n</ul>"
+            },
+            "handle": "coffee-table-rectangular-solid-wood-oak-47-3-in",
+            "url": "https://twoseventynine.com/products/coffee-table-rectangular-solid-wood-oak-47-3-in?variant=45994386587701&_gsid=Lgkhmy3vUoRg&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 37000,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 46500,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0666/3087/7237/files/1c3ffdb750914c8088a7a0aca4fd1dc6_1a8e32f7-7ac2-458d-b94f-e662c751f2e0.jpg",
+                "alt_text": "Oak Solid Wood Mid-Century Coffee Table with Shelf, 47.3 in",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0666/3087/7237/files/1c3ffdb750914c8088a7a0aca4fd1dc6_1a8e32f7-7ac2-458d-b94f-e662c751f2e0.jpg",
+                  "width": 1600,
+                  "height": 1600
+                },
+                "width": 1600,
+                "height": 1600
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/66630877237",
+              "name": "Two Seventy Nine",
+              "url": "https://twoseventynine.com",
+              "domain": "vnrs4b-1g.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/66630877237/policies/31145984053.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/66630877237/policies/31290032181.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/66630877237/policies/31289999413.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/66630877237/policies/31364218933.html"
+                }
+              ]
+            },
+            "checkout_url": "https://twoseventynine.com/buy/45994386587701:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=Lgkhmy3vUoRg&_gsid=Lgkhmy3vUoRg",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 37000,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 37000,
+            "currency": "USD"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "type": "info",
+        "code": "price_filter_applied",
+        "path": "$.filters.price",
+        "content": "Price filtering was applied on a USD basis; returned prices are contextualized to the buyer's market and may differ.",
+        "data": {
+          "request_currency": "USD",
+          "applied_usd": {
+            "max": 400
+          },
+          "conversion": {
+            "max": "native_usd"
+          }
+        }
+      }
+    ],
+    "pagination": {
+      "has_next_page": true,
+      "total_count": 538,
+      "cursor": "eyJvZmZzZXQiOjgsInRvdGFsX2NvdW50Ijo1MzgsInJldHVybmVkIjo4fQ"
+    }
+  },
+  "cta": {
+    "description": "Extensions: global catalog active — variants carry `seller.domain` (for `--business`), `url` (PDP), and `checkout_url` (buy-now) for cross-business routing; the seller identity lives at `variants[*].seller.domain`; run --input-schema to see the full accepted catalog payload, including `like`, context, filters, and extension fields. Cross-business results — each variant belongs to its own seller. Pick the seller AND variant the buyer wants (products[N].variants[M]) before proceeding. To create a cart, pass --business=<products[N].variants[M].seller.domain>. If chosen items span multiple seller.domain values, create one cart/checkout per seller. Buyer handoff: open products[N].variants[M].url for the PDP when the buyer is still browsing; open products[N].variants[M].checkout_url for buy-now handoff when the buyer wants business-hosted checkout. More results available (showing 8 of 538); paginate only if you need them.",
+    "commands": [
+      {
+        "command": "ucp cart create --business <seller-domain> --input '{\"line_items\":[{\"item\":{\"id\":\"<variant-id>\"},\"quantity\":1}]}'",
+        "description": "create a cart at the chosen business — substitute <seller-domain> from products[N].variants[M].seller.domain and <variant-id> from products[N].variants[M].id."
+      },
+      {
+        "command": "ucp catalog search --input '<previous search body>' --set-string /pagination/cursor=<cursor>",
+        "description": "fetch next page — more of the same ranking: re-send your previous search body unchanged (query, filters, context, limit) with pagination.cursor set to result.pagination.cursor, copied verbatim; cursors are opaque and may invalidate across inventory changes; if results are weak or off-target, change query/context.intent instead and omit the cursor"
+      }
+    ]
+  }
+}

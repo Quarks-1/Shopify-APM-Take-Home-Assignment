@@ -12,9 +12,19 @@ This is a single-user local app. It has no login, accounts, sessions, or Django 
 
 ## Running Locally
 
+Run `./start.sh` to pull, sync dependencies, migrate and (re)start both dev servers, or start `frontend` / `backend` from the app's preview configs (`.claude/launch.json`).
+
+Ports are per checkout, so the main checkout and each linked git worktree (`.claude/worktrees/<name>/`) can run side by side:
+
+- Main checkout: frontend 5173, backend 8000.
+- Worktree slot N: frontend 5173+N, backend 8000+N. Slots are remembered in `.git/dev-ports.json` (shared by all worktrees).
+- `node scripts/dev-ports.mjs` prints this checkout's ports (`--json` and `--shell` for scripts).
+- `.claude/launch.json` is generated, not committed: the SessionStart hook in `.claude/settings.json` and every `node scripts/dev.mjs` run rewrite it with this checkout's ports.
+- A worktree reuses the main checkout's `.venv` if it has none, installs its own `frontend/node_modules`, and gets its own `backend/db.sqlite3`, seeded from main's on first backend start and independent afterwards.
+
 ### Backend
 
-Create or use the virtual environment at the repository root, apply migrations, and start the Django development server on port 8000.
+Create or use the virtual environment at the repository root, apply migrations, and start the Django development server (port 8000 in the main checkout).
 
 ```bash
 python3 -m venv .venv
@@ -34,7 +44,7 @@ cd backend
 
 ### Frontend
 
-Install npm packages in `frontend/` and start the Vite development server on port 5173. Requests to `/api/*` proxy automatically to `http://127.0.0.1:8000`.
+Install npm packages in `frontend/` and start the Vite development server (port 5173 in the main checkout). Requests to `/api/*` proxy automatically to this checkout's backend port (8000 in the main checkout).
 
 ```bash
 cd frontend

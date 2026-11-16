@@ -28,6 +28,8 @@ import { Tab, TabList, TabPanel, Tabs } from "@/components/base/tabs/tabs";
 import { fetchWorkspaceSnapshot, type WorkspaceSnapshot } from "@/lib/api";
 import { cx } from "@/utils/cx";
 
+const DJANGO_HOST = new URL(__DJANGO_ORIGIN__).host;
+
 export function BackendStatusPage() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +186,7 @@ export function BackendStatusPage() {
                 <p className="text-body-2-regular text-text-secondary">
                   Ensure the Django server is running on{" "}
                   <span dir="ltr" className="font-mono">
-                    http://127.0.0.1:8000
+                    {__DJANGO_ORIGIN__}
                   </span>
                   .
                 </p>
@@ -257,7 +259,7 @@ export function BackendStatusPage() {
                   className="w-full sm:max-w-xs"
                 />
                 <Chip variant="caption" color="soft">
-                  Proxy /api to 127.0.0.1:8000
+                  Proxy /api to <bdi dir="ltr">{DJANGO_HOST}</bdi>
                 </Chip>
               </div>
 

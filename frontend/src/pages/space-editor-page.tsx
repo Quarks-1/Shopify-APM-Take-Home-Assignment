@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import {
   RiDeleteBinLine,
@@ -16,13 +17,16 @@ import { toast } from "@/components/base/toast/toast";
 import { ObjectCarouselList } from "@/features/objects/object-carousel-list";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
 import { useObjectSearch } from "@/features/objects/use-object-search";
+import { PanelResizer, usePanelSplit } from "@/features/spaces/panel-resizer";
 import { SpaceDesigner } from "@/features/spaces/space-designer";
 import { SpaceFormModal } from "@/features/spaces/space-form-modal";
 import { formatDims, formatPrice } from "@/lib/format";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import { getObjectsForSpace, getSpace, getSpaceEstimatedTotal } from "@/state/selectors";
+import { cx } from "@/utils/cx";
 
+const DESIGNER_ID = "space-editor-designer";
 const CARD = "rounded-3xl border border-border-button-default bg-background-primary-default";
 
 function useDocumentTitle(title: string) {
@@ -92,6 +96,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const panelSplit = usePanelSplit();
 
   useDocumentTitle(space ? `${space.name} · Spaces` : "Space not found · Spaces");
 
@@ -175,16 +180,26 @@ function EditSpace({ spaceId }: { spaceId: string }) {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
-        <SpaceDesigner
-          spaceId={space.id}
-          selectedObjectId={selectedId}
-          onSelectObject={setSelectedId}
-          className="lg:sticky lg:top-6"
-        />
+      <div
+        ref={panelSplit.containerRef}
+        style={
+          {
+            "--split-start": `${panelSplit.split}fr`,
+            "--split-end": `${1 - panelSplit.split}fr`,
+          } as CSSProperties
+        }
+        className={cx(
+          "grid grid-cols-1 gap-6 lg:items-start lg:gap-x-0",
+          "lg:grid-cols-[minmax(20rem,var(--split-start))_1.5rem_minmax(22rem,var(--split-end))]",
+        )}
+      >
+        <div id={DESIGNER_ID} className="min-w-0 lg:sticky lg:top-6">
+          <SpaceDesigner spaceId={space.id} selectedObjectId={selectedId} onSelectObject={setSelectedId} />
+        </div>
+        <PanelResizer panelSplit={panelSplit} controlsId={DESIGNER_ID} />
         <section
           aria-label="Objects in this space"
-          className={`${CARD} flex flex-col gap-4 p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-48px)]`}
+          className={`${CARD} flex min-w-0 flex-col gap-4 p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-48px)]`}
         >
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">

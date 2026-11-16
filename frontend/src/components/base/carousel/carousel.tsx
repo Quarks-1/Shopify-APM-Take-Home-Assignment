@@ -45,12 +45,22 @@ export interface CarouselProps
   "aria-label": string;
   /** Prev/next buttons above the track. */
   showArrows?: boolean;
+  /** Content at the start of the controls row (e.g. a section title). */
+  header?: ReactNode;
+  /** Content at the end of the controls row, just before the arrows. */
+  actions?: ReactNode;
   /** Position indicator below the track. */
   showDots?: boolean;
   /** Where a card comes to rest when it snaps. */
   align?: "start" | "center";
   /** Gap between cards, in px. */
   gap?: number;
+  /**
+   * When this value changes after mount, the track scrolls back to the first
+   * card (smoothly, or instantly under reduced motion). Use it when the items
+   * are reordered and the new first item should be brought into view.
+   */
+  scrollResetKey?: unknown;
   ref?: Ref<HTMLDivElement>;
 }
 
@@ -81,9 +91,12 @@ export function CarouselItem({ children, className, ref, ...props }: CarouselIte
 export function Carousel({
   children,
   showArrows = true,
+  header,
+  actions,
   showDots = true,
   align = "start",
   gap = 16,
+  scrollResetKey,
   className,
   ref,
   ...props
@@ -100,6 +113,18 @@ export function Carousel({
     () => Array.from(trackRef.current?.children ?? []) as HTMLElement[],
     [],
   );
+
+  // Skip the first run: only a *change* of the key scrolls back to the start.
+  const lastResetKey = useRef(scrollResetKey);
+  useEffect(() => {
+    if (Object.is(lastResetKey.current, scrollResetKey)) return;
+    lastResetKey.current = scrollResetKey;
+    const track = trackRef.current;
+    if (!track) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // 0 is the inline start in both LTR and RTL in current browsers.
+    track.scrollTo({ left: 0, behavior: reduce ? "auto" : "smooth" });
+  }, [scrollResetKey]);
 
   const measure = useCallback(() => {
     const track = trackRef.current;
@@ -176,34 +201,44 @@ export function Carousel({
       className={cx("flex w-full flex-col gap-4", className)}
       {...props}
     >
-      {showArrows && count > 0 ? (
-        <div className="flex items-center justify-end gap-2">
-          <IconButton
-            icon={RiArrowLeftSLine}
-            size="small"
-            aria-label="Previous slide"
-            disabled={atStart}
-            onClick={() => scrollToIndex(active - 1)}
-          />
-          <IconButton
-            icon={RiArrowRightSLine}
-            size="small"
-            aria-label="Next slide"
-            disabled={atEnd}
-            onClick={() => scrollToIndex(active + 1)}
-          />
+      {header || actions || (showArrows && count > 0) ? (
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          {header ? <div className="min-w-0">{header}</div> : null}
+          <div className="ms-auto flex items-center gap-2">
+            {actions}
+            {showArrows && count > 0 ? (
+              <>
+                <IconButton
+                  icon={RiArrowLeftSLine}
+                  size="small"
+                  aria-label="Previous slide"
+                  disabled={atStart}
+                  onClick={() => scrollToIndex(active - 1)}
+                />
+                <IconButton
+                  icon={RiArrowRightSLine}
+                  size="small"
+                  aria-label="Next slide"
+                  disabled={atEnd}
+                  onClick={() => scrollToIndex(active + 1)}
+                />
+              </>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
       {/* `tabIndex` makes the track focusable so it can be scrolled with the
           arrow keys, which is the browser's own behaviour once it has focus.
           The scrollbar is hidden inline rather than through a global class, so
-          the component stays self-contained. */}
+          the component stays self-contained. The track is padded and pulled back
+          by the same amount with negative margin so card rings and focus rings
+          aren't clipped by the scroll container. */}
       <div
         ref={trackRef}
         tabIndex={0}
         className={cx(
-          "relative flex w-full overflow-x-auto overscroll-x-contain outline-none",
+          "relative -m-1 flex overflow-x-auto overscroll-x-contain p-1 scroll-px-1 outline-none",
           "snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           "focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2",
           align === "center" && "[&>*]:snap-center",
