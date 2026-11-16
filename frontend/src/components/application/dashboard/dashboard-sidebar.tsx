@@ -19,7 +19,6 @@ import {
   RiMegaphoneLine,
   RiSideBarFill,
 } from "@remixicon/react";
-import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Counter } from "@/components/base/badges/counter";
 import { cx } from "@/utils/cx";
 
@@ -210,7 +209,6 @@ export function DashboardSidebar({
   mobile = false,
   onClose,
   fluid = false,
-  showThemeToggle = true,
   selected = "home",
   items = DASHBOARD_NAV,
   flat = false,
@@ -226,8 +224,6 @@ export function DashboardSidebar({
    *  whole point of collapsing is to shrink, so it must never get
    *  overridden back to full width. */
   fluid?: boolean;
-  /** Hide the app-level theme control when the sidebar is used as marketing artwork. */
-  showThemeToggle?: boolean;
   /** Which nav item shows the selected (filled blue) state. */
   selected?: DashboardNavKey;
   /** Primary navigation rows. The Pro dashboard's set unless a screen brings its own. */
@@ -320,18 +316,6 @@ export function DashboardSidebar({
             />
           </nav>
         </div>
-      </div>
-
-      <div className="flex w-full shrink-0 flex-col gap-3">
-        {showThemeToggle &&
-          (collapsed ? (
-            <ThemeToggle collapsed />
-          ) : (
-            <ThemeToggle
-              appearance="sidebar-segmented"
-              className={flat ? "!bg-background-secondary-default" : undefined}
-            />
-          ))}
       </div>
     </aside>
   ));

@@ -65,7 +65,7 @@ export function NewSpaceCard({ className }: { className?: string }) {
       onClick={() => navigate("/spaces/new")}
       className={cx(
         CARD,
-        "cursor-pointer items-center justify-center self-stretch border-dashed border-border-button-default",
+        "cursor-pointer items-center justify-center h-full border-dashed border-border-button-default",
         "min-h-64 text-text-secondary hover:border-border-button-hover hover:bg-background-secondary-default hover:text-text-primary",
         className,
       )}

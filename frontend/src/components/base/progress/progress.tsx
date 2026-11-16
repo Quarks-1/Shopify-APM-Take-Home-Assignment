@@ -97,7 +97,7 @@ export function ProgressTrack({ percentage, size = "md", isIndeterminate = false
   const direction = useDirection();
   return (
     // The rail is File Upload's ring track colour, which keeps an edge on
-    // every surface in both themes (chart-track matches dark cards).
+    // every surface.
     <div className={cx("relative w-full rounded-full bg-border-button-default text-accent-500", styles.track[size], className)}>
       {isIndeterminate ? (
         <Sweep />

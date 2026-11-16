@@ -13,14 +13,13 @@ import { cx, sortCx } from "@/utils/cx";
  *   subtle  py 4, Body 1/Medium   (14/20/500) — price chips
  *   caption py 4, Caption 1/Medium (12/16/500, tracking .15) — role tags
  *
- * Status pairs are semantic so the same component follows both Figma modes:
- *   lime    light 200/800 · dark 950 @ 60% / 500
- *   rose    light 200/800 · dark 950 @ 60% / 500
- *   yellow  light 200/800 · dark 950 @ 60% / 500
- *   cyan    light 200/800 · dark 950 @ 60% / 400
- *   blue    light 200/800 · dark 950 @ 60% / 300 (same dark status recipe;
- *           first needed by the medical template's "In treatment" status)
- *   purple  light 100/600 · dark 900/300 (AI profile delta chips)
+ * Status pairs are semantic (background / text):
+ *   lime    200/800
+ *   rose    200/800
+ *   yellow  200/800
+ *   cyan    200/800
+ *   blue    200/800 (first needed by the medical template's "In treatment" status)
+ *   purple  100/600
  *   neutral bg color/neutral/200 text color/neutral/500
  *   gray    bg color/neutral/100 text color/neutral/800
  *   soft    bg background/secondary/default text text/secondary

@@ -19,14 +19,28 @@ main() {
   ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   cd "$ROOT"
 
+  # Per-checkout ports (main = 5173/8000, linked worktrees get their own slot).
+  command -v node >/dev/null 2>&1 || die "node is required (it resolves this checkout's dev ports)"
+  eval "$(node scripts/dev-ports.mjs --shell)"
+  # The script path resolves symlinks; keep ROOT from the eval for consistency.
+  cd "$ROOT"
+
   # --- 1. Pull -----------------------------------------------------------------
   step "Pulling latest changes"
   OLD="$(git rev-parse HEAD)"
-  if ! git diff --quiet HEAD --; then
-    warn "uncommitted changes to tracked files; attempting pull anyway"
+  if [ "$IS_WORKTREE" = 1 ]; then
+    echo "Linked worktree: skipping pull"
+    NEW="$OLD"
+  elif ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+    echo "No upstream branch configured: skipping pull"
+    NEW="$OLD"
+  else
+    if ! git diff --quiet HEAD --; then
+      warn "uncommitted changes to tracked files; attempting pull anyway"
+    fi
+    git pull --ff-only || die "git pull failed; servers left untouched"
+    NEW="$(git rev-parse HEAD)"
   fi
-  git pull --ff-only || die "git pull failed; servers left untouched"
-  NEW="$(git rev-parse HEAD)"
   if [ "$OLD" = "$NEW" ]; then
     echo "Already up to date"
   else
@@ -38,14 +52,20 @@ main() {
 
   step "Checking dependencies"
   fresh_venv=0
-  if [ ! -x .venv/bin/python ]; then
+  if [ -x "$ROOT/.venv/bin/python" ]; then
+    VENV="$ROOT/.venv"
+  elif [ "$IS_WORKTREE" = 1 ] && [ -x "$MAIN_ROOT/.venv/bin/python" ]; then
+    VENV="$MAIN_ROOT/.venv"
+    echo "Using the main checkout's virtualenv"
+  else
     echo "Creating virtualenv"
-    python3 -m venv .venv
+    VENV="$ROOT/.venv"
+    python3 -m venv "$VENV"
     fresh_venv=1
   fi
   if [ "$fresh_venv" = 1 ] || changed requirements.txt; then
     echo "Installing Python dependencies"
-    .venv/bin/pip install -q -r requirements.txt
+    "$VENV/bin/pip" install -q -r requirements.txt
   fi
   if [ ! -d frontend/node_modules ] || changed frontend/package.json frontend/package-lock.json; then
     echo "Installing Node dependencies"
@@ -53,18 +73,19 @@ main() {
   fi
 
   # --- 3. Migrations -----------------------------------------------------------
+  # Also seeds a worktree's database from the main checkout on first run.
   step "Running migrations"
-  (cd backend && ../.venv/bin/python manage.py migrate --noinput)
+  node scripts/dev.mjs prepare
 
   # --- 4. Stop old servers -----------------------------------------------------
   listeners() { lsof -nP -tiTCP:"$1" -sTCP:LISTEN 2>/dev/null || true; }
 
   step "Stopping old servers"
   victims=""
-  for port in 8000 5173; do
+  for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
     for pid in $(listeners "$port"); do
       victims="$victims $pid"
-      if [ "$port" = 8000 ]; then
+      if [ "$port" = "$BACKEND_PORT" ]; then
         ppid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
         if [ -n "$ppid" ] && ps -o command= -p "$ppid" 2>/dev/null | grep -q "manage.py runserver"; then
           victims="$victims $ppid"
@@ -77,10 +98,10 @@ main() {
     # shellcheck disable=SC2086
     kill $victims 2>/dev/null || true
     for _ in $(seq 1 25); do
-      [ -z "$(listeners 8000)$(listeners 5173)" ] && break
+      [ -z "$(listeners "$BACKEND_PORT")$(listeners "$FRONTEND_PORT")" ] && break
       sleep 0.2
     done
-    left="$(listeners 8000) $(listeners 5173)"
+    left="$(listeners "$BACKEND_PORT") $(listeners "$FRONTEND_PORT")"
     if [ -n "${left// /}" ]; then
       echo "Force killing:$left"
       # shellcheck disable=SC2086
@@ -107,7 +128,7 @@ main() {
       kill -TERM -- "-$pid" 2>/dev/null || true
     done
     for _ in $(seq 1 25); do
-      [ -z "$(listeners 8000)$(listeners 5173)" ] && break
+      [ -z "$(listeners "$BACKEND_PORT")$(listeners "$FRONTEND_PORT")" ] && break
       sleep 0.2
     done
     for pid in $API_PID $WEB_PID; do
@@ -119,15 +140,15 @@ main() {
   trap 'exit 143' TERM
 
   step "Starting servers"
-  (cd backend && exec env PYTHONUNBUFFERED=1 ../.venv/bin/python manage.py runserver 127.0.0.1:8000 </dev/null 2>&1 | sed -u 's/^/[api] /') &
+  (exec node scripts/dev.mjs backend </dev/null 2>&1 | sed -u 's/^/[api] /') &
   API_PID=$!
-  (cd frontend && exec npm run dev -- --strictPort </dev/null 2>&1 | sed -u 's/^/[web] /') &
+  (exec node scripts/dev.mjs frontend </dev/null 2>&1 | sed -u 's/^/[web] /') &
   WEB_PID=$!
 
   echo
   echo "${GRN}Ready${OFF}"
-  echo "  Frontend: http://localhost:5173"
-  echo "  API:      http://127.0.0.1:8000"
+  echo "  Frontend: http://localhost:$FRONTEND_PORT"
+  echo "  API:      http://127.0.0.1:$BACKEND_PORT"
   echo "  Ctrl+C to stop"
   echo
 

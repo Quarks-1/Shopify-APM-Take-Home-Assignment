@@ -84,8 +84,7 @@ const styles = sortCx({
     // scrollable, so focusing a field clipped by the body's scroller could
     // scroll the whole panel instead (see Settings Modal).
     "flex min-h-0 flex-col gap-4 overflow-clip py-6 outline-none",
-    // Settings Modal's surface: page white in light mode, and in dark mode a
-    // ground darker than the inputs and menus it holds, so they keep an edge.
+    // Settings Modal's surface: page white.
     "rounded-3xl border border-separator-border bg-background-full shadow-xs",
   ].join(" "),
   size: {

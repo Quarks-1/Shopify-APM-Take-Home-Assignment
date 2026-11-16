@@ -1,0 +1,1521 @@
+{
+  "business": "https://catalog.shopify.com",
+  "endpoint": "https://catalog.shopify.com/api/ucp/mcp",
+  "transport": "mcp",
+  "ucp": {
+    "version": "2026-08-25",
+    "capabilities": {
+      "dev.ucp.shopping.catalog.search": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_search.json"
+        }
+      ],
+      "dev.ucp.shopping.catalog.lookup": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_lookup.json"
+        }
+      ],
+      "dev.shopify.catalog.global": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://shopify.dev/docs/agents/catalog/global-catalog",
+          "schema": "https://shopify.dev/ucp/schemas/2026-08-25/shopify_catalog_global.json",
+          "extends": [
+            "dev.ucp.shopping.catalog.search",
+            "dev.ucp.shopping.catalog.lookup"
+          ],
+          "requires": {
+            "protocol": {
+              "min": "2026-08-25"
+            }
+          }
+        }
+      ]
+    },
+    "status": "success"
+  },
+  "result": {
+    "products": [
+      {
+        "id": "gid://shopify/p/5z05T9QVlhOd30LkbzQUF0",
+        "title": "Brown Rug Plain, Modern Area Rug for bedroom, Solid Color Plain Wool rug for living room 8x10 Rug, 5x8 Rug,6x9 Rug,9x12 Rug, Baxter Tan Rug",
+        "description": {
+          "plain": "<p>Handcrafted Brown Wool Rug - Baxter Collection</p>\n<p>Introducing the Baxter Collection's handcrafted beige wool rug, available in various sizes including 8x10, 5x8, 6x9, 9x12, and runner. This rug is hand-tufted from premium Indian wool, showcasing a modern, solid color pattern with a medium pile height and a cut pile finish. With a thickness of 0.7 inches, it offers both comfort and durability. The rug features a cotton backing for added support and stability. Expertly crafted and designed without fringe, this elegant rug will add a touch of sophistication to any space</p>\n<p>Available Sizes: 8x10, 5x8, 6x9, 9x12, and Runner</p>\n<p>Hand-tufted from premium wool Expertly crafted, handmade tufted design Medium pile height with a cut pile finish Modern Brown solid color pattern</p>\n<p>Specifications:</p>\n<p>Thickness: 0.7 inches</p>\n<p>Backing: Yes, made from cotton</p>\n<p>Material: High-quality Indian wool</p>\n<p>Fringe: None</p>"
+        },
+        "handle": "brown-rug-plain-modern-area-rug-for-bedroom-solid-color-plain-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-tan-rug",
+        "rating": {
+          "value": 4,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 48
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Brown-Rug-Plain-Modern-Area-Rug-for-bedroom-Solid-Color-Plain-Wool-rug-for-living-room-8x10-Rug-5x8-Rug-6x9-Rug-9x12-Rug-Baxter-Tan-Rug-34838391029909.jpg",
+            "alt_text": "Brown Rug Plain, Modern Area Rug for bedroom, Solid Color Plain Wool rug for living room 8x10 Rug, 5x8 Rug,6x9 Rug,9x12 Rug, Baxter Tan Rug   8618963992725",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Brown-Rug-Plain-Modern-Area-Rug-for-bedroom-Solid-Color-Plain-Wool-rug-for-living-room-8x10-Rug-5x8-Rug-6x9-Rug-9x12-Rug-Baxter-Tan-Rug-34838391029909.jpg",
+              "width": 1014,
+              "height": 1600
+            },
+            "width": 1014,
+            "height": 1600
+          }
+        ],
+        "options": [
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "2x3"
+              },
+              {
+                "label": "3x5"
+              },
+              {
+                "label": "4x6"
+              },
+              {
+                "label": "5x8"
+              },
+              {
+                "label": "6x9"
+              },
+              {
+                "label": "8x10"
+              },
+              {
+                "label": "9x12"
+              },
+              {
+                "label": "4 ft Round"
+              },
+              {
+                "label": "6 ft Round"
+              },
+              {
+                "label": "9 ft Round"
+              },
+              {
+                "label": "4 ft Square"
+              },
+              {
+                "label": "6 ft Square"
+              },
+              {
+                "label": "9 ft Square"
+              },
+              {
+                "label": "2'6\"x12 Runner"
+              },
+              {
+                "label": "2'6x6 Runner"
+              },
+              {
+                "label": "2'6x9 Runner"
+              },
+              {
+                "label": "9'9\"x14"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Expertly handmade from premium Indian wool with a medium pile and cut pile finish for comfort and durability."
+          ],
+          "top_features": [
+            "Hand tufted from premium Indian wool for superior craftsmanship and texture",
+            "Medium pile height with cut pile finish provides a soft yet durable surface",
+            "Modern solid color design complements a variety of interior styles",
+            "Cotton backing enhances stability and supports the wool pile",
+            "Available in multiple sizes to fit different spaces and decor needs"
+          ],
+          "tech_specs": [
+            "Material: 100% Indian wool with cotton backing",
+            "Pile Type: Hand-tufted",
+            "Pile Height: Medium",
+            "Finish: Cut pile",
+            "Thickness: 0.7 inches",
+            "Available Sizes: 8x10 ft, 5x8 ft, 6x9 ft, 9x12 ft, runner"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/45413249745045",
+            "title": "Brown Rug Plain, Modern Area Rug for bedroom, Solid Color Plain Wool rug for living room 8x10 Rug, 5x8 Rug,6x9 Rug,9x12 Rug, Baxter Tan Rug",
+            "description": {
+              "plain": "<p>Handcrafted Brown Wool Rug - Baxter Collection</p>\n<p>Introducing the Baxter Collection's handcrafted beige wool rug, available in various sizes including 8x10, 5x8, 6x9, 9x12, and runner. This rug is hand-tufted from premium Indian wool, showcasing a modern, solid color pattern with a medium pile height and a cut pile finish. With a thickness of 0.7 inches, it offers both comfort and durability. The rug features a cotton backing for added support and stability. Expertly crafted and designed without fringe, this elegant rug will add a touch of sophistication to any space</p>\n<p>Available Sizes: 8x10, 5x8, 6x9, 9x12, and Runner</p>\n<p>Hand-tufted from premium wool Expertly crafted, handmade tufted design Medium pile height with a cut pile finish Modern Brown solid color pattern</p>\n<p>Specifications:</p>\n<p>Thickness: 0.7 inches</p>\n<p>Backing: Yes, made from cotton</p>\n<p>Material: High-quality Indian wool</p>\n<p>Fringe: None</p>"
+            },
+            "handle": "brown-rug-plain-modern-area-rug-for-bedroom-solid-color-plain-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-tan-rug",
+            "url": "https://therugline.com/products/brown-rug-plain-modern-area-rug-for-bedroom-solid-color-plain-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-tan-rug?variant=45413249745045&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 29900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 66999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Size",
+                "label": "5x8"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Brown-Rug-Plain-Modern-Area-Rug-for-bedroom-Solid-Color-Plain-Wool-rug-for-living-room-8x10-Rug-5x8-Rug-6x9-Rug-9x12-Rug-Baxter-Tan-Rug-34838391029909.jpg",
+                "alt_text": "Brown Rug Plain, Modern Area Rug for bedroom, Solid Color Plain Wool rug for living room 8x10 Rug, 5x8 Rug,6x9 Rug,9x12 Rug, Baxter Tan Rug   8618963992725",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Brown-Rug-Plain-Modern-Area-Rug-for-bedroom-Solid-Color-Plain-Wool-rug-for-living-room-8x10-Rug-5x8-Rug-6x9-Rug-9x12-Rug-Baxter-Tan-Rug-34838391029909.jpg",
+                  "width": 1014,
+                  "height": 1600
+                },
+                "width": 1014,
+                "height": 1600
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/58389463189",
+              "name": "The Rug Line",
+              "url": "https://therugline.com",
+              "domain": "buyrugs-online.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773548181.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773482645.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773515413.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773580949.html"
+                }
+              ]
+            },
+            "checkout_url": "https://therugline.com/buy/45413249745045:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 29900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 29900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/6ZCAI2IBzCvi1qu2N5HJSE",
+        "title": "Plum Purple Wool Area Rugs - Bedroom  Living Room Sizes",
+        "description": {
+          "plain": "Handmade Plum Purple Rug Solid Color Wool Rug Baxter Rug 8x10 , 5x8, 6x9, 9x12 &amp; Rug Runner\n\n-  Hand Tufted, Made of Wool\n-  Handmade Rug, Tufted\n-  Medium Pile Height, Cut Pile\n-  Solid Pattern, Modern Rug\n\nThickness: 0.7 inches\nHas Backing?  Yes\nBacking Material: Cotton\nMaterial Details: Indian Wool\nFringe?: No"
+        },
+        "handle": "area-rug-for-bedroom-modern-plum-purple-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug",
+        "rating": {
+          "value": 4,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 48
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Plum-Purple-Wool-Area-Rugs-Bedroom-Living-Room-Sizes-34866397544597.jpg",
+            "alt_text": "Plum Purple Wool Area Rugs - Bedroom  Living Room Sizes   8488904327317",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Plum-Purple-Wool-Area-Rugs-Bedroom-Living-Room-Sizes-34866397544597.jpg",
+              "width": 794,
+              "height": 794
+            },
+            "width": 794,
+            "height": 794
+          }
+        ],
+        "options": [
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "3x5"
+              },
+              {
+                "label": "4x6"
+              },
+              {
+                "label": "5x8"
+              },
+              {
+                "label": "6x9"
+              },
+              {
+                "label": "8x10"
+              },
+              {
+                "label": "9x12"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Hand-tufted solid color wool rug crafted for durability and a luxurious look."
+          ],
+          "top_features": [
+            "Hand-tufted construction ensures a premium, artisanal finish for enhanced visual appeal",
+            "Solid purple color provides a bold, modern accent to any room",
+            "Medium pile height offers comfortable cushioning without bulk",
+            "Durable wool material resists wear and maintains shape over time",
+            "Cotton backing adds stability and supports the tufted design"
+          ],
+          "tech_specs": [
+            "Material: Indian wool, cotton backing",
+            "Pile Height: 0.7 inches (medium)",
+            "Shape: Rectangular",
+            "Sizes: 8x10 ft, 5x8 ft, 6x9 ft, 9x12 ft",
+            "Pattern: Solid",
+            "Fringe: None",
+            "Backing: Yes"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/45054295441557",
+            "title": "Plum Purple Wool Area Rugs - Bedroom  Living Room Sizes",
+            "description": {
+              "plain": "Handmade Plum Purple Rug Solid Color Wool Rug Baxter Rug 8x10 , 5x8, 6x9, 9x12 &amp; Rug Runner\n\n-  Hand Tufted, Made of Wool\n-  Handmade Rug, Tufted\n-  Medium Pile Height, Cut Pile\n-  Solid Pattern, Modern Rug\n\nThickness: 0.7 inches\nHas Backing?  Yes\nBacking Material: Cotton\nMaterial Details: Indian Wool\nFringe?: No"
+            },
+            "handle": "area-rug-for-bedroom-modern-plum-purple-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug",
+            "url": "https://therugline.com/products/area-rug-for-bedroom-modern-plum-purple-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug?variant=45054295441557&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 29900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 66999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Size",
+                "label": "5x8"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Plum-Purple-Wool-Area-Rugs-Bedroom-Living-Room-Sizes-34866397544597.jpg",
+                "alt_text": "Plum Purple Wool Area Rugs - Bedroom  Living Room Sizes   8488904327317",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Plum-Purple-Wool-Area-Rugs-Bedroom-Living-Room-Sizes-34866397544597.jpg",
+                  "width": 794,
+                  "height": 794
+                },
+                "width": 794,
+                "height": 794
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/58389463189",
+              "name": "The Rug Line",
+              "url": "https://therugline.com",
+              "domain": "buyrugs-online.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773548181.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773482645.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773515413.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773580949.html"
+                }
+              ]
+            },
+            "checkout_url": "https://therugline.com/buy/45054295441557:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "rating": {
+              "value": 1,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 29900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 29900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/1BxfIW5IMPDyiyRw9GLiZs",
+        "title": "5' 0\" x 8' 0\" Contemporary 5X8 Black Wool Area Rug #008479",
+        "description": {
+          "plain": "<p></p><p><span style=\"color: rgb(38, 38, 38);\">There is sophistication in simplicity. Let this contemporary, hand-knotted wool rug add a touch of sophistication to your space.</span></p>"
+        },
+        "handle": "5-0-x-8-0-contemporary-5x8-black-wool-area-rug-008479",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0826/4928/4926/files/008479_01_1620578594315_55e23103-2511-4f87-864e-b9720afa5fab.jpg",
+            "alt_text": "5' 0\" x 8' 0\" Contemporary 5X8 Black Wool Area Rug #008479",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0826/4928/4926/files/008479_01_1620578594315_55e23103-2511-4f87-864e-b9720afa5fab.jpg",
+              "width": 1790,
+              "height": 2817
+            },
+            "width": 1790,
+            "height": 2817
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "5x8 Rectangle"
+              }
+            ]
+          },
+          {
+            "name": "Nominal size",
+            "values": [
+              {
+                "label": "5x8 Rectangle"
+              }
+            ]
+          },
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "5' 0\" x 8' 0\""
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Hand-knotted contemporary design in premium black wool for a refined, timeless look."
+          ],
+          "top_features": [
+            "Hand-knotted construction ensures unique craftsmanship and durability",
+            "Premium black wool material offers a luxurious and durable surface",
+            "Contemporary rectangular shape complements modern interiors",
+            "Solid color design provides versatile styling for various decor themes"
+          ],
+          "tech_specs": [
+            "Dimensions: 5 ft x 8 ft (60 in x 96 in)",
+            "Material: Wool",
+            "Color: Black",
+            "Shape: Rectangular",
+            "Pattern: Solid",
+            "Style: Contemporary"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/53142704455998",
+            "title": "5' 0\" x 8' 0\" Contemporary 5X8 Black Wool Area Rug #008479",
+            "description": {
+              "plain": "<p></p><p><span style=\"color: rgb(38, 38, 38);\">There is sophistication in simplicity. Let this contemporary, hand-knotted wool rug add a touch of sophistication to your space.</span></p>"
+            },
+            "handle": "5-0-x-8-0-contemporary-5x8-black-wool-area-rug-008479",
+            "url": "https://www.orientalrugmart.com/products/5-0-x-8-0-contemporary-5x8-black-wool-area-rug-008479?variant=53142704455998&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 25500,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 85000,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "5x8 Rectangle"
+              },
+              {
+                "name": "Nominal size",
+                "label": "5x8 Rectangle"
+              },
+              {
+                "name": "Size",
+                "label": "5' 0\" x 8' 0\""
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0826/4928/4926/files/008479_01_1620578594315_55e23103-2511-4f87-864e-b9720afa5fab.jpg",
+                "alt_text": "5' 0\" x 8' 0\" Contemporary 5X8 Black Wool Area Rug #008479",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0826/4928/4926/files/008479_01_1620578594315_55e23103-2511-4f87-864e-b9720afa5fab.jpg",
+                  "width": 1790,
+                  "height": 2817
+                },
+                "width": 1790,
+                "height": 2817
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/82649284926",
+              "name": "Oriental Rug Mart",
+              "url": "https://www.orientalrugmart.com",
+              "domain": "11b4bc-2.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/82649284926/policies/36704813374.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/82649284926/policies/36704846142.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/82649284926/policies/36704780606.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/82649284926/policies/36704878910.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.orientalrugmart.com/buy/53142704455998:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 25500,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 25500,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/7GJ0y65BSBVOl4UHC8cPXu",
+        "title": "Silken Premium Hand Knotted Wool Rug",
+        "description": {
+          "plain": "<table class=\"table\" id=\"detail\">\n<tbody>\n<tr>\n<td>\n<b>Product Description</b><br>Add a graceful touch to your home with this purple hand-knotted loom wool Area rug. Featuring a beautiful solid and striped pattern, it blends style with simplicity to complement a wide range of interiors. Its rich purple shade brings charm and warmth to your living space, making it suitable for everyday décor as well as special occasions. Crafted from soft wool, this rug feels comfortable underfoot and adds a cozy layer to your room. Its elegant yet minimal design enhances your home without overwhelming the setting. Perfect for living rooms, bedrooms, or lounges, it brings lasting beauty, comfort, and sophistication.<br>\n</td>\n</tr>\n<tr>\n<td>\n<b>Weave Description</b><br><span>The weaving technique of this ultimate designer rug is hand knotted loom with appealing pattern and great durability. Hand Knotted loom rugs are of a very basic kind which matches well with the contemporary as well as conventional living. The price is quite rational for the buyers along with minimal maintenance and the quality of manufacturing is high.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Material Description</b><br><span>In the universe of rug-fabrics, wool is considered one of the finest, owing to the touch, feel &amp; practical benefits of this natural wonder-fiber. Wool has many qualities that place it far ahead in the rug-making business – e.g. high durability, warmth, rich look &amp; feel etc. Wool is a pre-eminent choice for a classy rug that can last you for decades.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Pile Description</b><br><span>The rug is quite thick which make its very sturdy and can bear high traffic without any wear and tear. Its long durability and less vulnerability of inner surface to dust is guaranteed by its high density weaving.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Product Disclaimer</b><br><span>Thank you for considering our luxurious rug for your home. We want to provide you with important information to ensure a transparent and satisfactory shopping experience.<br>Due to their natural fiber composition, may have a mild smell caused by moisture retention. This is a normal characteristic and will gradually dissipate over a few weeks as the rug adjusts to its environment.<br>To help the process, we recommend placing the rug in a well-ventilated area. If needed, you can gently air it out to speed up the natural dissipation of the scent.<br>We want to ensure that you are well-informed before making your purchase. If you have any concerns or require further clarification, our customer service team is readily available to assist you.<br>Thank you for choosing our products. We look forward to the opportunity to provide you with a beautiful and high-quality addition to your home.</span>\n</td>\n</tr>\n</tbody>\n</table>"
+        },
+        "handle": "silken-premium-hand-knotted-wool-rug-purple_l00111",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0785/8854/3288/files/L00111L0025A_1.jpg",
+            "alt_text": "Silken Premium Hand Knotted Wool Rug",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0785/8854/3288/files/L00111L0025A_1.jpg",
+              "width": 3701,
+              "height": 4935
+            },
+            "width": 3701,
+            "height": 4935
+          }
+        ],
+        "options": [
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "3' x 5'"
+              },
+              {
+                "label": "6' x 6'"
+              },
+              {
+                "label": "8' x 8'"
+              },
+              {
+                "label": "9' x 12'"
+              },
+              {
+                "label": "10' x 10'"
+              },
+              {
+                "label": "10' x 13'"
+              },
+              {
+                "label": "2' 6'' x 10'"
+              },
+              {
+                "label": "2' 6'' x 12'"
+              },
+              {
+                "label": "2' 6'' x 8'"
+              },
+              {
+                "label": "2' 8'' x 10'"
+              },
+              {
+                "label": "2' 8'' x 8'"
+              }
+            ]
+          },
+          {
+            "name": "Rug shape",
+            "values": [
+              {
+                "label": "Octagon"
+              },
+              {
+                "label": "Rectangle"
+              },
+              {
+                "label": "Round"
+              },
+              {
+                "label": "Runner"
+              },
+              {
+                "label": "Square"
+              }
+            ]
+          },
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Purple"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Hand knotted loom wool construction offers exceptional durability and a unique, elegant look."
+          ],
+          "top_features": [
+            "Hand knotted loom weaving: Delivers unique patterns and superior durability for long-lasting use",
+            "Rich purple solid and striped design: Adds warmth and charm to any interior",
+            "Thick, high-density wool pile: Provides a sturdy, comfortable layer underfoot",
+            "Easy to clean and maintain: Simplifies care for everyday use",
+            "Minimalist modern style: Complements both contemporary and traditional decor"
+          ],
+          "tech_specs": [
+            "Material: 100% Wool",
+            "Color: Purple",
+            "Pattern: Solid and striped",
+            "Pile Type: Cut",
+            "Shape: Rectangular",
+            "Weave Method: Hand knotted loom"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/51665989337400",
+            "title": "Silken Premium Hand Knotted Wool Rug",
+            "description": {
+              "plain": "<table class=\"table\" id=\"detail\">\n<tbody>\n<tr>\n<td>\n<b>Product Description</b><br>Add a graceful touch to your home with this purple hand-knotted loom wool Area rug. Featuring a beautiful solid and striped pattern, it blends style with simplicity to complement a wide range of interiors. Its rich purple shade brings charm and warmth to your living space, making it suitable for everyday décor as well as special occasions. Crafted from soft wool, this rug feels comfortable underfoot and adds a cozy layer to your room. Its elegant yet minimal design enhances your home without overwhelming the setting. Perfect for living rooms, bedrooms, or lounges, it brings lasting beauty, comfort, and sophistication.<br>\n</td>\n</tr>\n<tr>\n<td>\n<b>Weave Description</b><br><span>The weaving technique of this ultimate designer rug is hand knotted loom with appealing pattern and great durability. Hand Knotted loom rugs are of a very basic kind which matches well with the contemporary as well as conventional living. The price is quite rational for the buyers along with minimal maintenance and the quality of manufacturing is high.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Material Description</b><br><span>In the universe of rug-fabrics, wool is considered one of the finest, owing to the touch, feel &amp; practical benefits of this natural wonder-fiber. Wool has many qualities that place it far ahead in the rug-making business – e.g. high durability, warmth, rich look &amp; feel etc. Wool is a pre-eminent choice for a classy rug that can last you for decades.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Pile Description</b><br><span>The rug is quite thick which make its very sturdy and can bear high traffic without any wear and tear. Its long durability and less vulnerability of inner surface to dust is guaranteed by its high density weaving.</span>\n</td>\n</tr>\n<tr>\n<td>\n<b>Product Disclaimer</b><br><span>Thank you for considering our luxurious rug for your home. We want to provide you with important information to ensure a transparent and satisfactory shopping experience.<br>Due to their natural fiber composition, may have a mild smell caused by moisture retention. This is a normal characteristic and will gradually dissipate over a few weeks as the rug adjusts to its environment.<br>To help the process, we recommend placing the rug in a well-ventilated area. If needed, you can gently air it out to speed up the natural dissipation of the scent.<br>We want to ensure that you are well-informed before making your purchase. If you have any concerns or require further clarification, our customer service team is readily available to assist you.<br>Thank you for choosing our products. We look forward to the opportunity to provide you with a beautiful and high-quality addition to your home.</span>\n</td>\n</tr>\n</tbody>\n</table>"
+            },
+            "handle": "silken-premium-hand-knotted-wool-rug-purple_l00111",
+            "url": "https://getmyrugs.com/products/silken-premium-hand-knotted-wool-rug-purple_l00111?variant=51665989337400&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 8900,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Purple"
+              },
+              {
+                "name": "Rug shape",
+                "label": "Rectangle"
+              },
+              {
+                "name": "Size",
+                "label": "3' x 5'"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0785/8854/3288/files/L00111L0025A_1.jpg",
+                "alt_text": "Silken Premium Hand Knotted Wool Rug",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0785/8854/3288/files/L00111L0025A_1.jpg",
+                  "width": 3701,
+                  "height": 4935
+                },
+                "width": 3701,
+                "height": 4935
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/78588543288",
+              "name": "GetMyRugs LLC",
+              "url": "https://getmyrugs.com",
+              "domain": "getmyrugs-llc.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/78588543288/policies/34036154680.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/78588543288/policies/34036187448.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/78588543288/policies/34036121912.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/78588543288/policies/34036220216.html"
+                }
+              ]
+            },
+            "checkout_url": "https://getmyrugs.com/buy/51665989337400:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 8900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 8900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/1tmbisk4GP9OyBv62H3RT1",
+        "title": "Coletta 5X8 Rug Wool / Silk Grey Modern Hand Knotted Indian Abstract",
+        "description": {
+          "plain": "- Hand Knotted, Made of Wool;Viscose (Viscoseette)\n<br>- Handmade, Flatweave, with Pile, Highly Durable Rug, Lasts for years\n<br>- Low Pile Height, High-Low Cut Pile\n<br>- Abstract Pattern, Regional Design: Indian,Modern Style Rug\n<br>- Colors in this rug are Grey\n<br>- One of a Kind, Unique\n<br><br>\n<br>\n<br>Size: 5' x 8' ft Rectangle\n<br>Actual Size: 5' 1\" x 7' 10\" ft\n<br>Color: Grey\n<br>KPSI: 34 Knots\n<br>Thickness: 0.3 inches\n<br>Has Backing?  No\n<br>Backing Material: N/A\n<br>Material Details: 60% Wool / 40% Viscose Blend\n<br>Fringe?: No\n<br>\n<br>Easy to Clean||Kid Friendly||Pet Friendly||Suitable for Floor Heating||Room Size Rug"
+        },
+        "handle": "5x8-rug-wool-silk-grey-modern-hand-knotted-indian-abstract-room-size-carpet",
+        "rating": {
+          "value": 4.3,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 46
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Coletta-5X8-Rug-Wool-Silk-Grey-Modern-Hand-Knotted-Indian-Abstract-34778193166485.jpg",
+            "alt_text": "Coletta 5X8 Rug Wool / Silk Grey Modern Hand Knotted Indian Abstract   7864420663445",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Coletta-5X8-Rug-Wool-Silk-Grey-Modern-Hand-Knotted-Indian-Abstract-34778193166485.jpg",
+              "width": 1041,
+              "height": 1600
+            },
+            "width": 1041,
+            "height": 1600
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Handmade flatweave rug featuring a unique abstract pattern and high durability, crafted from a wool and viscose blend."
+          ],
+          "top_features": [
+            "Hand-knotted construction ensures artisanal quality and uniqueness",
+            "Wool and viscose blend offers durability and softness for long-lasting use",
+            "Low pile height and modern abstract design provide a contemporary look",
+            "Pet and kid friendly materials for safer indoor environments",
+            "Suitable for floor heating, expanding room size as needed"
+          ],
+          "tech_specs": [
+            "Dimensions: 5 ft x 8 ft (actual size 5 ft 1 in x 7 ft 10 in)",
+            "Material: 60% wool, 40% viscose blend",
+            "Pile Height: Low",
+            "Pattern: Abstract",
+            "Color: Grey",
+            "Knots per square inch: 34",
+            "Thickness: 0.3 inches",
+            "Backing: None",
+            "Fringe: None"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/46946767700117",
+            "title": "Coletta 5X8 Rug Wool / Silk Grey Modern Hand Knotted Indian Abstract",
+            "description": {
+              "plain": "- Hand Knotted, Made of Wool;Viscose (Viscoseette)\n<br>- Handmade, Flatweave, with Pile, Highly Durable Rug, Lasts for years\n<br>- Low Pile Height, High-Low Cut Pile\n<br>- Abstract Pattern, Regional Design: Indian,Modern Style Rug\n<br>- Colors in this rug are Grey\n<br>- One of a Kind, Unique\n<br><br>\n<br>\n<br>Size: 5' x 8' ft Rectangle\n<br>Actual Size: 5' 1\" x 7' 10\" ft\n<br>Color: Grey\n<br>KPSI: 34 Knots\n<br>Thickness: 0.3 inches\n<br>Has Backing?  No\n<br>Backing Material: N/A\n<br>Material Details: 60% Wool / 40% Viscose Blend\n<br>Fringe?: No\n<br>\n<br>Easy to Clean||Kid Friendly||Pet Friendly||Suitable for Floor Heating||Room Size Rug"
+            },
+            "handle": "5x8-rug-wool-silk-grey-modern-hand-knotted-indian-abstract-room-size-carpet",
+            "url": "https://therugline.com/products/5x8-rug-wool-silk-grey-modern-hand-knotted-indian-abstract-room-size-carpet?variant=46946767700117&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 44295,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 116500,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Coletta-5X8-Rug-Wool-Silk-Grey-Modern-Hand-Knotted-Indian-Abstract-34778193166485.jpg",
+                "alt_text": "Coletta 5X8 Rug Wool / Silk Grey Modern Hand Knotted Indian Abstract   7864420663445",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Coletta-5X8-Rug-Wool-Silk-Grey-Modern-Hand-Knotted-Indian-Abstract-34778193166485.jpg",
+                  "width": 1041,
+                  "height": 1600
+                },
+                "width": 1041,
+                "height": 1600
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/58389463189",
+              "name": "The Rug Line",
+              "url": "https://therugline.com",
+              "domain": "buyrugs-online.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773548181.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773482645.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773515413.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773580949.html"
+                }
+              ]
+            },
+            "checkout_url": "https://therugline.com/buy/46946767700117:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 44295,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 44295,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/6N8mqvMOSbd44rgnrmp8B8",
+        "title": "Bronze Green Area Rug for Bedroom, Modern Rug, Solid Color Wool rug for living Room Baxter Rug",
+        "description": {
+          "plain": "<p>Handmade Bronze Green Rug Solid Color Wool Rug Baxter Rug </p>\n<ul>\n<li>Hand Tufted, Made of Wool</li>\n<li>Handmade Rug, Tufted </li>\n<li>Medium Pile Height, Cut Pile </li>\n<li>Solid Pattern, Modern Rug </li>\n<li>Thickness: 0.7 inches</li>\n<li>Has Backing? Yes</li>\n<li>Backing Material: Cotton</li>\n<li>Material Details: Indian Wool</li>\n<li>Fringe?: No</li>\n</ul>"
+        },
+        "handle": "bronze-green-area-rug-for-bedroom-modern-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug",
+        "rating": {
+          "value": 4,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 288
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Bronze-Green-Area-Rug-for-Bedroom-Modern-Rug-Solid-Color-Wool-rug-for-living-Room-Baxter-Rug-34838391095445.jpg",
+            "alt_text": "Bronze Green Area Rug for Bedroom, Modern Rug, Solid Color Wool rug for living Room Baxter Rug   8448800915605",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Bronze-Green-Area-Rug-for-Bedroom-Modern-Rug-Solid-Color-Wool-rug-for-living-Room-Baxter-Rug-34838391095445.jpg",
+              "width": 1600,
+              "height": 1202
+            },
+            "width": 1600,
+            "height": 1202
+          }
+        ],
+        "options": [
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "2x3"
+              },
+              {
+                "label": "3x5"
+              },
+              {
+                "label": "4x6"
+              },
+              {
+                "label": "5x8"
+              },
+              {
+                "label": "6x9"
+              },
+              {
+                "label": "8x10"
+              },
+              {
+                "label": "9x12"
+              },
+              {
+                "label": "4 ft Round"
+              },
+              {
+                "label": "6 ft Round"
+              },
+              {
+                "label": "9 ft Round"
+              },
+              {
+                "label": "4 ft Square"
+              },
+              {
+                "label": "6 ft Square"
+              },
+              {
+                "label": "9 ft Square"
+              },
+              {
+                "label": "2'6\"x12 Runner"
+              },
+              {
+                "label": "2'6x6 Runner"
+              },
+              {
+                "label": "2'6x9 Runner"
+              },
+              {
+                "label": "9'9\"x14"
+              }
+            ]
+          },
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Beige"
+              },
+              {
+                "label": "Bronze Green"
+              },
+              {
+                "label": "Carbon"
+              },
+              {
+                "label": "Grey"
+              },
+              {
+                "label": "Lemon Green"
+              },
+              {
+                "label": "Marigold Orange"
+              },
+              {
+                "label": "Sage Green"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Hand-tufted solid color wool rug crafted from Indian wool for a contemporary look and feel."
+          ],
+          "top_features": [
+            "Hand-tufted construction: Delivers a unique, artisanal finish for each rug",
+            "Medium cut pile: Offers a soft yet durable texture suitable for everyday use",
+            "Solid sage green color: Complements a variety of modern and minimalist decor styles",
+            "Cotton backing: Provides stability and added durability",
+            "Easy to clean: Simplifies maintenance for busy households"
+          ],
+          "tech_specs": [
+            "Material: Indian wool",
+            "Pile Height: 0.7 inches (medium cut)",
+            "Pattern: Solid",
+            "Shape: Rectangular",
+            "Backing Material: Cotton",
+            "Fringe: None"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/44962409250965",
+            "title": "Bronze Green Area Rug for Bedroom, Modern Rug, Solid Color Wool rug for living Room Baxter Rug",
+            "description": {
+              "plain": "<p>Handmade Bronze Green Rug Solid Color Wool Rug Baxter Rug </p>\n<ul>\n<li>Hand Tufted, Made of Wool</li>\n<li>Handmade Rug, Tufted </li>\n<li>Medium Pile Height, Cut Pile </li>\n<li>Solid Pattern, Modern Rug </li>\n<li>Thickness: 0.7 inches</li>\n<li>Has Backing? Yes</li>\n<li>Backing Material: Cotton</li>\n<li>Material Details: Indian Wool</li>\n<li>Fringe?: No</li>\n</ul>"
+            },
+            "handle": "bronze-green-area-rug-for-bedroom-modern-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug",
+            "url": "https://therugline.com/products/bronze-green-area-rug-for-bedroom-modern-rug-solid-color-wool-rug-for-living-room-8x10-rug-5x8-rug-6x9-rug-9x12-rug-baxter-rug?variant=44962409250965&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 29900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 66999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Bronze Green"
+              },
+              {
+                "name": "Size",
+                "label": "5x8"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Bronze-Green-Area-Rug-for-Bedroom-Modern-Rug-Solid-Color-Wool-rug-for-living-Room-Baxter-Rug-34838391095445.jpg",
+                "alt_text": "Bronze Green Area Rug for Bedroom, Modern Rug, Solid Color Wool rug for living Room Baxter Rug   8448800915605",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0583/8946/3189/files/Bronze-Green-Area-Rug-for-Bedroom-Modern-Rug-Solid-Color-Wool-rug-for-living-Room-Baxter-Rug-34838391095445.jpg",
+                  "width": 1600,
+                  "height": 1202
+                },
+                "width": 1600,
+                "height": 1202
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/58389463189",
+              "name": "The Rug Line",
+              "url": "https://therugline.com",
+              "domain": "buyrugs-online.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773548181.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773482645.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773515413.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/58389463189/policies/28773580949.html"
+                }
+              ]
+            },
+            "checkout_url": "https://therugline.com/buy/44962409250965:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 29900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 29900,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/5Fvqev7Qoks1UFrcU3bapd",
+        "title": "Premium Modern Handmade Wool & Viscose Flame Pattern Area Rug",
+        "description": {
+          "plain": "<h6 data-end=\"321\" data-start=\"297\"><span style=\"text-decoration: underline;\"><strong data-end=\"321\" data-start=\"301\">About this item:<br><br></strong></span></h6>\n<p data-end=\"570\" data-start=\"323\">🐑 <strong data-end=\"371\" data-start=\"326\">Premium New Zealand Wool + Viscose Blend:</strong> Handcrafted from high-quality New Zealand wool and viscose, this rug combines natural softness, warmth, and sheen with outstanding durability — ideal for both cozy interiors and high-traffic spaces.</p>\n<p data-end=\"754\" data-start=\"572\">🔥 <strong data-end=\"619\" data-start=\"575\">Bold Flame-Inspired Contemporary Design:</strong> Featuring a striking flame motif, this artistic design brings modern energy and bold elegance to your living room, bedroom, or office.</p>\n<p data-end=\"961\" data-start=\"756\">🌱 <strong data-end=\"805\" data-start=\"759\">Durable Cotton Backing with Natural Latex:</strong> Backed with 100% cotton and reinforced using eco-friendly natural latex adhesive, this rug provides long-lasting structure and grip on most flooring types.</p>\n<p data-end=\"1175\" data-start=\"963\">🏠 <strong data-end=\"1002\" data-start=\"966\">Elegant &amp; Versatile Home Accent:</strong> The textured surface and fluid pattern allow this rug to fit beautifully in contemporary, modern, or transitional interiors, adding visual interest and warmth to any space.</p>\n<p data-end=\"1405\" data-start=\"1177\">🎨 <strong data-end=\"1219\" data-start=\"1180\">Natural Variations in Size &amp; Color:</strong> As a hand-tufted rug, slight variations in size (within a few inches) and minor color differences may occur due to hand-dyeing and screen differences — making each piece uniquely yours.</p>\n<p data-end=\"1594\" data-start=\"1407\">🧵 <strong data-end=\"1450\" data-start=\"1410\">Crafted by Expert Artisans in India:</strong> Handmade by skilled artisans in India, each rug reflects generations of traditional rug-making excellence with attention to detail and quality.</p>\n<p data-end=\"1779\" data-start=\"1596\">🧼 <strong data-end=\"1635\" data-start=\"1599\">Low Maintenance &amp; Easy to Clean:</strong> Simply vacuum regularly with suction-only vacuums (no beater bar) to keep the rug looking fresh. Spot clean stains with a damp cloth as needed.</p>\n<p data-end=\"1941\" data-start=\"1781\">✨ <strong data-end=\"1809\" data-start=\"1783\">Natural Wool Shedding:</strong> Light to moderate shedding is normal for wool rugs, especially in the first few months. This will reduce with regular care and use.</p>\n<hr data-end=\"1946\" data-start=\"1943\">\n<h6 data-end=\"1976\" data-start=\"1948\"><span style=\"text-decoration: underline;\"><strong data-end=\"1976\" data-start=\"1952\">Product Description:<br><br></strong></span></h6>\n<p data-end=\"2350\" data-start=\"1978\">Bring bold sophistication into your home with our <strong data-end=\"2077\" data-start=\"2028\">Hand-Tufted Flame-Inspired Wool &amp; Viscose Rug</strong> – a luxurious statement piece designed to elevate modern interiors. Made from a premium blend of <strong data-end=\"2195\" data-start=\"2175\">New Zealand wool</strong> and <strong data-end=\"2211\" data-start=\"2200\">viscose</strong>, this rug is exceptionally soft underfoot while offering long-lasting resilience — perfect for both residential and professional settings.</p>\n<p data-end=\"2610\" data-start=\"2352\">The <strong data-end=\"2384\" data-start=\"2356\">contemporary flame motif</strong> adds a touch of dynamic artistry, making it a centerpiece in any room. Whether placed in a minimalist living room, chic bedroom, or creative office space, this rug brings depth, texture, and a sense of movement to your décor.</p>\n<p data-end=\"2855\" data-start=\"2612\">Supported by a <strong data-end=\"2680\" data-start=\"2627\">durable cotton backing and natural latex adhesive</strong>, the rug stays firmly in place and maintains its shape over time. It’s <strong data-end=\"2772\" data-start=\"2752\">versatile enough</strong> to work with a wide range of styles — from modern industrial to artistic eclectic.</p>\n<p data-end=\"3123\" data-start=\"2857\">Because of its <strong data-end=\"2897\" data-start=\"2872\">handmade construction</strong>, each rug may vary slightly in size and color — a natural result of artisan craftsmanship that enhances its character. Additionally, <strong data-end=\"3051\" data-start=\"3031\">natural shedding</strong> is common with wool rugs and diminishes with routine vacuuming and use.</p>\n<p data-end=\"3365\" data-start=\"3125\">Crafted responsibly in <strong data-end=\"3176\" data-start=\"3148\">India by expert artisans</strong>, this rug represents ethical production and timeless design. It’s also <strong data-end=\"3268\" data-start=\"3248\">easy to maintain</strong>, requiring just regular vacuuming and occasional spot cleaning to retain its beauty and texture.</p>\n<h2 data-end=\"3365\" data-start=\"3125\">FAQs</h2>\n<p class=\"MsoNormal\"><strong><span style=\"font-size: 12.0pt; line-height: 115%; font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">1. What is an abstract flame pattern rug and how does it fit modern décor?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">An abstract flame pattern rug adds movement and style to interiors, and Restoration &amp; Renovation offers premium handmade options designed for modern homes.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">2. Why should I choose a handmade flame design wool rug?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">Choosing a handmade flame design wool rug ensures you get a product that combines craftsmanship, quality, and uniqueness. Handmade rugs are created by skilled artisans, resulting in detailed patterns and a more refined finish compared to machine-made options. The use of wool provides natural durability, softness, and insulation, while the flame design adds a distinctive, artistic element that enhances modern interiors.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">3. What size flame rug is best for a living room?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">The best size for a flame rug in a living room depends on the layout and furniture arrangement. For smaller spaces, sizes like 5x8 ft or 6x9 ft work well to define a seating area without overcrowding the room. In larger living rooms, 8x10 ft or 9x12 ft rugs are ideal for anchoring furniture and creating a cohesive look. A good rule is to ensure that at least the front legs of sofas and chairs rest on the rug for better balance and proportion.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">4. Are handmade wool flame rugs durable and easy to maintain?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">Yes, handmade wool flame rugs are both durable and easy to maintain. Wool is naturally resilient, stain-resistant, and capable of withstanding daily foot traffic, making it suitable for living rooms, bedrooms, and even office spaces. Regular vacuuming and quick spot cleaning for spills are usually enough to keep the rug in good condition, while occasional professional cleaning helps maintain its appearance over time.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">5. Where can I buy flame pattern rugs online in the USA?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">You can find high-quality flame pattern rugs at Restoration &amp; Renovation, with designs tailored for contemporary living spaces.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">6. What makes a premium flame pattern rug different from standard rugs?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">A premium flame pattern rug stands out from standard rugs due to its superior materials, craftsmanship, and design. It is typically made from high-quality wool or wool blends, handcrafted for better durability and detail, and features a unique abstract pattern that adds artistic value. Unlike standard rugs, which are often mass-produced, premium rugs offer a more refined look, longer lifespan, and a distinctive style that enhances modern interiors.</span></p>\n\n                                                                                                                                                                                                                                                                                               <script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"FAQPage\",\n  \"mainEntity\": [\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What is an abstract flame pattern rug and how does it fit modern décor?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"An abstract flame pattern rug features flowing, dynamic designs that create a sense of movement and visual interest. It fits well in modern décor by adding an artistic and contemporary touch, making it a striking focal point in minimalist or neutral interiors.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Why should I choose a handmade flame design wool rug?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Choosing a handmade flame design wool rug ensures high-quality craftsmanship, durability, and uniqueness. Skilled artisans create detailed patterns with a refined finish, while wool provides natural softness, insulation, and resilience, making it both functional and stylish.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What size flame rug is best for a living room?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"The ideal size depends on your space. Smaller living rooms benefit from sizes like 5x8 ft or 6x9 ft, while larger rooms are better suited for 8x10 ft or 9x12 ft rugs. Ensuring that the front legs of furniture sit on the rug helps create a balanced and cohesive layout.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Are handmade wool flame rugs durable and easy to maintain?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Yes, handmade wool flame rugs are durable and easy to maintain. Wool is naturally resilient and stain-resistant, making it suitable for everyday use. Regular vacuuming, prompt spot cleaning, and occasional professional cleaning help preserve the rug’s quality.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Where can I buy flame pattern rugs online in the USA?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Flame pattern rugs can be purchased online from trusted home décor retailers that offer high-quality materials, modern designs, and reliable shipping across the USA.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What makes a premium flame pattern rug different from standard rugs?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"A premium flame pattern rug stands out due to its superior materials, handcrafted construction, and unique design. Made from high-quality wool or blends, these rugs offer better durability, refined detailing, and a distinctive artistic style compared to mass-produced standard rugs.\"\n      }\n    }\n  ]\n}\n</script>\n"
+        },
+        "handle": "restoration-and-renovation-premium-modern-handmade-wool-flame-pattern-area-rug-soft-viscose-blend-perfect-for-living-room-bedroom-and-office-decor",
+        "rating": {
+          "value": 4.8,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 4
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0745/1980/6226/files/91pFhq_CXOL._AC_SL1500.jpg",
+            "alt_text": "Abstract watercolor rug with pink and blue.",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0745/1980/6226/files/91pFhq_CXOL._AC_SL1500.jpg",
+              "width": 1126,
+              "height": 1500
+            },
+            "width": 1126,
+            "height": 1500
+          }
+        ],
+        "options": [
+          {
+            "name": "Size",
+            "values": [
+              {
+                "label": "5' x 8'"
+              },
+              {
+                "label": "6' x 9'"
+              },
+              {
+                "label": "8' x 10'"
+              },
+              {
+                "label": "9' x 12'"
+              },
+              {
+                "label": "10' x 14'"
+              }
+            ]
+          },
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Multi"
+              },
+              {
+                "label": "Multi B"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Handmade in India from premium New Zealand wool and viscose, featuring a striking flame motif and eco-friendly latex backing for lasting durability and unique artisan character."
+          ],
+          "top_features": [
+            "Handcrafted by skilled artisans for unique, detailed patterns and superior craftsmanship",
+            "Premium New Zealand wool and viscose blend offers natural softness, warmth, and sheen",
+            "Bold flame-inspired abstract design adds modern energy and visual interest to interiors",
+            "Durable cotton backing with eco-friendly natural latex adhesive ensures long-lasting structure and grip",
+            "Low maintenance: easy to vacuum and spot clean for minimal upkeep"
+          ],
+          "tech_specs": [
+            "Material: New Zealand wool and viscose blend",
+            "Backing: 100% cotton with natural latex adhesive",
+            "Shape: Rectangular",
+            "Pattern: Abstract flame motif",
+            "Care: Vacuum regularly, spot clean with damp cloth",
+            "Origin: Handmade in India"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/47798863888658",
+            "title": "Premium Modern Handmade Wool & Viscose Flame Pattern Area Rug",
+            "description": {
+              "plain": "<h6 data-end=\"321\" data-start=\"297\"><span style=\"text-decoration: underline;\"><strong data-end=\"321\" data-start=\"301\">About this item:<br><br></strong></span></h6>\n<p data-end=\"570\" data-start=\"323\">🐑 <strong data-end=\"371\" data-start=\"326\">Premium New Zealand Wool + Viscose Blend:</strong> Handcrafted from high-quality New Zealand wool and viscose, this rug combines natural softness, warmth, and sheen with outstanding durability — ideal for both cozy interiors and high-traffic spaces.</p>\n<p data-end=\"754\" data-start=\"572\">🔥 <strong data-end=\"619\" data-start=\"575\">Bold Flame-Inspired Contemporary Design:</strong> Featuring a striking flame motif, this artistic design brings modern energy and bold elegance to your living room, bedroom, or office.</p>\n<p data-end=\"961\" data-start=\"756\">🌱 <strong data-end=\"805\" data-start=\"759\">Durable Cotton Backing with Natural Latex:</strong> Backed with 100% cotton and reinforced using eco-friendly natural latex adhesive, this rug provides long-lasting structure and grip on most flooring types.</p>\n<p data-end=\"1175\" data-start=\"963\">🏠 <strong data-end=\"1002\" data-start=\"966\">Elegant &amp; Versatile Home Accent:</strong> The textured surface and fluid pattern allow this rug to fit beautifully in contemporary, modern, or transitional interiors, adding visual interest and warmth to any space.</p>\n<p data-end=\"1405\" data-start=\"1177\">🎨 <strong data-end=\"1219\" data-start=\"1180\">Natural Variations in Size &amp; Color:</strong> As a hand-tufted rug, slight variations in size (within a few inches) and minor color differences may occur due to hand-dyeing and screen differences — making each piece uniquely yours.</p>\n<p data-end=\"1594\" data-start=\"1407\">🧵 <strong data-end=\"1450\" data-start=\"1410\">Crafted by Expert Artisans in India:</strong> Handmade by skilled artisans in India, each rug reflects generations of traditional rug-making excellence with attention to detail and quality.</p>\n<p data-end=\"1779\" data-start=\"1596\">🧼 <strong data-end=\"1635\" data-start=\"1599\">Low Maintenance &amp; Easy to Clean:</strong> Simply vacuum regularly with suction-only vacuums (no beater bar) to keep the rug looking fresh. Spot clean stains with a damp cloth as needed.</p>\n<p data-end=\"1941\" data-start=\"1781\">✨ <strong data-end=\"1809\" data-start=\"1783\">Natural Wool Shedding:</strong> Light to moderate shedding is normal for wool rugs, especially in the first few months. This will reduce with regular care and use.</p>\n<hr data-end=\"1946\" data-start=\"1943\">\n<h6 data-end=\"1976\" data-start=\"1948\"><span style=\"text-decoration: underline;\"><strong data-end=\"1976\" data-start=\"1952\">Product Description:<br><br></strong></span></h6>\n<p data-end=\"2350\" data-start=\"1978\">Bring bold sophistication into your home with our <strong data-end=\"2077\" data-start=\"2028\">Hand-Tufted Flame-Inspired Wool &amp; Viscose Rug</strong> – a luxurious statement piece designed to elevate modern interiors. Made from a premium blend of <strong data-end=\"2195\" data-start=\"2175\">New Zealand wool</strong> and <strong data-end=\"2211\" data-start=\"2200\">viscose</strong>, this rug is exceptionally soft underfoot while offering long-lasting resilience — perfect for both residential and professional settings.</p>\n<p data-end=\"2610\" data-start=\"2352\">The <strong data-end=\"2384\" data-start=\"2356\">contemporary flame motif</strong> adds a touch of dynamic artistry, making it a centerpiece in any room. Whether placed in a minimalist living room, chic bedroom, or creative office space, this rug brings depth, texture, and a sense of movement to your décor.</p>\n<p data-end=\"2855\" data-start=\"2612\">Supported by a <strong data-end=\"2680\" data-start=\"2627\">durable cotton backing and natural latex adhesive</strong>, the rug stays firmly in place and maintains its shape over time. It’s <strong data-end=\"2772\" data-start=\"2752\">versatile enough</strong> to work with a wide range of styles — from modern industrial to artistic eclectic.</p>\n<p data-end=\"3123\" data-start=\"2857\">Because of its <strong data-end=\"2897\" data-start=\"2872\">handmade construction</strong>, each rug may vary slightly in size and color — a natural result of artisan craftsmanship that enhances its character. Additionally, <strong data-end=\"3051\" data-start=\"3031\">natural shedding</strong> is common with wool rugs and diminishes with routine vacuuming and use.</p>\n<p data-end=\"3365\" data-start=\"3125\">Crafted responsibly in <strong data-end=\"3176\" data-start=\"3148\">India by expert artisans</strong>, this rug represents ethical production and timeless design. It’s also <strong data-end=\"3268\" data-start=\"3248\">easy to maintain</strong>, requiring just regular vacuuming and occasional spot cleaning to retain its beauty and texture.</p>\n<h2 data-end=\"3365\" data-start=\"3125\">FAQs</h2>\n<p class=\"MsoNormal\"><strong><span style=\"font-size: 12.0pt; line-height: 115%; font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">1. What is an abstract flame pattern rug and how does it fit modern décor?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">An abstract flame pattern rug adds movement and style to interiors, and Restoration &amp; Renovation offers premium handmade options designed for modern homes.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">2. Why should I choose a handmade flame design wool rug?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">Choosing a handmade flame design wool rug ensures you get a product that combines craftsmanship, quality, and uniqueness. Handmade rugs are created by skilled artisans, resulting in detailed patterns and a more refined finish compared to machine-made options. The use of wool provides natural durability, softness, and insulation, while the flame design adds a distinctive, artistic element that enhances modern interiors.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">3. What size flame rug is best for a living room?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">The best size for a flame rug in a living room depends on the layout and furniture arrangement. For smaller spaces, sizes like 5x8 ft or 6x9 ft work well to define a seating area without overcrowding the room. In larger living rooms, 8x10 ft or 9x12 ft rugs are ideal for anchoring furniture and creating a cohesive look. A good rule is to ensure that at least the front legs of sofas and chairs rest on the rug for better balance and proportion.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">4. Are handmade wool flame rugs durable and easy to maintain?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">Yes, handmade wool flame rugs are both durable and easy to maintain. Wool is naturally resilient, stain-resistant, and capable of withstanding daily foot traffic, making it suitable for living rooms, bedrooms, and even office spaces. Regular vacuuming and quick spot cleaning for spills are usually enough to keep the rug in good condition, while occasional professional cleaning helps maintain its appearance over time.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">5. Where can I buy flame pattern rugs online in the USA?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">You can find high-quality flame pattern rugs at Restoration &amp; Renovation, with designs tailored for contemporary living spaces.</span><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\"> </span></p>\n<p class=\"MsoNormal\"><strong><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">6. What makes a premium flame pattern rug different from standard rugs?</span></strong></p>\n<p class=\"MsoNormal\"><span style=\"font-family: 'Georgia',serif; mso-fareast-font-family: Georgia; mso-bidi-font-family: Georgia;\" lang=\"EN-GB\">A premium flame pattern rug stands out from standard rugs due to its superior materials, craftsmanship, and design. It is typically made from high-quality wool or wool blends, handcrafted for better durability and detail, and features a unique abstract pattern that adds artistic value. Unlike standard rugs, which are often mass-produced, premium rugs offer a more refined look, longer lifespan, and a distinctive style that enhances modern interiors.</span></p>\n\n                                                                                                                                                                                                                                                                                               <script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"FAQPage\",\n  \"mainEntity\": [\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What is an abstract flame pattern rug and how does it fit modern décor?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"An abstract flame pattern rug features flowing, dynamic designs that create a sense of movement and visual interest. It fits well in modern décor by adding an artistic and contemporary touch, making it a striking focal point in minimalist or neutral interiors.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Why should I choose a handmade flame design wool rug?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Choosing a handmade flame design wool rug ensures high-quality craftsmanship, durability, and uniqueness. Skilled artisans create detailed patterns with a refined finish, while wool provides natural softness, insulation, and resilience, making it both functional and stylish.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What size flame rug is best for a living room?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"The ideal size depends on your space. Smaller living rooms benefit from sizes like 5x8 ft or 6x9 ft, while larger rooms are better suited for 8x10 ft or 9x12 ft rugs. Ensuring that the front legs of furniture sit on the rug helps create a balanced and cohesive layout.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Are handmade wool flame rugs durable and easy to maintain?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Yes, handmade wool flame rugs are durable and easy to maintain. Wool is naturally resilient and stain-resistant, making it suitable for everyday use. Regular vacuuming, prompt spot cleaning, and occasional professional cleaning help preserve the rug’s quality.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"Where can I buy flame pattern rugs online in the USA?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"Flame pattern rugs can be purchased online from trusted home décor retailers that offer high-quality materials, modern designs, and reliable shipping across the USA.\"\n      }\n    },\n    {\n      \"@type\": \"Question\",\n      \"name\": \"What makes a premium flame pattern rug different from standard rugs?\",\n      \"acceptedAnswer\": {\n        \"@type\": \"Answer\",\n        \"text\": \"A premium flame pattern rug stands out due to its superior materials, handcrafted construction, and unique design. Made from high-quality wool or blends, these rugs offer better durability, refined detailing, and a distinctive artistic style compared to mass-produced standard rugs.\"\n      }\n    }\n  ]\n}\n</script>\n"
+            },
+            "handle": "restoration-and-renovation-premium-modern-handmade-wool-flame-pattern-area-rug-soft-viscose-blend-perfect-for-living-room-bedroom-and-office-decor",
+            "url": "https://restorationandrenovation.com/products/restoration-and-renovation-premium-modern-handmade-wool-flame-pattern-area-rug-soft-viscose-blend-perfect-for-living-room-bedroom-and-office-decor?variant=47798863888658&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 39270,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 47190,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Multi"
+              },
+              {
+                "name": "Size",
+                "label": "5' x 8'"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0745/1980/6226/files/91pFhq_CXOL._AC_SL1500.jpg",
+                "alt_text": "Abstract watercolor rug with pink and blue.",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0745/1980/6226/files/91pFhq_CXOL._AC_SL1500.jpg",
+                  "width": 1126,
+                  "height": 1500
+                },
+                "width": 1126,
+                "height": 1500
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/74519806226",
+              "name": "Restoration and Renovation",
+              "url": "https://restorationandrenovation.com",
+              "domain": "rugmandi.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/74519806226/policies/37042946322.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/74519806226/policies/37042979090.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/74519806226/policies/37042913554.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/74519806226/policies/37043011858.html"
+                }
+              ]
+            },
+            "checkout_url": "https://restorationandrenovation.com/buy/47798863888658:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 39270,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 39270,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/6Z0L2Rue7OZ8grRZj0HRwd",
+        "title": "Paint Chip Wool Area Rug",
+        "description": {
+          "plain": "<p>The Paint Chip collection by Dash &amp; Albert centers on geometric lines. This design features abstract, painterly forms and is offered in several colorways.</p><p>The Paint Chip Wool Area Rug is hooked in India from wool, with a high pile height for a plush, cushioned feel. Pet friendly and family friendly, the rug works well in living rooms and bedrooms.</p>"
+        },
+        "handle": "dash-albert-paint-chip-hand-micro-hooked-wool-rug",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0245/6249/9636/files/DA1599_PaintChip_Blue_MicroHookedWool.jpg",
+            "alt_text": "Paint Chip Wool Area Rug",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0245/6249/9636/files/DA1599_PaintChip_Blue_MicroHookedWool.jpg",
+              "width": 2048,
+              "height": 2048
+            },
+            "width": 2048,
+            "height": 2048
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Bark"
+              },
+              {
+                "label": "Blue"
+              },
+              {
+                "label": "Clay"
+              },
+              {
+                "label": "Confetti"
+              },
+              {
+                "label": "Coral"
+              },
+              {
+                "label": "Forest"
+              },
+              {
+                "label": "Moss"
+              },
+              {
+                "label": "Multi"
+              },
+              {
+                "label": "Natural"
+              },
+              {
+                "label": "Pastel"
+              },
+              {
+                "label": "Stone"
+              }
+            ]
+          },
+          {
+            "name": "Dimensions",
+            "values": [
+              {
+                "label": "2' W X 3' L Rectangle"
+              },
+              {
+                "label": "2'-6\" W X 8' L Runner"
+              },
+              {
+                "label": "3' W X 5' L Rectangle"
+              },
+              {
+                "label": "4' W X 6' L Rectangle"
+              },
+              {
+                "label": "5' W X 8' L Rectangle"
+              },
+              {
+                "label": "6' W X 9' L Rectangle"
+              },
+              {
+                "label": "7'-6\" W X 9'-6\" L Rectangle"
+              },
+              {
+                "label": "8'-6\" W X 11'-6\" L Rectangle"
+              },
+              {
+                "label": "9'-6\" W X 13'-6\" L Rectangle"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Handcrafted from 100% wool with a unique paint chip motif, offering durability, easy maintenance, and artistic appeal for modern interiors."
+          ],
+          "top_features": [
+            "Hand-hooked construction ensures durability and easy vacuuming for high-traffic areas",
+            "100% wool material provides a soft, comfortable underfoot experience",
+            "Vibrant paint chip design adds a modern artistic touch to any room",
+            "Low maintenance and hypoallergenic for homes with children or pets",
+            "Suitable for both indoor and outdoor use, expanding design possibilities"
+          ],
+          "tech_specs": [
+            "Dimensions: 4 ft x 6 ft (rectangular)",
+            "Material: 100% wool pile with 100% cotton reverse",
+            "Pile Height: 0.5 in",
+            "Weave Type: Handmade",
+            "Shape: Rectangular",
+            "Pattern: Abstract, Geometric, Art"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/42222640398430",
+            "title": "Paint Chip Wool Area Rug",
+            "description": {
+              "plain": "<p>The Paint Chip collection by Dash &amp; Albert centers on geometric lines. This design features abstract, painterly forms and is offered in several colorways.</p><p>The Paint Chip Wool Area Rug is hooked in India from wool, with a high pile height for a plush, cushioned feel. Pet friendly and family friendly, the rug works well in living rooms and bedrooms.</p>"
+            },
+            "handle": "dash-albert-paint-chip-hand-micro-hooked-wool-rug",
+            "url": "https://therugdistrict.ca/products/dash-albert-paint-chip-hand-micro-hooked-wool-rug?variant=42222640398430&_gsid=F6KXDiWyj4vX&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 11800,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Blue"
+              },
+              {
+                "name": "Dimensions",
+                "label": "2' W X 3' L Rectangle"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0245/6249/9636/files/DA1599_PaintChip_Blue_MicroHookedWool.jpg",
+                "alt_text": "Paint Chip Wool Area Rug",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0245/6249/9636/files/DA1599_PaintChip_Blue_MicroHookedWool.jpg",
+                  "width": 2048,
+                  "height": 2048
+                },
+                "width": 2048,
+                "height": 2048
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/24562499636",
+              "name": "The Rug District",
+              "url": "https://therugdistrict.ca",
+              "domain": "select-rugs-ca.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/24562499636/policies/12899876958.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/24562499636/policies/12899909726.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/24562499636/policies/12899844190.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/24562499636/policies/12899942494.html"
+                }
+              ]
+            },
+            "checkout_url": "https://therugdistrict.ca/buy/42222640398430:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=F6KXDiWyj4vX&_gsid=F6KXDiWyj4vX",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 11800,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 11800,
+            "currency": "USD"
+          }
+        }
+      }
+    ],
+    "messages": [],
+    "pagination": {
+      "has_next_page": true,
+      "total_count": 843,
+      "cursor": "eyJvZmZzZXQiOjgsInRvdGFsX2NvdW50Ijo4NDMsInJldHVybmVkIjo4fQ"
+    }
+  },
+  "cta": {
+    "description": "Extensions: global catalog active — variants carry `seller.domain` (for `--business`), `url` (PDP), and `checkout_url` (buy-now) for cross-business routing; the seller identity lives at `variants[*].seller.domain`; run --input-schema to see the full accepted catalog payload, including `like`, context, filters, and extension fields. Cross-business results — each variant belongs to its own seller. Pick the seller AND variant the buyer wants (products[N].variants[M]) before proceeding. To create a cart, pass --business=<products[N].variants[M].seller.domain>. If chosen items span multiple seller.domain values, create one cart/checkout per seller. Buyer handoff: open products[N].variants[M].url for the PDP when the buyer is still browsing; open products[N].variants[M].checkout_url for buy-now handoff when the buyer wants business-hosted checkout. More results available (showing 8 of 843); paginate only if you need them.",
+    "commands": [
+      {
+        "command": "ucp cart create --business <seller-domain> --input '{\"line_items\":[{\"item\":{\"id\":\"<variant-id>\"},\"quantity\":1}]}'",
+        "description": "create a cart at the chosen business — substitute <seller-domain> from products[N].variants[M].seller.domain and <variant-id> from products[N].variants[M].id."
+      },
+      {
+        "command": "ucp catalog search --input '<previous search body>' --set-string /pagination/cursor=<cursor>",
+        "description": "fetch next page — more of the same ranking: re-send your previous search body unchanged (query, filters, context, limit) with pagination.cursor set to result.pagination.cursor, copied verbatim; cursors are opaque and may invalidate across inventory changes; if results are weak or off-target, change query/context.intent instead and omit the cursor"
+      }
+    ]
+  }
+}

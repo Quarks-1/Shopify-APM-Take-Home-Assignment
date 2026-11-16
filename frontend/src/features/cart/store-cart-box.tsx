@@ -31,37 +31,42 @@ export function StoreCartBox({ group }: { group: CartStoreGroup }) {
       aria-label={store.name}
       className="flex flex-col gap-4 rounded-3xl border border-border-button-default bg-background-primary-default p-5"
     >
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-2">
-          <h2 className="text-title-3-semibold text-text-primary">{store.name}</h2>
-          <div className="flex flex-col gap-1">
-            <bdi dir="ltr" className="text-caption-1-medium text-text-tertiary">
-              {store.domain}
-            </bdi>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip variant="subtle" color="soft">
-              {itemCount} items
-            </Chip>
-            {checkoutOpenedAt ? (
-              <Chip variant="subtle" color="lime" className="gap-1">
-                <RiCheckLine aria-hidden className="size-3.5" />
-                Checkout opened · {formatRelativeTime(checkoutOpenedAt)}
+      <Carousel
+        aria-label={`${store.name} items`}
+        showDots={false}
+        gap={12}
+        header={
+          <header className="flex min-w-0 flex-col gap-2">
+            <h2 className="text-title-3-semibold text-text-primary">{store.name}</h2>
+            <div className="flex flex-col gap-1">
+              <bdi dir="ltr" className="text-caption-1-medium text-text-tertiary">
+                {store.domain}
+              </bdi>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip variant="subtle" color="soft">
+                {itemCount} items
               </Chip>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <bdi dir="ltr" className="text-headline-medium text-text-primary">
-            {formatPrice(subtotal)}
-          </bdi>
-          <Button variant="primary" leadingIcon={RiShoppingBag3Line} onClick={buyNow}>
-            Buy now
-          </Button>
-        </div>
-      </header>
-
-      <Carousel aria-label={`${store.name} items`} showDots={false} gap={12}>
+              {checkoutOpenedAt ? (
+                <Chip variant="subtle" color="lime" className="gap-1">
+                  <RiCheckLine aria-hidden className="size-3.5" />
+                  Checkout opened · {formatRelativeTime(checkoutOpenedAt)}
+                </Chip>
+              ) : null}
+            </div>
+          </header>
+        }
+        actions={
+          <>
+            <bdi dir="ltr" className="me-2 text-headline-medium text-text-primary">
+              {formatPrice(subtotal)}
+            </bdi>
+            <Button variant="primary" leadingIcon={RiShoppingBag3Line} onClick={buyNow}>
+              Buy now
+            </Button>
+          </>
+        }
+      >
         {lines.map(({ line, product, object, spaces }) => (
           <CarouselItem key={line.id} className="w-60">
             <ProductCard
@@ -72,6 +77,7 @@ export function StoreCartBox({ group }: { group: CartStoreGroup }) {
                   <div className="flex items-center justify-between gap-2">
                     <NumberField
                       aria-label="Quantity"
+                      className="min-w-0 flex-1"
                       size="small"
                       minValue={0}
                       maxValue={20}

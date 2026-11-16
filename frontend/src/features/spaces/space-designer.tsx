@@ -9,7 +9,7 @@ import { toast } from "@/components/base/toast/toast";
 import { OBJECT_TYPE_SVG } from "@/features/objects/object-type-visuals";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
 import { formatDims, formatLength, formatPrice, toDisplayLength } from "@/lib/format";
-import type { Dims, Space } from "@/mocks/types";
+import type { Dims, ObjectDims, Space } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import {
   footprint,
@@ -33,14 +33,21 @@ interface Rect {
 type Mode = "select" | "draw";
 
 const IN_STEPS = [1, 2, 3, 6, 12, 24];
+const FT_STEPS = [0.5, 1, 2, 5, 10];
 const CM_STEPS = [2, 5, 10, 20, 50];
+const INCHES_PER_FOOT = 12;
 const CM_PER_INCH = 2.54;
 const MAX_CELLS = 40;
 
 /** Visible grid-line step in inches: the smallest candidate that keeps the long side under 40 cells. */
 function pickGridStep(dims: Dims, unit: Space["unit"]): number {
   const longest = Math.max(dims.x, dims.y);
-  const candidates = unit === "cm" ? CM_STEPS.map((cm) => cm / CM_PER_INCH) : IN_STEPS;
+  const candidates =
+    unit === "cm"
+      ? CM_STEPS.map((cm) => cm / CM_PER_INCH)
+      : unit === "ft"
+        ? FT_STEPS.map((ft) => ft * INCHES_PER_FOOT)
+        : IN_STEPS;
   return candidates.find((step) => longest / step <= MAX_CELLS) ?? candidates[candidates.length - 1];
 }
 
@@ -59,9 +66,9 @@ function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number): { x: 
   return { x: p.x, y: p.y };
 }
 
-/** Object dims for a footprint on this space's plane (wall: x and z, otherwise x and y). */
-function dimsForFootprint(space: Space, w: number, h: number, step: number): Dims {
-  return space.type === "wall" ? { x: w, y: step, z: h } : { x: w, y: h };
+/** Object dims for a footprint on this space's plane (wall: x and z, otherwise x and y). Never invents a depth. */
+function dimsForFootprint(space: Space, w: number, h: number): ObjectDims {
+  return space.type === "wall" ? { x: w, z: h } : { x: w, y: h };
 }
 
 type Drag =
@@ -87,7 +94,9 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
   const [drag, setDragState] = useState<Drag | null>(null);
-  const [mode, setMode] = useState<Mode>("select");
+  const [mode, setMode] = useState<Mode>(() =>
+    (getSpace(state, spaceId)?.placements.length ?? 0) === 0 ? "draw" : "select",
+  );
 
   const setDrag = useCallback((next: Drag | null) => {
     dragRef.current = next;
@@ -106,6 +115,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const pad = longest * 0.03;
   const fontSize = longest / 45;
   const handleSize = longest / 45;
+  const labelRoom = fontSize * 1.3;
 
   const items = space.placements.flatMap((p) => {
     const object = getObject(state, p.objectId);
@@ -126,7 +136,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     const id = actions.createObject({
       name: "New object",
       type: "furniture",
-      dims: dimsForFootprint(space, w, h, step),
+      dims: dimsForFootprint(space, w, h),
     });
     actions.placeObject(spaceId, id, pos);
     onSelectObject(id);
@@ -294,6 +304,23 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   const gridId = `${uid}-grid`;
   const drawing = drag?.kind === "draw" ? drag.rect : null;
+  const drawingSizeText =
+    drawing && (drawing.w > 0 || drawing.h > 0) ? formatDims({ x: drawing.w, y: drawing.h }, unit) : "";
+  const sizeLabel = (() => {
+    if (!drawing || !drawingSizeText) return null;
+    const labelFontSize = fontSize * 0.85;
+    const width = drawingSizeText.length * labelFontSize * 0.6 + labelFontSize * 1.2;
+    const height = labelFontSize * 1.8;
+    const gap = labelFontSize * 0.4;
+    let y: number;
+    if (drawing.y - gap - height >= -pad) y = drawing.y - gap - height;
+    else if (drawing.y + drawing.h + gap + height <= dims.y + pad) y = drawing.y + drawing.h + gap;
+    else y = drawing.y + gap;
+    const minX = -pad + width / 2;
+    const maxX = dims.x + pad - width / 2;
+    const centerX = Math.min(Math.max(drawing.x + drawing.w / 2, minX), Math.max(minX, maxX));
+    return { labelFontSize, width, height, x: centerX - width / 2, y, cx: centerX };
+  })();
   const count = items.length;
 
   return (
@@ -341,7 +368,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
           ref={svgRef}
           role="group"
           aria-label={`Designer for ${space.name}`}
-          viewBox={`${-pad} ${-pad} ${dims.x + pad * 2} ${dims.y + pad * 2}`}
+          viewBox={`${-pad} ${-pad - labelRoom} ${dims.x + pad * 2} ${dims.y + pad * 2 + labelRoom}`}
           preserveAspectRatio="xMidYMid meet"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -359,11 +386,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                 vectorEffect="non-scaling-stroke"
               />
             </pattern>
-            {items.map(({ object, rect }) => (
-              <clipPath key={object.id} id={`${uid}-clip-${object.id}`}>
-                <rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} />
-              </clipPath>
-            ))}
           </defs>
 
           <rect x={0} y={0} width={dims.x} height={dims.y} fill="var(--color-background-primary-default)" />
@@ -385,7 +407,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
             const selected = object.id === selectedObjectId;
             const overlaps = overlapping.has(object.id);
             const sizeText = formatDims({ x: rect.w, y: rect.h }, unit);
-            const showLabel = rect.w >= fontSize * 4 && rect.h >= fontSize * 2.6;
             const label = `${object.name}, ${sizeText}, at ${toDisplayLength(rect.x, unit)}, ${toDisplayLength(rect.y, unit)}${overlaps ? ", overlaps another object" : ""}`;
             const stroke = selected
               ? "var(--color-accent-500)"
@@ -418,27 +439,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                   strokeDasharray={overlaps && !selected ? "6 4" : undefined}
                   vectorEffect="non-scaling-stroke"
                 />
-                {showLabel ? (
-                  <g clipPath={`url(#${uid}-clip-${object.id})`} className="pointer-events-none">
-                    <text
-                      x={rect.x + fontSize * 0.5}
-                      y={rect.y + fontSize * 1.4}
-                      fontSize={fontSize}
-                      fontWeight={600}
-                      style={{ fill: "var(--color-text-primary)" }}
-                    >
-                      {object.name}
-                    </text>
-                    <text
-                      x={rect.x + fontSize * 0.5}
-                      y={rect.y + fontSize * 2.6}
-                      fontSize={fontSize * 0.85}
-                      style={{ fill: "var(--color-text-secondary)" }}
-                    >
-                      {sizeText}
-                    </text>
-                  </g>
-                ) : null}
                 <rect
                   x={rect.x - fontSize * 0.25}
                   y={rect.y - fontSize * 0.25}
@@ -453,6 +453,41 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
               </g>
             );
           })}
+
+          <g aria-hidden="true" className="pointer-events-none">
+            {items.map(({ object, rect }) => {
+              const sizeText = formatDims({ x: rect.w, y: rect.h }, unit);
+              const lineWidth = object.name.length * fontSize * 0.6 + fontSize * 0.4 + sizeText.length * fontSize * 0.85 * 0.55;
+              const flip = rect.x + lineWidth > dims.x;
+              return (
+                <text
+                  key={object.id}
+                  x={flip ? rect.x + rect.w : rect.x}
+                  y={rect.y - fontSize * 0.35}
+                  textAnchor={flip ? "end" : "start"}
+                  fontSize={fontSize}
+                  fontWeight={600}
+                  stroke="var(--color-background-primary-default)"
+                  strokeWidth={fontSize * 0.3}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
+                  style={{
+                    fill: object.id === selectedObjectId ? "var(--color-accent-600)" : "var(--color-text-primary)",
+                  }}
+                >
+                  <tspan>{object.name}</tspan>
+                  <tspan
+                    dx={fontSize * 0.4}
+                    fontSize={fontSize * 0.85}
+                    fontWeight={400}
+                    style={{ fill: "var(--color-text-secondary)" }}
+                  >
+                    {sizeText}
+                  </tspan>
+                </text>
+              );
+            })}
+          </g>
 
           {mode === "select"
             ? items
@@ -489,7 +524,36 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
               className="pointer-events-none"
             />
           ) : null}
+
+          {sizeLabel ? (
+            <g className="pointer-events-none" aria-hidden="true">
+              <rect
+                x={sizeLabel.x}
+                y={sizeLabel.y}
+                width={sizeLabel.width}
+                height={sizeLabel.height}
+                rx={sizeLabel.height / 2}
+                fill="var(--color-accent-600)"
+              />
+              <text
+                x={sizeLabel.cx}
+                y={sizeLabel.y + sizeLabel.height / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={sizeLabel.labelFontSize}
+                fontWeight={600}
+                fill="var(--color-text-white)"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {drawingSizeText}
+              </text>
+            </g>
+          ) : null}
         </svg>
+
+        <span className="sr-only" aria-live="polite">
+          {drawingSizeText}
+        </span>
 
         {count === 0 && !drawing ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
