@@ -326,6 +326,12 @@ def _first_variant(product):
     return variants[0] if variants and isinstance(variants[0], dict) else {}
 
 
+_OPTION_MEASURE_NAME_RE = re.compile(
+    r'^(?:width|length|depth|height|size|bedding\s*size|mattress\s*size)$',
+    re.IGNORECASE,
+)
+
+
 def _option_labels(variant):
     out = []
     for o in variant.get('options') or []:
@@ -334,6 +340,24 @@ def _option_labels(variant):
             if isinstance(label, str):
                 out.append(label)
     return out
+
+
+def _from_variant_options(variant):
+    """Pair variant option name + label (e.g. Length: 200 cm, Width: 120 cm)."""
+    parts = []
+    for o in variant.get('options') or []:
+        if not isinstance(o, dict):
+            continue
+        name = clean_text(str(o.get('name') or ''))
+        label = o.get('label')
+        if not name or not isinstance(label, str) or not label.strip():
+            continue
+        if not _OPTION_MEASURE_NAME_RE.match(name):
+            continue
+        parts.append(f'{name}: {clean_text(label)}')
+    if len(parts) < 2:
+        return {}, None
+    return parse_dimensions_text(', '.join(parts), default_unit=None)
 
 
 def _from_description(product):
@@ -357,6 +381,9 @@ def parse_dimensions(product):
     if dims or longest:
         return dims, longest, 'title'
     variant = _first_variant(product)
+    dims, longest = _from_variant_options(variant)
+    if dims or longest:
+        return dims, longest, 'options'
     best_dims, best_longest = {}, None
     for label in _option_labels(variant):
         d, lg = parse_dimensions_text(label, default_unit=None)

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 
+from .searcher.filters import evaluate
 from .searcher.normalize import normalize_product
 from .searcher.parse import (
     clean_text,
@@ -11,6 +12,8 @@ from .searcher.parse import (
     parse_materials,
     parse_weight,
 )
+
+TOL = 1.15
 
 FIXTURES = Path(__file__).parent / 'test_fixtures' / 'ucp'
 
@@ -146,6 +149,45 @@ class DimensionPriorityTests(SimpleTestCase):
             ({'x': 46, 'y': 24, 'z': 17}, None, 'description'))
         self.assertEqual(parse_dimensions(product('Rug', description='A 20 x 20 in pillow.')),
                          ({}, None, None))
+
+    def test_ucp_split_width_length_options(self):
+        """Loft Home SOLACE: UCP puts mattress footprint in Width/Length option labels."""
+        p = {
+            'title': 'Scandinavian Oak Wood Storage Bed SOLACE',
+            'description': {
+                'plain': (
+                    '<p>Experience the perfect blend of elegance and functionality with the '
+                    'Scandinavian Oak Wood Storage Bed SOLACE.</p>'
+                ),
+            },
+            'metadata': {
+                'tech_specs': [
+                    'Material: Solid oak wood',
+                    'Finish: Lacquered or varnished',
+                    'Storage Type: Hidden lift-up drawers',
+                    'Compatible Mattress Sizes: King, Queen, Single',
+                    'Color: Brown',
+                    'Pattern: Solid or textured',
+                ],
+            },
+            'variants': [{
+                'options': [
+                    {'name': 'Length', 'label': '200 cm'},
+                    {'name': 'Width', 'label': '120 cm'},
+                ],
+            }],
+        }
+        self.assertEqual(
+            parse_dimensions(p),
+            ({'x': 78.74, 'y': 47.24}, None, 'options'),
+        )
+        snap = {'type': 'furniture', 'dims': {'x': 78, 'y': 108}}
+        fields = {
+            'dims': {'x': 78.74, 'y': 47.24},
+            'price_cents': 89880,
+            'currency': 'USD',
+        }
+        self.assertEqual(evaluate(fields, snap, TOL)[2], 'fits')
 
     def test_nothing_found(self):
         self.assertEqual(parse_dimensions(product('Plain lamp')), ({}, None, None))
