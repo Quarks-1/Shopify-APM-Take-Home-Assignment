@@ -260,6 +260,22 @@ _AXIS_KEY_RE = re.compile(
     r'(width|depth|height|length|diameter)$',
     re.IGNORECASE,
 )
+_QUALIFIED_AXIS_KEY_RE = re.compile(
+    r'^(?:(?:overall|product|assembled|item|unit|finished|total)\s+)*'
+    r'(width|depth|height|length|diameter)'
+    r'(?:\s*(?:\([^)]*\)|[-–]\s*.+))?$',
+    re.IGNORECASE,
+)
+_QUALIFIED_AXIS_BAD_RE = re.compile(
+    r'\b(?:mattress|compatible|clearance|underbed|underside)\b', re.IGNORECASE,
+)
+_MEASURE_RANGE_RE = re.compile(r'\d+(?:\.\d+)?\s*-\s*\d')
+_BEDDING_SIZE_OPT_RE = re.compile(r'bed(?:ding)?\s*size|mattress\s*size', re.IGNORECASE)
+_QUALIFIED_ROW_START_RE = re.compile(
+    r'((?:(?:overall|product)\s+)?(?:width|length|height|depth)\b'
+    r'(?:\s*(?:\([^)]*\)|[-–]\s*[^:]{2,50}))?\s*:\s*)',
+    re.IGNORECASE,
+)
 _DESC_ANCHOR_RE = re.compile(
     r'(?:dimensions?|measures|measuring|overall size|overall)\s*[:\-]?\s*', re.IGNORECASE
 )
@@ -276,6 +292,145 @@ def _specs(product):
     md = product.get('metadata') or {}
     raw = md.get('tech_specs') or []
     return [clean_text(s) for s in raw if isinstance(s, (str, int, float)) and clean_text(s)]
+
+
+def _axis_letter_from_key(key):
+    if not key or _QUALIFIED_AXIS_BAD_RE.search(key):
+        return None
+    m = _QUALIFIED_AXIS_KEY_RE.match(key)
+    if not m:
+        return None
+    axis = m.group(1).lower()
+    return {'width': 'W', 'depth': 'D', 'height': 'H', 'length': 'L', 'diameter': 'O'}[axis]
+
+
+def _discrete_inches(val):
+    """Inch measurements from a spec value, skipping ranges and cm duplicates."""
+    val = clean_text(val)
+    if not val or _MEASURE_RANGE_RE.search(val):
+        return None
+    out = []
+    for t in _tokens(val):
+        factor = t.factor if t.factor is not None else 1.0
+        v = _r(t.value * factor)
+        if not (MIN_LEN < v <= MAX_LEN):
+            continue
+        if out and abs(v - out[-1]) / max(out[-1], 0.01) < 0.06:
+            continue
+        out.append(v)
+    return out or None
+
+
+def _pick_discrete(vals, size_index):
+    if not vals:
+        return None
+    if len(vals) == 1:
+        return vals[0]
+    if 0 <= size_index < len(vals):
+        return vals[size_index]
+    return None
+
+
+def _bedding_size_index(product, variant):
+    """Index of the selected mattress/bedding size among product option values."""
+    selected = ''
+    for o in variant.get('options') or []:
+        if not isinstance(o, dict):
+            continue
+        name = str(o.get('name') or '')
+        if _BEDDING_SIZE_OPT_RE.search(name):
+            selected = clean_text(str(o.get('label') or ''))
+            break
+    if not selected:
+        return 0
+    for opt in product.get('options') or []:
+        if not isinstance(opt, dict) or not _BEDDING_SIZE_OPT_RE.search(str(opt.get('name') or '')):
+            continue
+        labels = [
+            clean_text(str(v.get('label') or ''))
+            for v in (opt.get('values') or [])
+            if isinstance(v, dict)
+        ]
+        for i, label in enumerate(labels):
+            if label.lower() == selected.lower():
+                return i
+        return 0
+    return 0
+
+
+def _qualified_axis_pairs(entries, size_index):
+    """entries: list of (key, val). Returns [(letter, inches), ...]."""
+    pairs = []
+    for key, val in entries:
+        if key is None:
+            continue
+        letter = _axis_letter_from_key(key)
+        if not letter:
+            continue
+        vals = _discrete_inches(val)
+        v = _pick_discrete(vals, size_index)
+        if v is not None:
+            pairs.append((letter, v))
+    return pairs
+
+
+def _qualified_rows_from_text(text):
+    """Split free text into (key, value) rows for overall width/length/height lines."""
+    text = clean_text(text)
+    if not text:
+        return []
+    rows = []
+    matches = list(_QUALIFIED_ROW_START_RE.finditer(text))
+    for i, m in enumerate(matches):
+        key = clean_text(m.group(1).rstrip(':').strip())
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        val = text[m.end():end].strip()
+        if key and val:
+            rows.append((key, val))
+    return rows
+
+
+def _dims_from_qualified_pairs(pairs):
+    if not pairs:
+        return {}
+    return {k: _r(v) for k, v in _map_labels(pairs).items()}
+
+
+def _footprint_dims(dims):
+    return dims.get('x') is not None and dims.get('y') is not None
+
+
+def _from_qualified_overall_axes(product):
+    """Per-size overall width/length/height rows (e.g. Clearhalo bedding tables)."""
+    variant = _first_variant(product)
+    size_index = _bedding_size_index(product, variant)
+    desc = clean_text((product.get('description') or {}).get('plain'))
+    desc_rows = _qualified_rows_from_text(desc)
+    desc_dims = _dims_from_qualified_pairs(_qualified_axis_pairs(desc_rows, size_index))
+    if _footprint_dims(desc_dims):
+        return desc_dims, 'description'
+    spec_rows = []
+    for entry in _specs(product):
+        key, val = _split_spec(entry)
+        if key is not None and _axis_letter_from_key(key):
+            spec_rows.append((key, val))
+    spec_dims = _dims_from_qualified_pairs(_qualified_axis_pairs(spec_rows, size_index))
+    if _footprint_dims(spec_dims):
+        return spec_dims, 'tech_specs'
+    merged_pairs = list(_qualified_axis_pairs(desc_rows, size_index))
+    seen = {letter for letter, _ in merged_pairs}
+    for key, val in spec_rows:
+        letter = _axis_letter_from_key(key)
+        if not letter or letter in seen:
+            continue
+        v = _pick_discrete(_discrete_inches(val), size_index)
+        if v is not None:
+            merged_pairs.append((letter, v))
+            seen.add(letter)
+    merged = _dims_from_qualified_pairs(merged_pairs)
+    if _footprint_dims(merged):
+        return merged, 'description' if desc_rows else 'tech_specs'
+    return {}, None
 
 
 def _from_specs(product):
@@ -377,6 +532,9 @@ def parse_dimensions(product):
     dims, longest = _from_specs(product)
     if dims or longest:
         return dims, longest, 'tech_specs'
+    dims, qsrc = _from_qualified_overall_axes(product)
+    if dims:
+        return dims, None, qsrc
     dims, longest = parse_dimensions_text(product.get('title') or '', default_unit=None)
     if dims or longest:
         return dims, longest, 'title'

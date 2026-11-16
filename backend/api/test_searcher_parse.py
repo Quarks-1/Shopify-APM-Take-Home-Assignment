@@ -150,6 +150,51 @@ class DimensionPriorityTests(SimpleTestCase):
         self.assertEqual(parse_dimensions(product('Rug', description='A 20 x 20 in pillow.')),
                          ({}, None, None))
 
+    def test_clearhalo_qualified_overall_axes(self):
+        """Clearhalo lists one measurement per bedding size in the description."""
+        desc = (
+            'Overall Width - Side to Side: 49" (125 cm) 61" (155 cm) 73" (185 cm) '
+            'Overall Length - Head to Toe: 79" (200 cm) 82.5" (210 cm) '
+            'Overall Height - Top to Bottom: 8" (20 cm)'
+        )
+        p = {
+            'title': 'Scandinavian Solid Wood Bed Frame Low Profile Bed with Wood Legs',
+            'description': {'plain': desc},
+            'metadata': {
+                'tech_specs': [
+                    'Overall width (side to side): 49-61 in (125-155 cm)',
+                    'Overall length (head to toe): 79-82.5 in (200-210 cm)',
+                    'Overall height (top to bottom): 8 in (20 cm)',
+                ],
+            },
+            'options': [{
+                'name': 'Bedding size',
+                'values': [
+                    {'label': 'Full'},
+                    {'label': 'Queen'},
+                    {'label': 'California King'},
+                ],
+            }],
+            'variants': [{
+                'options': [
+                    {'name': 'Bedding size', 'label': 'Full'},
+                    {'name': 'Mattress fill material', 'label': 'No mattress'},
+                    {'name': 'Mattress included', 'label': 'Bed frame only'},
+                ],
+            }],
+        }
+        self.assertEqual(
+            parse_dimensions(p),
+            ({'x': 79.0, 'y': 49.0, 'z': 8.0}, None, 'description'),
+        )
+        snap = {'type': 'furniture', 'dims': {'x': 78, 'y': 108}}
+        fields = {
+            'dims': {'x': 79.0, 'y': 49.0, 'z': 8.0},
+            'price_cents': 39228,
+            'currency': 'USD',
+        }
+        self.assertEqual(evaluate(fields, snap, TOL)[2], 'fits')
+
     def test_ucp_split_width_length_options(self):
         """Loft Home SOLACE: UCP puts mattress footprint in Width/Length option labels."""
         p = {
