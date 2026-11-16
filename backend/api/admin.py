@@ -10,7 +10,16 @@ class SimilarItemInline(admin.TabularInline):
 
 @admin.register(Space)
 class SpaceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'space_type', 'x', 'y', 'z', 'dimension_unit', 'weight_limit')
+    list_display = (
+        'id',
+        'space_type',
+        'x',
+        'y',
+        'z',
+        'dimension_unit',
+        'editing_grid_increment_inches',
+        'weight_limit',
+    )
     list_filter = ('space_type', 'dimension_unit')
 
 

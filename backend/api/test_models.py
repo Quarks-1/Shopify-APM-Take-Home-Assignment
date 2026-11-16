@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from .models import (
+    EDITING_GRID_INCREMENT_INCHES,
     DimensionUnit,
     Material,
     Object,
@@ -50,6 +51,26 @@ class SpaceModelTests(TestCase):
             space_type=SpaceType.WALL,
         )
         self.assertEqual(space.dimension_unit, DimensionUnit.FT)
+
+    def test_default_editing_grid_increment_is_one_inch(self):
+        space = Space.objects.create(
+            x=Decimal('1'),
+            y=Decimal('1'),
+            space_type=SpaceType.FLOOR,
+        )
+        space.refresh_from_db()
+        self.assertEqual(space.editing_grid_increment_inches, EDITING_GRID_INCREMENT_INCHES)
+        self.assertEqual(space.editing_grid_increment_inches, Decimal('1'))
+
+    def test_editing_grid_increment_can_be_persisted(self):
+        space = Space.objects.create(
+            x=Decimal('1'),
+            y=Decimal('1'),
+            space_type=SpaceType.SHELF,
+            editing_grid_increment_inches=Decimal('2.5000'),
+        )
+        space.refresh_from_db()
+        self.assertEqual(space.editing_grid_increment_inches, Decimal('2.5000'))
 
     def test_space_type_choices(self):
         for value, _label in SpaceType.choices:

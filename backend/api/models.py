@@ -38,6 +38,9 @@ _DIMENSION_DECIMAL = {
     'validators': [MinValueValidator(Decimal('0'))],
 }
 
+# Default snap step for spatial editing UIs tied to a Space (not 6 in).
+EDITING_GRID_INCREMENT_INCHES = Decimal('1')
+
 
 class Space(models.Model):
     x = models.DecimalField(**_DIMENSION_DECIMAL)
@@ -55,6 +58,13 @@ class Space(models.Model):
         null=True,
         blank=True,
         validators=[MinValueValidator(Decimal('0'))],
+    )
+    editing_grid_increment_inches = models.DecimalField(
+        max_digits=6,
+        decimal_places=4,
+        default=EDITING_GRID_INCREMENT_INCHES,
+        validators=[MinValueValidator(Decimal('0.0001'))],
+        help_text='Editing snap grid step size in inches.',
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
