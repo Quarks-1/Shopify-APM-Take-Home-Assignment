@@ -4,7 +4,7 @@ import { useTemplateCopy, useTemplateLanguageSelector } from "@/components/found
 
 import { useDirection } from "@/components/foundations/direction/direction";
 import { useEffect, useState, type ReactNode } from "react";
-import { RiAddFill, RiEqualizer3Line } from "@remixicon/react";
+import { RiPaletteLine } from "@remixicon/react";
 import {
   Button as AriaButton,
   Dialog as AriaDialog,
@@ -12,8 +12,8 @@ import {
   Popover as AriaPopover,
 } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
-import { Button } from "@/components/base/buttons/button";
 import { ChevronUpDownSmall } from "@/components/foundations/icons/chevrons";
+import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { cx } from "@/utils/cx";
 
 /**
@@ -22,27 +22,8 @@ import { cx } from "@/utils/cx";
  * Dropdown opened from the sidebar's workspace switcher (avatar + name +
  * chevron) at the top. Floats to the right of the sidebar with the team
  * menu's surface and appear animation (white, 1px border, shadow/dropdown) in
- * BoardUI's compact dropdown: radius 14 at 4px padding. Lists the users with
- * access (20px tinted-initial avatars + name), a full-bleed divider, then
- * "Add user" / "Manage" actions. Rows and the divider keep the panel's 4px
- * rhythm, the buttons sit 6px in; rows (10px) and buttons (8px) both stay
- * concentric in the 14px panel.
+ * BoardUI's compact dropdown: radius 14 at 4px padding.
  */
-
-type AvatarColor = "neutral" | "lime" | "pink";
-
-type UserRow = {
-  initials: string;
-  color: AvatarColor;
-  name: string;
-  isSelected?: boolean;
-};
-
-const USERS: UserRow[] = [
-  { initials: "M", color: "neutral", name: "Mertcan Esmergul" },
-  { initials: "S", color: "lime", name: "Steven Raule" },
-  { initials: "L", color: "pink", name: "Lauren Proso" },
-];
 
 /** Label slot on the trigger: blurs + fades away as the rail collapses. */
 function Collapsible({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
@@ -59,65 +40,21 @@ function Collapsible({ collapsed, children }: { collapsed: boolean; children: Re
   ));
 }
 
-function UserMenuItem({ initials, color, name, isSelected, onSelect }: UserRow & { onSelect: () => void }) {
-  const localize = useTemplateCopy();
-  return localize((
-    <AriaButton
-      type="button"
-      aria-current={isSelected ? "page" : undefined}
-      onPress={onSelect}
-      className={cx(
-        "flex w-full cursor-pointer items-center gap-2 rounded-2lg px-2 py-1.5 text-start outline-none transition-colors",
-        isSelected
-          ? "bg-background-primary-hover"
-          : "hover:bg-background-primary-hover focus-visible:bg-background-primary-hover",
-      )}
-    >
-      <Avatar size="xs" color={color} initials={initials} />
-      <span className="truncate text-body-medium text-text-primary">{name}</span>
-    </AriaButton>
-  ));
-}
-
-/** The dropdown's contents — users-with-access list + Add user/Manage
- *  actions — split out so other triggers (e.g. the calendar template's
- *  inbox icon) can open the same panel without duplicating it. */
-export function AccountMenuContent({ onSelect }: { onSelect: () => void }) {
+/** Account menu panel — appearance and optional template language control. */
+export function AccountMenuContent() {
   const localize = useTemplateCopy();
   const languageSelector = useTemplateLanguageSelector();
   return localize((
-    <>
-      {/* Users with access */}
-      <div className="flex w-full flex-col gap-1 pt-1">
-        <span className="px-2 text-body-medium text-text-secondary">Users with access</span>
-        <div className="flex w-full flex-col gap-1">
-          {USERS.map((user) => (
-            <UserMenuItem key={user.name} {...user} onSelect={onSelect} />
-          ))}
-        </div>
-      </div>
-
-      {/* Full-bleed divider, 4px from the list and the actions */}
-      <div className="-mx-1 my-1 h-px bg-border-button-default" />
-
-      {/* Actions — 6px from the divider, the panel's edges and each other;
-          the buttons' 8px radius stays concentric in the 14px panel. */}
-      <div className="flex w-full items-center gap-1.5 p-0.5">
-        <Button variant="secondary" size="small" leadingIcon={RiAddFill} className="flex-1" onClick={onSelect}>
-          Add user
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          leadingIcon={RiEqualizer3Line}
-          className="flex-1"
-          onClick={onSelect}
-        >
-          Manage
-        </Button>
+    <div className="flex w-full flex-col gap-1 pt-1">
+      <div className="flex w-full items-center justify-between gap-2.5 rounded-2lg px-2 py-1">
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <RiPaletteLine className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
+          <span className="truncate text-body-medium text-text-primary">Appearance</span>
+        </span>
+        <ThemeToggle appearance="segmented" size="small" className="shrink-0" />
       </div>
       {languageSelector}
-    </>
+    </div>
   ));
 }
 
@@ -153,7 +90,7 @@ export function DashboardUserMenu({
   return localize((
     <AriaDialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <AriaButton
-        aria-label="Mertcan Esmergul"
+        aria-label="Account menu"
         onPointerLeave={() => {
           if (suppressHover) onHoverSuppressionEnd?.();
         }}
@@ -197,7 +134,7 @@ export function DashboardUserMenu({
         )}
       >
         <AriaDialog aria-label="Account menu" className="flex flex-col outline-none">
-          <AccountMenuContent onSelect={() => setIsOpen(false)} />
+          <AccountMenuContent />
         </AriaDialog>
       </AriaPopover>
     </AriaDialogTrigger>
