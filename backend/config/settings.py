@@ -106,3 +106,12 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
+
+
+# Product searcher (api.searcher)
+SEARCHER_UCP_BIN = os.environ.get('SEARCHER_UCP_BIN', 'ucp')
+SEARCHER_PAGE_LIMIT = int(os.environ.get('SEARCHER_PAGE_LIMIT', '20'))
+SEARCHER_TARGET = int(os.environ.get('SEARCHER_TARGET', '10'))
+SEARCHER_MAX_ROUNDS = int(os.environ.get('SEARCHER_MAX_ROUNDS', '8'))
+SEARCHER_SIZE_TOLERANCE = float(os.environ.get('SEARCHER_SIZE_TOLERANCE', '1.15'))
+SEARCHER_UCP_TIMEOUT = float(os.environ.get('SEARCHER_UCP_TIMEOUT', '60'))

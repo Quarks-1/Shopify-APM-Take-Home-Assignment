@@ -1,0 +1,1247 @@
+{
+  "business": "https://catalog.shopify.com",
+  "endpoint": "https://catalog.shopify.com/api/ucp/mcp",
+  "transport": "mcp",
+  "ucp": {
+    "version": "2026-08-25",
+    "capabilities": {
+      "dev.ucp.shopping.catalog.search": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_search.json"
+        }
+      ],
+      "dev.ucp.shopping.catalog.lookup": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_lookup.json"
+        }
+      ],
+      "dev.shopify.catalog.global": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://shopify.dev/docs/agents/catalog/global-catalog",
+          "schema": "https://shopify.dev/ucp/schemas/2026-08-25/shopify_catalog_global.json",
+          "extends": [
+            "dev.ucp.shopping.catalog.search",
+            "dev.ucp.shopping.catalog.lookup"
+          ],
+          "requires": {
+            "protocol": {
+              "min": "2026-08-25"
+            }
+          }
+        }
+      ]
+    },
+    "status": "success"
+  },
+  "result": {
+    "products": [
+      {
+        "id": "gid://shopify/p/1V2nZ6Mh3iOWJrDGTIaDK9",
+        "title": "Milan 3 Seater Sofa - ( Premium Molfino Fabric- Black )",
+        "description": {
+          "plain": "<div class=\"_1AtVbE col-12-12\" data-mce-fragment=\"1\">\n<div class=\"_3nkT-2\" data-mce-fragment=\"1\">\n<div class=\"_2o-xpa\" data-mce-fragment=\"1\">\n<div class=\"_1mXcCf RmoJUa\" data-mce-fragment=\"1\">\n<meta charset=\"utf-8\">\n<p><span data-mce-fragment=\"1\">Seventh Heaven Sofa is ideal for daily use with premium comfort. Our integrated design, manufacturing and quality control process is singularly focused on providing the most innovative series of styles in the industry with highest quality and finish. Our quality craftsmanship ensures great value for money products. In addition to a core team of experienced furniture industry professionals, Seventh Heaven products also rely on the experience of interior designers to ensure that the designs are leading edge and can be incorporated into high end interiors as core feature pieces or as eclectic complimentary additions to any room.</span></p>\n<p><span>FEATURES:</span></p>\n<ol>\n<li>\n<span></span><b>Industry leading 1 years warranty</b><span> -  No compromise on quality, durability and comfort </span>\n</li>\n<li>\n<span></span><b>Sheesham wooden legs</b><span> - Sheesham legs for sofa bed are finely crafted and polished with a color that will match and uplift any home decor</span>\n</li>\n<li>\n<span></span><b>Chenille Molfino Fabric</b><span> - Heavy GSM soft chenille molfino fabric for soft and luxury feel</span>\n</li>\n<li>\n<span></span><b>Polyurethane Foam Seating Core</b><span> - 40 Density Ultra Premium PU foam as the core of seating area ensures durability and comfort even after years of chilling while binge watching and late snoozing time</span>\n</li>\n<li>\n<span></span><b>High Density Softy foam comfort layer</b><span> - Top layer of softy foam is added to provide the soft support you need and the plush comfort you love</span>\n</li>\n<li>\n<span></span><b>Sinuous Spring Suspension System</b><span> - Heavy gauge wire spring is used under foam for that extra strength, comfort and bounce you love even after years of kids jumping and playing</span>\n</li>\n<li>\n<span></span><b>Quality Finish</b><span> -  Handcrafted furniture by highly experienced craftsman for extreme precision and quality finish</span>\n</li>\n</ol>\n</div>\n</div>\n</div>\n</div>\n<div class=\"_1AtVbE col-12-12\" data-mce-fragment=\"1\">\n<div class=\"_3dtsli\" data-mce-fragment=\"1\">\n<div class=\"_5pFuey\" data-mce-fragment=\"1\"><br></div>\n</div>\n</div>"
+        },
+        "handle": "3-seater-milan-sofa-chenille-molfino-fabric-finish-color-sky-blue",
+        "rating": {
+          "value": 4.8,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1946
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/black1.png",
+            "alt_text": "Milan 3 Seater Sofa - ( Premium Molfino Fabric- Black )",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/black1.png",
+              "width": 2742,
+              "height": 2742
+            },
+            "width": 2742,
+            "height": 2742
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Beige"
+              },
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Blue"
+              },
+              {
+                "label": "Brown"
+              },
+              {
+                "label": "Green"
+              },
+              {
+                "label": "Maroon"
+              },
+              {
+                "label": "Sky Blue"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines ultra-soft Molfino chenille fabric with a robust PU foam core and handcrafted quality for unmatched comfort and longevity."
+          ],
+          "top_features": [
+            "Ultra-soft Molfino chenille fabric provides a luxurious and comfortable seating experience",
+            "High-density PU foam core ensures long-lasting durability and support",
+            "Sinuous spring suspension system delivers extra strength and bounce for all-day comfort",
+            "Handcrafted by experienced craftsmen for a precise and high-quality finish",
+            "Removable cushions allow for easy cleaning and maintenance"
+          ],
+          "tech_specs": [
+            "Seating Capacity: 3 persons",
+            "Upholstery Material: Molfino chenille fabric (Polyester)",
+            "Core Material: Polyurethane foam (PU foam), 40 density",
+            "Leg Material: Sheesham wood",
+            "Firmness: Medium to medium soft",
+            "Warranty: 1 year"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/42069189263522",
+            "title": "Milan 3 Seater Sofa - ( Premium Molfino Fabric- Black )",
+            "description": {
+              "plain": "<div class=\"_1AtVbE col-12-12\" data-mce-fragment=\"1\">\n<div class=\"_3nkT-2\" data-mce-fragment=\"1\">\n<div class=\"_2o-xpa\" data-mce-fragment=\"1\">\n<div class=\"_1mXcCf RmoJUa\" data-mce-fragment=\"1\">\n<meta charset=\"utf-8\">\n<p><span data-mce-fragment=\"1\">Seventh Heaven Sofa is ideal for daily use with premium comfort. Our integrated design, manufacturing and quality control process is singularly focused on providing the most innovative series of styles in the industry with highest quality and finish. Our quality craftsmanship ensures great value for money products. In addition to a core team of experienced furniture industry professionals, Seventh Heaven products also rely on the experience of interior designers to ensure that the designs are leading edge and can be incorporated into high end interiors as core feature pieces or as eclectic complimentary additions to any room.</span></p>\n<p><span>FEATURES:</span></p>\n<ol>\n<li>\n<span></span><b>Industry leading 1 years warranty</b><span> -  No compromise on quality, durability and comfort </span>\n</li>\n<li>\n<span></span><b>Sheesham wooden legs</b><span> - Sheesham legs for sofa bed are finely crafted and polished with a color that will match and uplift any home decor</span>\n</li>\n<li>\n<span></span><b>Chenille Molfino Fabric</b><span> - Heavy GSM soft chenille molfino fabric for soft and luxury feel</span>\n</li>\n<li>\n<span></span><b>Polyurethane Foam Seating Core</b><span> - 40 Density Ultra Premium PU foam as the core of seating area ensures durability and comfort even after years of chilling while binge watching and late snoozing time</span>\n</li>\n<li>\n<span></span><b>High Density Softy foam comfort layer</b><span> - Top layer of softy foam is added to provide the soft support you need and the plush comfort you love</span>\n</li>\n<li>\n<span></span><b>Sinuous Spring Suspension System</b><span> - Heavy gauge wire spring is used under foam for that extra strength, comfort and bounce you love even after years of kids jumping and playing</span>\n</li>\n<li>\n<span></span><b>Quality Finish</b><span> -  Handcrafted furniture by highly experienced craftsman for extreme precision and quality finish</span>\n</li>\n</ol>\n</div>\n</div>\n</div>\n</div>\n<div class=\"_1AtVbE col-12-12\" data-mce-fragment=\"1\">\n<div class=\"_3dtsli\" data-mce-fragment=\"1\">\n<div class=\"_5pFuey\" data-mce-fragment=\"1\"><br></div>\n</div>\n</div>"
+            },
+            "handle": "3-seater-milan-sofa-chenille-molfino-fabric-finish-color-sky-blue",
+            "url": "https://seventhheaven.in/products/3-seater-milan-sofa-chenille-molfino-fabric-finish-color-sky-blue?variant=42069189263522&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 1329900,
+              "currency": "INR"
+            },
+            "list_price": {
+              "amount": 2205800,
+              "currency": "INR"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Black"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/black1.png",
+                "alt_text": "Milan 3 Seater Sofa - ( Premium Molfino Fabric- Black )",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/black1.png",
+                  "width": 2742,
+                  "height": 2742
+                },
+                "width": 2742,
+                "height": 2742
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/52244054178",
+              "name": "Seventh Heaven ",
+              "url": "https://seventhheaven.in",
+              "domain": "my-seventh-heaven.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24494997666.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24495030434.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24494964898.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24495063202.html"
+                }
+              ]
+            },
+            "checkout_url": "https://seventhheaven.in/buy/42069189263522:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "rating": {
+              "value": 4,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 1329900,
+            "currency": "INR"
+          },
+          "max": {
+            "amount": 1329900,
+            "currency": "INR"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/7LmRVj2uAPkuifnQWlIcQ9",
+        "title": "Modern Heritage Evansley 3-Seater Fabric Sofa with 2 Pillows",
+        "description": {
+          "plain": "<p>Relaxation meets refined design with the <strong>Evansley 3-Seater Sofa</strong>, perfect for those who appreciate casual, contemporary style. Its sleek, neutral color palette allows it to seamlessly blend into various home settings while offering plenty of seating for everyday lounging. The generously sized cushions and supportive bolster pillows ensure maximum comfort, making it an inviting spot for relaxation. Plus, the reversible seat and back cushions enhance its durability, allowing you to switch up the look and feel when needed. <br><br>Engineered for modern living, the Evansley Sofa features easy-to-maintain Next-Gen Nuvella™ fabric, designed to withstand daily wear and tear. The machine-washable covers and stain-resistant upholstery keep it looking fresh with minimal effort. Supported by a sag-resistant platform foundation, this sofa delivers long-lasting comfort without the worry of sagging or uneven support. Available in Pewter and Navy, this sofa offers style, comfort, and convenience all in one.</p>"
+        },
+        "handle": "evansley-3-seater-sofa-with-box-cushions",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 10
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/Evansley3-SeaterSofaWith2Pillows_6.png",
+            "alt_text": "Evansley 3-Seater Sofa With 2 Pillows-Jennifer Furniture",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/Evansley3-SeaterSofaWith2Pillows_6.png",
+              "width": 1480,
+              "height": 880
+            },
+            "width": 1480,
+            "height": 880
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Navy Blue"
+              },
+              {
+                "label": "Pewter"
+              }
+            ]
+          },
+          {
+            "name": "Upholstery material",
+            "values": [
+              {
+                "label": "Fabric"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Reversible seat and back cushions with machine-washable, stain-resistant Nuvella fabric for easy maintenance and versatile style."
+          ],
+          "top_features": [
+            "Reversible seat and back cushions: Switch up the look and feel for extended use and style variety",
+            "Nuvella fabric: Next-generation, machine-washable, and stain-resistant for easy care",
+            "Sag-resistant platform foundation: Maintains consistent support and prevents unevenness over time",
+            "Generously sized cushions: Provides maximum comfort for everyday lounging",
+            "Supports two bolster pillows: Enhances relaxation and versatility"
+          ],
+          "tech_specs": [
+            "Seating Capacity: 3",
+            "Upholstery Material: Nuvella fabric",
+            "Upholstery Color: Navy",
+            "Cushion Type: Removable, padded",
+            "Platform Foundation: Sag-resistant",
+            "Available Colors: Pewter, Navy"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/51616179945844",
+            "title": "Modern Heritage Evansley 3-Seater Fabric Sofa with 2 Pillows",
+            "description": {
+              "plain": "<p>Relaxation meets refined design with the <strong>Evansley 3-Seater Sofa</strong>, perfect for those who appreciate casual, contemporary style. Its sleek, neutral color palette allows it to seamlessly blend into various home settings while offering plenty of seating for everyday lounging. The generously sized cushions and supportive bolster pillows ensure maximum comfort, making it an inviting spot for relaxation. Plus, the reversible seat and back cushions enhance its durability, allowing you to switch up the look and feel when needed. <br><br>Engineered for modern living, the Evansley Sofa features easy-to-maintain Next-Gen Nuvella™ fabric, designed to withstand daily wear and tear. The machine-washable covers and stain-resistant upholstery keep it looking fresh with minimal effort. Supported by a sag-resistant platform foundation, this sofa delivers long-lasting comfort without the worry of sagging or uneven support. Available in Pewter and Navy, this sofa offers style, comfort, and convenience all in one.</p>"
+            },
+            "handle": "evansley-3-seater-sofa-with-box-cushions",
+            "url": "https://www.jenniferfurniture.com/products/evansley-3-seater-sofa-with-box-cushions?variant=51616179945844&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 54450,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 122400,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Pewter"
+              },
+              {
+                "name": "Upholstery material",
+                "label": "Fabric"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/Evansley3-SeaterSofaWith2Pillows_6.png",
+                "alt_text": "Evansley 3-Seater Sofa With 2 Pillows-Jennifer Furniture",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/Evansley3-SeaterSofaWith2Pillows_6.png",
+                  "width": 1480,
+                  "height": 880
+                },
+                "width": 1480,
+                "height": 880
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/11016302",
+              "name": "Jennifer Furniture",
+              "url": "https://www.jenniferfurniture.com",
+              "domain": "jennifer-convertibles.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122375.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122439.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122311.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.jenniferfurniture.com/buy/51616179945844:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 54450,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 54450,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/5Zw9p3W34z6QzhJVycyhvY",
+        "title": "Deluxe Cloud 3-Seater Black Couch Sectional | 3-Piece, Linen Look Poly Fabric, Washable Cushion Covers",
+        "description": {
+          "plain": "<p>Deluxe Cloud black 3-seater sectional sofa offers sleek modular comfort for modern living rooms. Shop now at WJS Home.</p>"
+        },
+        "handle": "deluxe-cloud-couch-sectionals-3-seater-black-linen-look-poly-washable-170019",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/Deluxe-Cloud-3-Seater-Black-Couch-Sectional-3-Piece_-Linen-Look-Poly-Fabric_-Washable-Cushion-Covers-4.webp",
+            "alt_text": "Deluxe Cloud 3-Seater Black Couch Sectional | 3-Piece, Linen Look Poly Fabric, Washable Cushion Covers",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/Deluxe-Cloud-3-Seater-Black-Couch-Sectional-3-Piece_-Linen-Look-Poly-Fabric_-Washable-Cushion-Covers-4.webp",
+              "width": 1600,
+              "height": 1200
+            },
+            "width": 1600,
+            "height": 1200
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Three-piece modular design with removable, washable cushion covers in a sleek linen-look poly fabric."
+          ],
+          "top_features": [
+            "Three modular seats provide flexible seating for family or guests",
+            "Removable, washable cushion covers ensure easy cleaning and maintenance",
+            "Linen-look poly fabric offers a modern, stylish appearance",
+            "Solid black polyester upholstery delivers durability and comfort",
+            "L-shaped sectional design maximizes space in living areas"
+          ],
+          "tech_specs": [
+            "Upholstery Material: Polyester",
+            "Upholstery Color: Black",
+            "Cushion Cover Material: Polyester",
+            "Cushion Cover Care: Removable and washable",
+            "Sectional Shape: L-shaped",
+            "Number of Seats: 3"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/47370397089967",
+            "title": "Deluxe Cloud 3-Seater Black Couch Sectional | 3-Piece, Linen Look Poly Fabric, Washable Cushion Covers",
+            "description": {
+              "plain": "<p>Deluxe Cloud black 3-seater sectional sofa offers sleek modular comfort for modern living rooms. Shop now at WJS Home.</p>"
+            },
+            "handle": "deluxe-cloud-couch-sectionals-3-seater-black-linen-look-poly-washable-170019",
+            "url": "https://wjshomestore.com/products/deluxe-cloud-couch-sectionals-3-seater-black-linen-look-poly-washable-170019?variant=47370397089967&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 69000,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 197200,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/Deluxe-Cloud-3-Seater-Black-Couch-Sectional-3-Piece_-Linen-Look-Poly-Fabric_-Washable-Cushion-Covers-4.webp",
+                "alt_text": "Deluxe Cloud 3-Seater Black Couch Sectional | 3-Piece, Linen Look Poly Fabric, Washable Cushion Covers",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/Deluxe-Cloud-3-Seater-Black-Couch-Sectional-3-Piece_-Linen-Look-Poly-Fabric_-Washable-Cushion-Covers-4.webp",
+                  "width": 1600,
+                  "height": 1200
+                },
+                "width": 1600,
+                "height": 1200
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/68918116527",
+              "name": "WJS Home",
+              "url": "https://wjshomestore.com",
+              "domain": "asfzre-rp.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/32082886831.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904722095.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904689327.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904754863.html"
+                }
+              ]
+            },
+            "checkout_url": "https://wjshomestore.com/buy/47370397089967:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 69000,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 69000,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/1EBGNWo1Gxg6tHIS4bHho1",
+        "title": "Billy 3 seater Sofa",
+        "description": {
+          "plain": "<p data-start=\"133\" data-end=\"213\" class=\"PDq2pG_selectionAnchorContainer\">Once you place your order, our representative will contact you for confirmation.<span aria-hidden=\"true\" class=\"PDq2pG_selectionAnchor\"></span></p>\n<h2 data-start=\"215\" data-end=\"231\"><strong data-start=\"215\" data-end=\"231\">Description:</strong></h2>\n<p data-start=\"233\" data-end=\"511\">The Billy Sofa Set combines everyday comfort with timeless design. Upholstered in durable jute fabric and supported by a solid wood and plywood structure, it offers spacious seating and lasting durability, making it a versatile addition to both modern and classic living spaces.</p>\n<p data-start=\"513\" data-end=\"528\"><strong data-start=\"513\" data-end=\"528\">Dimensions:</strong></p>\n<p data-start=\"530\" data-end=\"642\"><strong data-start=\"530\" data-end=\"543\">2 Seater:</strong> 47 L | 28 W | 28 Seat H | 34 Overall H | 11 Back Thickness | 24 Back Height with Cushions (inches)</p>\n<p data-start=\"644\" data-end=\"756\"><strong data-start=\"644\" data-end=\"657\">3 Seater:</strong> 69 L | 28 W | 28 Seat H | 34 Overall H | 11 Back Thickness | 24 Back Height with Cushions (inches)</p>\n<p data-start=\"758\" data-end=\"771\"><strong data-start=\"758\" data-end=\"771\">Material: </strong>Jute Fabric | Solid &amp; Plywood Structure | Solid Wood</p>\n<p data-start=\"827\" data-end=\"1445\" data-is-last-node=\"\" data-is-only-node=\"\"><strong data-start=\"827\" data-end=\"837\">Notes:</strong><br>• The estimated delivery time for this product is 25 working days.<br>• We prioritize client satisfaction and handle all orders with 100% in advance booking to provide a smooth shopping experience.<br>• The delivery charges for Karachi, Lahore, Islamabad, Rawalpindi &amp; Hyderabad will be implemented as mentioned on the website.<br>• For other cities, the delivery charges will be confirmed by the sales representative over the phone.<br>• For product availability, delivery or any other queries, you can contact our Customer Sales Representative (0300-0422488).<br>• The actual colors may differ slightly from the picture.</p>"
+        },
+        "handle": "billy-3-seater-sofa-1",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0429/7654/2881/files/Untitled-1_59276686-69d5-4410-b6ec-98a581e181fa.jpg",
+            "alt_text": "Billy 3 seater Sofa",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0429/7654/2881/files/Untitled-1_59276686-69d5-4410-b6ec-98a581e181fa.jpg",
+              "width": 1200,
+              "height": 1200
+            },
+            "width": 1200,
+            "height": 1200
+          },
+          {
+            "type": "external_video",
+            "url": "https://www.youtube.com/embed/Rs5LapMAEwE",
+            "alt_text": "Billy 2 seater Sofa",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0429/7654/2881/files/preview_images/hqdefault_d57064cd-f4ed-455f-974d-7639e17a645d.jpg",
+              "width": 480,
+              "height": 360
+            }
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Grey"
+              },
+              {
+                "label": "Light Green"
+              },
+              {
+                "label": "Off White"
+              },
+              {
+                "label": "Red"
+              }
+            ]
+          },
+          {
+            "name": "Seating capacity",
+            "values": [
+              {
+                "label": "3 Seater"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines timeless design with durable jute upholstery and a sturdy solid wood and plywood frame."
+          ],
+          "top_features": [
+            "Durable jute fabric upholstery: Provides everyday comfort and easy maintenance",
+            "Solid wood and plywood structure: Ensures long-lasting durability and stability",
+            "Spacious 3-seater design: Accommodates multiple people for shared seating",
+            "Timeless modern style: Fits both classic and contemporary living spaces",
+            "Available in multiple color options: Allows for personalized home decor"
+          ],
+          "tech_specs": [
+            "Dimensions (3 seater): 69 L x 28 W x 34 H inches",
+            "Dimensions (2 seater): 47 L x 28 W x 28 H inches",
+            "Back thickness: 11 inches",
+            "Back height with cushions: 24 inches",
+            "Upholstery material: Jute fabric",
+            "Frame material: Solid wood and plywood"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/46411069915354",
+            "title": "Billy 3 seater Sofa",
+            "description": {
+              "plain": "<p data-start=\"133\" data-end=\"213\" class=\"PDq2pG_selectionAnchorContainer\">Once you place your order, our representative will contact you for confirmation.<span aria-hidden=\"true\" class=\"PDq2pG_selectionAnchor\"></span></p>\n<h2 data-start=\"215\" data-end=\"231\"><strong data-start=\"215\" data-end=\"231\">Description:</strong></h2>\n<p data-start=\"233\" data-end=\"511\">The Billy Sofa Set combines everyday comfort with timeless design. Upholstered in durable jute fabric and supported by a solid wood and plywood structure, it offers spacious seating and lasting durability, making it a versatile addition to both modern and classic living spaces.</p>\n<p data-start=\"513\" data-end=\"528\"><strong data-start=\"513\" data-end=\"528\">Dimensions:</strong></p>\n<p data-start=\"530\" data-end=\"642\"><strong data-start=\"530\" data-end=\"543\">2 Seater:</strong> 47 L | 28 W | 28 Seat H | 34 Overall H | 11 Back Thickness | 24 Back Height with Cushions (inches)</p>\n<p data-start=\"644\" data-end=\"756\"><strong data-start=\"644\" data-end=\"657\">3 Seater:</strong> 69 L | 28 W | 28 Seat H | 34 Overall H | 11 Back Thickness | 24 Back Height with Cushions (inches)</p>\n<p data-start=\"758\" data-end=\"771\"><strong data-start=\"758\" data-end=\"771\">Material: </strong>Jute Fabric | Solid &amp; Plywood Structure | Solid Wood</p>\n<p data-start=\"827\" data-end=\"1445\" data-is-last-node=\"\" data-is-only-node=\"\"><strong data-start=\"827\" data-end=\"837\">Notes:</strong><br>• The estimated delivery time for this product is 25 working days.<br>• We prioritize client satisfaction and handle all orders with 100% in advance booking to provide a smooth shopping experience.<br>• The delivery charges for Karachi, Lahore, Islamabad, Rawalpindi &amp; Hyderabad will be implemented as mentioned on the website.<br>• For other cities, the delivery charges will be confirmed by the sales representative over the phone.<br>• For product availability, delivery or any other queries, you can contact our Customer Sales Representative (0300-0422488).<br>• The actual colors may differ slightly from the picture.</p>"
+            },
+            "handle": "billy-3-seater-sofa-1",
+            "url": "https://habitt.com/products/billy-3-seater-sofa-1?variant=46411069915354&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 4625600,
+              "currency": "PKR"
+            },
+            "list_price": {
+              "amount": 5990000,
+              "currency": "PKR"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Seating capacity",
+                "label": "3 Seater"
+              },
+              {
+                "name": "Color",
+                "label": "Grey"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0429/7654/2881/files/Untitled-1_59276686-69d5-4410-b6ec-98a581e181fa.jpg",
+                "alt_text": "Billy 3 seater Sofa",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0429/7654/2881/files/Untitled-1_59276686-69d5-4410-b6ec-98a581e181fa.jpg",
+                  "width": 1200,
+                  "height": 1200
+                },
+                "width": 1200,
+                "height": 1200
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/42976542881",
+              "name": "Habitt",
+              "url": "https://habitt.com",
+              "domain": "habitt-store.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/42976542881/policies/21195456673.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/42976542881/policies/21195489441.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/42976542881/policies/21195423905.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/42976542881/policies/21195522209.html"
+                }
+              ]
+            },
+            "checkout_url": "https://habitt.com/buy/46411069915354:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 4625600,
+            "currency": "PKR"
+          },
+          "max": {
+            "amount": 4625600,
+            "currency": "PKR"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/4JTDQGVrOQdWcMEj7pkgDo",
+        "title": "Modern Heritage Heartcort 3-Seater Fabric Sofa With 5 Pillows and Track Arms",
+        "description": {
+          "plain": "[Description]Elevate your living space with the refined design of the Heartcort 3-seater Sofa. Featuring clean lines and subtly curved details, this sofa is a versatile choice for modern homes. Its neutral fabric seamlessly blends with any décor, making it an ideal addition to your living room. <br><br>Built for comfort and durability, the Modern Heritage\n Heartcort 3-seater Fabric Sofa has a corner-blocked frame and foam cushions wrapped in poly fiber, offering long-lasting support. The attached back and loose seat cushions ensure a relaxed seating experience. The included accent pillows, filled with soft polyfill, add extra comfort while enhancing the sofa’s aesthetic. <br><br>The polyester upholstery is both stylish and easy to maintain. The exposed faux wood feet offer a sleek finish, while the platform foundation system resists sagging, providing better support and a wrinkle-free look even after extended use. [endDescription] [Specifications]\n<div class=\"productDetails-table\" data-mce-fragment=\"1\">\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Overall Dimensions</div>\n<div class=\"AttributeColumnRight\">97\" W x 40\" D x 39\" H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Dimensions</div>\n<div class=\"AttributeColumnRight\">23\"D x 20\"H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Height</div>\n<div class=\"AttributeColumnRight\">26</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Leg Height</div>\n<div class=\"AttributeColumnRight\">3</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Top of cushion to top of back</div>\n<div class=\"AttributeColumnRight\">19\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Minimum width of doorway for delivery</div>\n<div class=\"AttributeColumnRight\">32</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Toss Pillow</div>\n<div class=\"AttributeColumnRight\">24\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Kidney Pillow</div>\n<div class=\"AttributeColumnRight\">16\" x 23\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Number of Seats</div>\n<div class=\"AttributeColumnRight\">3 Seater</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Pillow Included</div>\n<div class=\"AttributeColumnRight\">Yes</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">No. of Pillows included</div>\n<div class=\"AttributeColumnRight\">5 Pillows</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Colors</div>\n<div class=\"AttributeColumnRight\">Quartz</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Material</div>\n<div class=\"AttributeColumnRight\">Fabric (Polyester 100%)</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Frame Material</div>\n<div class=\"AttributeColumnRight\">Wood</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Motion Type</div>\n<div class=\"AttributeColumnRight\">Stationary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Style</div>\n<div class=\"AttributeColumnRight\">Track Arm</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Cushion</div>\n<div class=\"AttributeColumnRight\">Loose Seat Cushion</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Type</div>\n<div class=\"AttributeColumnRight\">Attached Back Cushions</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Legs Type</div>\n<div class=\"AttributeColumnRight\">Exposed feet</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>About Brand</strong></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Style</div>\n<div class=\"AttributeColumnRight\">Modern</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer</div>\n<div class=\"AttributeColumnRight\">Modern Heritage\n</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer Collection</div>\n<div class=\"AttributeColumnRight\">Heartcort</div>\n</div>\n</div>\n[endSpecifications] [Features]\n<ul>\n<li>Corner-blocked frame</li>\n<li>Attached back and loose seat cushions</li>\n<li style=\"font-weight: bold;\"><strong>High-quality foam cushions wrapped in polyfiber</strong></li>\n<li>Accent pillows included</li>\n<li style=\"font-weight: bold;\"><strong>Pillows with soft polyfill</strong></li>\n<li>Polyester upholstery</li>\n<li>Exposed feet with faux wood finish</li>\n<li>\n<strong>Platform foundation system resists sagging 3x better than spring system</strong> after 20,000 testing cycles by providing more even support</li>\n<li>Smooth platform foundation maintains a tight, wrinkle-free look without dips or sags that can occur over time with sinuous spring foundations</li>\n</ul>\n[endFeatures] [Warranty] <strong> Limited Warranty – Cushions &amp; Fabric</strong><br>Enjoy up to 1 year of free, limited warranty coverage on cushions and fabric. This warranty ensures that any manufacturing defects in materials or craftsmanship are covered during the first year of your purchase. Please note, the warranty does not apply to normal wear and tear, misuse, or accidental damage. [endWarranty]"
+        },
+        "handle": "heartcort-3-seater-sofa-in-fabric-with-5-pillows",
+        "rating": {
+          "value": 4.9,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 10
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageHeartcort3-SeaterFabricSofaWith5PillowsandTrackArms_WhiteBG_006.jpg",
+            "alt_text": "Modern Heritage Heartcort 3-Seater Fabric Sofa With 5 Pillows and Track Arms-Jennifer Furniture",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageHeartcort3-SeaterFabricSofaWith5PillowsandTrackArms_WhiteBG_006.jpg",
+              "width": 3000,
+              "height": 1784
+            },
+            "width": 3000,
+            "height": 1784
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Quartz"
+              }
+            ]
+          },
+          {
+            "name": "Upholstery material",
+            "values": [
+              {
+                "label": "Fabric"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Platform foundation system resists sagging three times better than spring systems, ensuring long-term support and a wrinkle-free look."
+          ],
+          "top_features": [
+            "Platform foundation resists sagging for extended durability",
+            "Attached back and loose seat cushions provide enhanced comfort",
+            "Five accent pillows with soft polyfill add extra coziness and style",
+            "Polyester upholstery is easy to maintain and blends with modern decor",
+            "Exposed faux wood feet and clean lines create a sleek, contemporary look"
+          ],
+          "tech_specs": [
+            "Overall Dimensions: 97 in W x 40 in D x 39 in H",
+            "Seat Dimensions: 23 in D x 20 in H",
+            "Arm Height: 26 in",
+            "Leg Height: 39 in",
+            "Frame Material: Wood",
+            "Upholstery Material: 100% Polyester",
+            "Number of Seats: 3",
+            "Number of Included Pillows: 5"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/51615965643124",
+            "title": "Modern Heritage Heartcort 3-Seater Fabric Sofa With 5 Pillows and Track Arms",
+            "description": {
+              "plain": "[Description]Elevate your living space with the refined design of the Heartcort 3-seater Sofa. Featuring clean lines and subtly curved details, this sofa is a versatile choice for modern homes. Its neutral fabric seamlessly blends with any décor, making it an ideal addition to your living room. <br><br>Built for comfort and durability, the Modern Heritage\n Heartcort 3-seater Fabric Sofa has a corner-blocked frame and foam cushions wrapped in poly fiber, offering long-lasting support. The attached back and loose seat cushions ensure a relaxed seating experience. The included accent pillows, filled with soft polyfill, add extra comfort while enhancing the sofa’s aesthetic. <br><br>The polyester upholstery is both stylish and easy to maintain. The exposed faux wood feet offer a sleek finish, while the platform foundation system resists sagging, providing better support and a wrinkle-free look even after extended use. [endDescription] [Specifications]\n<div class=\"productDetails-table\" data-mce-fragment=\"1\">\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Overall Dimensions</div>\n<div class=\"AttributeColumnRight\">97\" W x 40\" D x 39\" H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Dimensions</div>\n<div class=\"AttributeColumnRight\">23\"D x 20\"H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Height</div>\n<div class=\"AttributeColumnRight\">26</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Leg Height</div>\n<div class=\"AttributeColumnRight\">3</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Top of cushion to top of back</div>\n<div class=\"AttributeColumnRight\">19\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Minimum width of doorway for delivery</div>\n<div class=\"AttributeColumnRight\">32</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Toss Pillow</div>\n<div class=\"AttributeColumnRight\">24\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Kidney Pillow</div>\n<div class=\"AttributeColumnRight\">16\" x 23\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Number of Seats</div>\n<div class=\"AttributeColumnRight\">3 Seater</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Pillow Included</div>\n<div class=\"AttributeColumnRight\">Yes</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">No. of Pillows included</div>\n<div class=\"AttributeColumnRight\">5 Pillows</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Colors</div>\n<div class=\"AttributeColumnRight\">Quartz</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Material</div>\n<div class=\"AttributeColumnRight\">Fabric (Polyester 100%)</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Frame Material</div>\n<div class=\"AttributeColumnRight\">Wood</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Motion Type</div>\n<div class=\"AttributeColumnRight\">Stationary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Style</div>\n<div class=\"AttributeColumnRight\">Track Arm</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Cushion</div>\n<div class=\"AttributeColumnRight\">Loose Seat Cushion</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Type</div>\n<div class=\"AttributeColumnRight\">Attached Back Cushions</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Legs Type</div>\n<div class=\"AttributeColumnRight\">Exposed feet</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>About Brand</strong></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Style</div>\n<div class=\"AttributeColumnRight\">Modern</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer</div>\n<div class=\"AttributeColumnRight\">Modern Heritage\n</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer Collection</div>\n<div class=\"AttributeColumnRight\">Heartcort</div>\n</div>\n</div>\n[endSpecifications] [Features]\n<ul>\n<li>Corner-blocked frame</li>\n<li>Attached back and loose seat cushions</li>\n<li style=\"font-weight: bold;\"><strong>High-quality foam cushions wrapped in polyfiber</strong></li>\n<li>Accent pillows included</li>\n<li style=\"font-weight: bold;\"><strong>Pillows with soft polyfill</strong></li>\n<li>Polyester upholstery</li>\n<li>Exposed feet with faux wood finish</li>\n<li>\n<strong>Platform foundation system resists sagging 3x better than spring system</strong> after 20,000 testing cycles by providing more even support</li>\n<li>Smooth platform foundation maintains a tight, wrinkle-free look without dips or sags that can occur over time with sinuous spring foundations</li>\n</ul>\n[endFeatures] [Warranty] <strong> Limited Warranty – Cushions &amp; Fabric</strong><br>Enjoy up to 1 year of free, limited warranty coverage on cushions and fabric. This warranty ensures that any manufacturing defects in materials or craftsmanship are covered during the first year of your purchase. Please note, the warranty does not apply to normal wear and tear, misuse, or accidental damage. [endWarranty]"
+            },
+            "handle": "heartcort-3-seater-sofa-in-fabric-with-5-pillows",
+            "url": "https://www.jenniferfurniture.com/products/heartcort-3-seater-sofa-in-fabric-with-5-pillows?variant=51615965643124&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 54999,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 71999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Quartz"
+              },
+              {
+                "name": "Upholstery material",
+                "label": "Fabric"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageHeartcort3-SeaterFabricSofaWith5PillowsandTrackArms_WhiteBG_006.jpg",
+                "alt_text": "Modern Heritage Heartcort 3-Seater Fabric Sofa With 5 Pillows and Track Arms-Jennifer Furniture",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageHeartcort3-SeaterFabricSofaWith5PillowsandTrackArms_WhiteBG_006.jpg",
+                  "width": 3000,
+                  "height": 1784
+                },
+                "width": 3000,
+                "height": 1784
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/11016302",
+              "name": "Jennifer Furniture",
+              "url": "https://www.jenniferfurniture.com",
+              "domain": "jennifer-convertibles.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122375.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122439.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122311.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.jenniferfurniture.com/buy/51615965643124:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 54999,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 54999,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/5cORNXKrd2lsxPovq4uZZk",
+        "title": "Rio 3 Seater Sofa- ( Premium Molfino Fabric- Green )",
+        "description": {
+          "plain": "<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">Seventh Heaven Sofa is ideal for daily use with premium comfort. Our integrated design, manufacturing and quality control process is singularly focused on providing the most innovative series of styles in the industry with highest quality and finish. Our quality craftsmanship ensures great value for money products. In addition to a core team of experienced furniture industry professionals, Seventh Heaven products also rely on the experience of interior designers to ensure that the designs are leading edge and can be incorporated into high end interiors as core feature pieces or as eclectic complimentary additions to any room.</span></p>\n<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">FEATURES:</span></p>\n<ol data-mce-fragment=\"1\">\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Industry leading 1 years warranty</b><span data-mce-fragment=\"1\"> -  No compromise on quality, durability and comfort </span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Sheesham wooden legs</b><span data-mce-fragment=\"1\"> - Sheesham legs for sofa bed are finely crafted and polished with a color that will match and uplift any home decor</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Chenille Molfino Fabric</b><span data-mce-fragment=\"1\"> - Heavy GSM soft chenille molfino fabric for soft and luxury feel</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Polyurethane Foam Seating Core</b><span data-mce-fragment=\"1\"> - 40 Density Ultra Premium PU foam as the core of seating area ensures durability and comfort even after years of chilling while binge watching and late snoozing time</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">High Density Softy foam comfort layer</b><span data-mce-fragment=\"1\"> - Top layer of softy foam is added to provide the soft support you need and the plush comfort you love</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Sinuous Spring Suspension System</b><span data-mce-fragment=\"1\"> - Heavy gauge wire spring is used under foam for that extra strength, comfort and bounce you love even after years of kids jumping and playing</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Quality Finish</b><span data-mce-fragment=\"1\"> -  Handcrafted furniture by highly experienced craftsman for extreme precision and quality finish</span>\n</li>\n</ol>"
+        },
+        "handle": "3-seater-rio-sofa-chenille-molfino-fabric-finish-color-green",
+        "rating": {
+          "value": 4.7,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 40
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/hf_20260727_074218_cd114065-be40-492e-86db-fae4847315b6.png",
+            "alt_text": "Rio 3 Seater Sofa- ( Premium Molfino Fabric- Green )",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/hf_20260727_074218_cd114065-be40-492e-86db-fae4847315b6.png",
+              "width": 2048,
+              "height": 2048
+            },
+            "width": 2048,
+            "height": 2048
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines industry-leading 40-density PU foam core with high-quality chenille molfino fabric for superior comfort and durability."
+          ],
+          "top_features": [
+            "Premium chenille molfino fabric provides a soft, luxurious feel for enhanced relaxation",
+            "40-density polyurethane foam core ensures long-lasting comfort and durability",
+            "Sinuous spring suspension system delivers extra strength and bounce for lasting support",
+            "Handcrafted by experienced craftsmen for an extreme precision and quality finish",
+            "Sheesham wood legs offer sturdy support and a refined appearance"
+          ],
+          "tech_specs": [
+            "Seating Capacity: 3 persons",
+            "Upholstery Material: Chenille molfino fabric (Velvet, Polyester)",
+            "Core Material: 40-density polyurethane foam",
+            "Leg Material: Sheesham wood",
+            "Warranty: 1 year",
+            "Color: Green"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/42428884910242",
+            "title": "Rio 3 Seater Sofa- ( Premium Molfino Fabric- Green )",
+            "description": {
+              "plain": "<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">Seventh Heaven Sofa is ideal for daily use with premium comfort. Our integrated design, manufacturing and quality control process is singularly focused on providing the most innovative series of styles in the industry with highest quality and finish. Our quality craftsmanship ensures great value for money products. In addition to a core team of experienced furniture industry professionals, Seventh Heaven products also rely on the experience of interior designers to ensure that the designs are leading edge and can be incorporated into high end interiors as core feature pieces or as eclectic complimentary additions to any room.</span></p>\n<p data-mce-fragment=\"1\"><span data-mce-fragment=\"1\">FEATURES:</span></p>\n<ol data-mce-fragment=\"1\">\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Industry leading 1 years warranty</b><span data-mce-fragment=\"1\"> -  No compromise on quality, durability and comfort </span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Sheesham wooden legs</b><span data-mce-fragment=\"1\"> - Sheesham legs for sofa bed are finely crafted and polished with a color that will match and uplift any home decor</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Chenille Molfino Fabric</b><span data-mce-fragment=\"1\"> - Heavy GSM soft chenille molfino fabric for soft and luxury feel</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Polyurethane Foam Seating Core</b><span data-mce-fragment=\"1\"> - 40 Density Ultra Premium PU foam as the core of seating area ensures durability and comfort even after years of chilling while binge watching and late snoozing time</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">High Density Softy foam comfort layer</b><span data-mce-fragment=\"1\"> - Top layer of softy foam is added to provide the soft support you need and the plush comfort you love</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Sinuous Spring Suspension System</b><span data-mce-fragment=\"1\"> - Heavy gauge wire spring is used under foam for that extra strength, comfort and bounce you love even after years of kids jumping and playing</span>\n</li>\n<li data-mce-fragment=\"1\">\n<span data-mce-fragment=\"1\"></span><b data-mce-fragment=\"1\">Quality Finish</b><span data-mce-fragment=\"1\"> -  Handcrafted furniture by highly experienced craftsman for extreme precision and quality finish</span>\n</li>\n</ol>"
+            },
+            "handle": "3-seater-rio-sofa-chenille-molfino-fabric-finish-color-green",
+            "url": "https://seventhheaven.in/products/3-seater-rio-sofa-chenille-molfino-fabric-finish-color-green?variant=42428884910242&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 1329900,
+              "currency": "INR"
+            },
+            "list_price": {
+              "amount": 2352800,
+              "currency": "INR"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/hf_20260727_074218_cd114065-be40-492e-86db-fae4847315b6.png",
+                "alt_text": "Rio 3 Seater Sofa- ( Premium Molfino Fabric- Green )",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0522/4405/4178/files/hf_20260727_074218_cd114065-be40-492e-86db-fae4847315b6.png",
+                  "width": 2048,
+                  "height": 2048
+                },
+                "width": 2048,
+                "height": 2048
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/52244054178",
+              "name": "Seventh Heaven ",
+              "url": "https://seventhheaven.in",
+              "domain": "my-seventh-heaven.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24494997666.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24495030434.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24494964898.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/52244054178/policies/24495063202.html"
+                }
+              ]
+            },
+            "checkout_url": "https://seventhheaven.in/buy/42428884910242:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 1329900,
+            "currency": "INR"
+          },
+          "max": {
+            "amount": 1329900,
+            "currency": "INR"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/2WRyVPNbG1bEEBhqvJt4rA",
+        "title": "Modern Heritage Darcy 3-Seater Fabric Sofa with Pillow Arms",
+        "description": {
+          "plain": "[Description]\n<p style=\"text-align: justify;\">Talk about fine lines and great curves. That’s the beauty of this standout sofa—made to suit your appreciation for clean, contemporary style. A striking flared frame, comfy pillow top armrests, and ultra-soft upholstery that holds up to everyday living complete this fashion statement.</p>\n<p style=\"text-align: justify;\"><strong> Pillow Arms</strong></p>\n<p style=\"text-align: justify;\">Pillow arm sofas make lying down in the living room even more comfortable. Featuring oversized cushions draped over the armrests, these arms are typically seen on plush furniture. Opt for an overstuffed pillow arm sofa if you prefer a soft feel.</p>\n<p style=\"text-align: justify;\"><strong> Pillow Back</strong></p>\n<p style=\"text-align: justify;\">Pillow back sofas, also known as scatter back sofas, are characterized by their loose assortment of large pillows arranged across the backrest. These pillows are usually upholstered in the same color as the rest of the sofa. Typically, this type of couch does not have any traditional fitted back cushions. It does, however, provide a plush feel when kicking back and relaxing.</p>\n<p style=\"text-align: justify;\"><strong> Fabric Upholstery</strong></p>\n<p style=\"text-align: justify;\">Soft and cozy! Fabric upholstery is an economical, environmentally friendly way to show off your eye for style and color. It allows for a multitude of patterns or color options.</p>\n<p style=\"text-align: justify;\"><strong> Frame Construction</strong></p>\n<p style=\"text-align: justify;\">Corner-blocked frame for strength. Frame constructions have been rigorously tested to simulate the home and transportation environments for improved durability. Components are secured with combinations of glue, blocks, interlocking panels and staples. Seats and back spring rails are cut from mixed hardwood and engineered lumber.</p>\n[endDescription][Specifications]\n<div class=\"productDetails-table\" data-mce-fragment=\"1\">\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>Dimensions</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Overall Dimension</div>\n<div class=\"AttributeColumnRight\">89\" W x 38\" D x 37\" H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Width</div>\n<div class=\"AttributeColumnRight\">62\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Depth</div>\n<div class=\"AttributeColumnRight\">22\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Height</div>\n<div class=\"AttributeColumnRight\">21.5\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Top of cushion to top of the back</div>\n<div class=\"AttributeColumnRight\">18\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>General Information</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Number of Seats</div>\n<div class=\"AttributeColumnRight\">3 Seats</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Material</div>\n<div class=\"AttributeColumnRight\">Fabric (Polyester 100%)</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Frame Material</div>\n<div class=\"AttributeColumnRight\">Wood</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Color</div>\n<div class=\"AttributeColumnRight\">Cobblestone , Blue , Black</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Motion Type</div>\n<div class=\"AttributeColumnRight\">Stationary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Leg Type</div>\n<div class=\"AttributeColumnRight\">Exposed feet with faux wood finish</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Type</div>\n<div class=\"AttributeColumnRight\">Loose Seat Cushion</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Type</div>\n<div class=\"AttributeColumnRight\">Pillow Arm</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Type</div>\n<div class=\"AttributeColumnRight\">Attached Back</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Cushions Type</div>\n<div class=\"AttributeColumnRight\">Box cushions</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Pattern</div>\n<div class=\"AttributeColumnRight\">Solid</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Shape</div>\n<div class=\"AttributeColumnRight\">Rectangular</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Fill Material</div>\n<div class=\"AttributeColumnRight\">Foam</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Fill Material</div>\n<div class=\"AttributeColumnRight\">Foam</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Removable Cushions</div>\n<div class=\"AttributeColumnRight\">Yes</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Tufted Style</div>\n<div class=\"AttributeColumnRight\">No</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Nailhead Trim</div>\n<div class=\"AttributeColumnRight\">No</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>About Brand</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Style</div>\n<div class=\"AttributeColumnRight\">Contemporary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer Collection</div>\n<div class=\"AttributeColumnRight\">Darcy</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Category</div>\n<div class=\"AttributeColumnRight\">Sofas</div>\n</div>\n</div>\n[endSpecifications] [Features]\n<ul>\n<li>Corner blocked frame</li>\n<li>Loose seat and attached back and armrest cushions</li>\n<li>High resiliency foam cushions wrapped in thick poly fiber</li>\n<li>Exposed feet with faux wood finish</li>\n</ul>\n[endFeatures] [Warranty] 1-year limited warranty on cushions and leather or fabric.[endWarranty]"
+        },
+        "handle": "darcy-sofa",
+        "rating": {
+          "value": 4.6,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 11
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageDarcy3-SeaterFabricSofawithPillowArms_4.png",
+            "alt_text": "Modern Heritage Darcy 3-Seater Fabric Sofa with Pillow Arms",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageDarcy3-SeaterFabricSofawithPillowArms_4.png",
+              "width": 1480,
+              "height": 880
+            },
+            "width": 1480,
+            "height": 880
+          }
+        ],
+        "options": [
+          {
+            "name": "Upholstery color",
+            "values": [
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Blue"
+              },
+              {
+                "label": "Cobblestone"
+              }
+            ]
+          },
+          {
+            "name": "Material",
+            "values": [
+              {
+                "label": "Fabirc"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Features oversized pillow armrest cushions and a flared frame for a stylish, comfortable seating experience."
+          ],
+          "top_features": [
+            "Flared frame design: Adds a modern, stylish accent to living spaces",
+            "Oversized pillow armrest cushions: Provides extra comfort and a plush feel",
+            "Ultra-soft polyester fabric upholstery: Offers durability and a cozy, economical look",
+            "High-resiliency foam cushions: Ensures lasting comfort for everyday use",
+            "Exposed faux wood feet: Delivers a contemporary, finished look"
+          ],
+          "tech_specs": [
+            "Overall Dimensions: 89 W x 38 D x 37 H in",
+            "Seat Width: 62 in",
+            "Seat Depth: 22 in",
+            "Seat Height: 21.5 in (top of cushion to top of back)",
+            "Back Height: 18 in",
+            "Upholstery Material: 100% Polyester",
+            "Frame Material: Wood",
+            "Number of Seats: 3",
+            "Cushion Type: Loose seat with attached back and armrest cushions",
+            "Back Fill Material: Foam",
+            "Seat Fill Material: Foam",
+            "Removable Cushions: Yes"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/40047083290714",
+            "title": "Modern Heritage Darcy 3-Seater Fabric Sofa with Pillow Arms",
+            "description": {
+              "plain": "[Description]\n<p style=\"text-align: justify;\">Talk about fine lines and great curves. That’s the beauty of this standout sofa—made to suit your appreciation for clean, contemporary style. A striking flared frame, comfy pillow top armrests, and ultra-soft upholstery that holds up to everyday living complete this fashion statement.</p>\n<p style=\"text-align: justify;\"><strong> Pillow Arms</strong></p>\n<p style=\"text-align: justify;\">Pillow arm sofas make lying down in the living room even more comfortable. Featuring oversized cushions draped over the armrests, these arms are typically seen on plush furniture. Opt for an overstuffed pillow arm sofa if you prefer a soft feel.</p>\n<p style=\"text-align: justify;\"><strong> Pillow Back</strong></p>\n<p style=\"text-align: justify;\">Pillow back sofas, also known as scatter back sofas, are characterized by their loose assortment of large pillows arranged across the backrest. These pillows are usually upholstered in the same color as the rest of the sofa. Typically, this type of couch does not have any traditional fitted back cushions. It does, however, provide a plush feel when kicking back and relaxing.</p>\n<p style=\"text-align: justify;\"><strong> Fabric Upholstery</strong></p>\n<p style=\"text-align: justify;\">Soft and cozy! Fabric upholstery is an economical, environmentally friendly way to show off your eye for style and color. It allows for a multitude of patterns or color options.</p>\n<p style=\"text-align: justify;\"><strong> Frame Construction</strong></p>\n<p style=\"text-align: justify;\">Corner-blocked frame for strength. Frame constructions have been rigorously tested to simulate the home and transportation environments for improved durability. Components are secured with combinations of glue, blocks, interlocking panels and staples. Seats and back spring rails are cut from mixed hardwood and engineered lumber.</p>\n[endDescription][Specifications]\n<div class=\"productDetails-table\" data-mce-fragment=\"1\">\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>Dimensions</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Overall Dimension</div>\n<div class=\"AttributeColumnRight\">89\" W x 38\" D x 37\" H</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Width</div>\n<div class=\"AttributeColumnRight\">62\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Depth</div>\n<div class=\"AttributeColumnRight\">22\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Height</div>\n<div class=\"AttributeColumnRight\">21.5\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Top of cushion to top of the back</div>\n<div class=\"AttributeColumnRight\">18\"</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>General Information</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Number of Seats</div>\n<div class=\"AttributeColumnRight\">3 Seats</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Upholstery Material</div>\n<div class=\"AttributeColumnRight\">Fabric (Polyester 100%)</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Frame Material</div>\n<div class=\"AttributeColumnRight\">Wood</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Color</div>\n<div class=\"AttributeColumnRight\">Cobblestone , Blue , Black</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Motion Type</div>\n<div class=\"AttributeColumnRight\">Stationary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Leg Type</div>\n<div class=\"AttributeColumnRight\">Exposed feet with faux wood finish</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Type</div>\n<div class=\"AttributeColumnRight\">Loose Seat Cushion</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Arm Type</div>\n<div class=\"AttributeColumnRight\">Pillow Arm</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Type</div>\n<div class=\"AttributeColumnRight\">Attached Back</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Cushions Type</div>\n<div class=\"AttributeColumnRight\">Box cushions</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Pattern</div>\n<div class=\"AttributeColumnRight\">Solid</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Shape</div>\n<div class=\"AttributeColumnRight\">Rectangular</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Back Fill Material</div>\n<div class=\"AttributeColumnRight\">Foam</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Seat Fill Material</div>\n<div class=\"AttributeColumnRight\">Foam</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Removable Cushions</div>\n<div class=\"AttributeColumnRight\">Yes</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Tufted Style</div>\n<div class=\"AttributeColumnRight\">No</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Nailhead Trim</div>\n<div class=\"AttributeColumnRight\">No</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\"><strong>About Brand</strong></div>\n<div class=\"AttributeColumnRight\"></div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Style</div>\n<div class=\"AttributeColumnRight\">Contemporary</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Manufacturer Collection</div>\n<div class=\"AttributeColumnRight\">Darcy</div>\n</div>\n<div class=\"AttributeRow\">\n<div class=\"AttributeColumnLeft\">Category</div>\n<div class=\"AttributeColumnRight\">Sofas</div>\n</div>\n</div>\n[endSpecifications] [Features]\n<ul>\n<li>Corner blocked frame</li>\n<li>Loose seat and attached back and armrest cushions</li>\n<li>High resiliency foam cushions wrapped in thick poly fiber</li>\n<li>Exposed feet with faux wood finish</li>\n</ul>\n[endFeatures] [Warranty] 1-year limited warranty on cushions and leather or fabric.[endWarranty]"
+            },
+            "handle": "darcy-sofa",
+            "url": "https://www.jenniferfurniture.com/products/darcy-sofa?variant=40047083290714&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 34050,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 95999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Upholstery color",
+                "label": "Cobblestone"
+              },
+              {
+                "name": "Material",
+                "label": "Fabirc"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageDarcy3-SeaterFabricSofawithPillowArms_4.png",
+                "alt_text": "Modern Heritage Darcy 3-Seater Fabric Sofa with Pillow Arms",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/1101/6302/files/ModernHeritageDarcy3-SeaterFabricSofawithPillowArms_4.png",
+                  "width": 1480,
+                  "height": 880
+                },
+                "width": 1480,
+                "height": 880
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/11016302",
+              "name": "Jennifer Furniture",
+              "url": "https://www.jenniferfurniture.com",
+              "domain": "jennifer-convertibles.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122375.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122439.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/11016302/policies/22122311.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.jenniferfurniture.com/buy/40047083290714:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 34050,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 34050,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/4U1CYCOzTmfvdXy5Hy3fwt",
+        "title": "Deluxe Cloud 3-Seater Khaki Washable Couch Sectional | 3-Piece, Chenille and Linen Fabric, Modular Design",
+        "description": {
+          "plain": "<p>Shop the 3-Piece Linen Khaki Couch Sectionals at WJShome. Modular design fits any space, washable covers for easy care. Free shipping</p>"
+        },
+        "handle": "3-piece-linen-khaki-couch-sectionals-3-seater",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 3
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/WJS-Home-3-Piece-Linen-Khaki-Couch-Sectionals-3-Seater_2.webp",
+            "alt_text": "WJS Home 3 Piece Linen Khaki Couch Sectionals 3 Seater_2",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/WJS-Home-3-Piece-Linen-Khaki-Couch-Sectionals-3-Seater_2.webp",
+              "width": 1600,
+              "height": 1200
+            },
+            "width": 1600,
+            "height": 1200
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Modular three-piece design with washable covers for effortless cleaning and adaptable seating."
+          ],
+          "top_features": [
+            "Modular three-piece design: Adapts to various room sizes and layouts for flexible living spaces",
+            "Washable linen and chenille upholstery: Simplifies cleaning and maintenance for busy households",
+            "Removable cushions: Allows for easy repositioning and thorough cleaning",
+            "Solid beige color: Complements a wide range of interior styles",
+            "Upholstered construction: Provides comfort and durability for everyday use"
+          ],
+          "tech_specs": [
+            "Set Includes: 3 pieces (backrest, left arm, right arm)",
+            "Upholstery Material: Linen and chenille",
+            "Upholstery Color: Beige",
+            "Pattern: Solid",
+            "Features: Upholstered, removable cushions"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/46313568272559",
+            "title": "Deluxe Cloud 3-Seater Khaki Washable Couch Sectional | 3-Piece, Chenille and Linen Fabric, Modular Design",
+            "description": {
+              "plain": "<p>Shop the 3-Piece Linen Khaki Couch Sectionals at WJShome. Modular design fits any space, washable covers for easy care. Free shipping</p>"
+            },
+            "handle": "3-piece-linen-khaki-couch-sectionals-3-seater",
+            "url": "https://wjshomestore.com/products/3-piece-linen-khaki-couch-sectionals-3-seater?variant=46313568272559&_gsid=XcRAZ8MgGU8g&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 117900,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 232500,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/WJS-Home-3-Piece-Linen-Khaki-Couch-Sectionals-3-Seater_2.webp",
+                "alt_text": "WJS Home 3 Piece Linen Khaki Couch Sectionals 3 Seater_2",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0689/1811/6527/files/WJS-Home-3-Piece-Linen-Khaki-Couch-Sectionals-3-Seater_2.webp",
+                  "width": 1600,
+                  "height": 1200
+                },
+                "width": 1600,
+                "height": 1200
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/68918116527",
+              "name": "WJS Home",
+              "url": "https://wjshomestore.com",
+              "domain": "asfzre-rp.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/32082886831.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904722095.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904689327.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/68918116527/policies/33904754863.html"
+                }
+              ]
+            },
+            "checkout_url": "https://wjshomestore.com/buy/46313568272559:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=XcRAZ8MgGU8g&_gsid=XcRAZ8MgGU8g",
+            "rating": {
+              "value": 4,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 117900,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 117900,
+            "currency": "USD"
+          }
+        }
+      }
+    ],
+    "messages": [],
+    "pagination": {
+      "has_next_page": true,
+      "total_count": 784,
+      "cursor": "eyJvZmZzZXQiOjgsInRvdGFsX2NvdW50Ijo3ODQsInJldHVybmVkIjo4fQ"
+    }
+  },
+  "cta": {
+    "description": "Extensions: global catalog active — variants carry `seller.domain` (for `--business`), `url` (PDP), and `checkout_url` (buy-now) for cross-business routing; the seller identity lives at `variants[*].seller.domain`; run --input-schema to see the full accepted catalog payload, including `like`, context, filters, and extension fields. Cross-business results — each variant belongs to its own seller. Pick the seller AND variant the buyer wants (products[N].variants[M]) before proceeding. To create a cart, pass --business=<products[N].variants[M].seller.domain>. If chosen items span multiple seller.domain values, create one cart/checkout per seller. Buyer handoff: open products[N].variants[M].url for the PDP when the buyer is still browsing; open products[N].variants[M].checkout_url for buy-now handoff when the buyer wants business-hosted checkout. More results available (showing 8 of 784); paginate only if you need them.",
+    "commands": [
+      {
+        "command": "ucp cart create --business <seller-domain> --input '{\"line_items\":[{\"item\":{\"id\":\"<variant-id>\"},\"quantity\":1}]}'",
+        "description": "create a cart at the chosen business — substitute <seller-domain> from products[N].variants[M].seller.domain and <variant-id> from products[N].variants[M].id."
+      },
+      {
+        "command": "ucp catalog search --input '<previous search body>' --set-string /pagination/cursor=<cursor>",
+        "description": "fetch next page — more of the same ranking: re-send your previous search body unchanged (query, filters, context, limit) with pagination.cursor set to result.pagination.cursor, copied verbatim; cursors are opaque and may invalidate across inventory changes; if results are weak or off-target, change query/context.intent instead and omit the cursor"
+      }
+    ]
+  }
+}

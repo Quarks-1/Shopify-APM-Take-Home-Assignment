@@ -1,0 +1,1111 @@
+{
+  "business": "https://catalog.shopify.com",
+  "endpoint": "https://catalog.shopify.com/api/ucp/mcp",
+  "transport": "mcp",
+  "ucp": {
+    "version": "2026-08-25",
+    "capabilities": {
+      "dev.ucp.shopping.catalog.search": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_search.json"
+        }
+      ],
+      "dev.ucp.shopping.catalog.lookup": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://ucp.dev/2026-08-25/specification/shopping/catalog/",
+          "schema": "https://ucp.dev/2026-08-25/schemas/shopping/catalog_lookup.json"
+        }
+      ],
+      "dev.shopify.catalog.global": [
+        {
+          "version": "2026-08-25",
+          "spec": "https://shopify.dev/docs/agents/catalog/global-catalog",
+          "schema": "https://shopify.dev/ucp/schemas/2026-08-25/shopify_catalog_global.json",
+          "extends": [
+            "dev.ucp.shopping.catalog.search",
+            "dev.ucp.shopping.catalog.lookup"
+          ],
+          "requires": {
+            "protocol": {
+              "min": "2026-08-25"
+            }
+          }
+        }
+      ]
+    },
+    "status": "success"
+  },
+  "result": {
+    "products": [
+      {
+        "id": "gid://shopify/p/2jTMxPmzN5NMH5dE04q6I7",
+        "title": "Teamson Home Fascino 63\" Industrial Metal Tripod Floor Lamp with Dish Shade, Black/Gold",
+        "description": {
+          "plain": "\n<ul>\n    <li>INDUSTRIAL FLOOR LAMP: Features a classic black finish and a wide dish shade with a bright gold interior for a bold update to any space</li>\n<li>PROVIDES VERSATILE LIGHT: Tripod design provides a multi-use lighting solution for reading or to add a soft glow to your bedroom, office, or living area</li>\n<li>QUICK TO ASSEMBLE AND CLEAN: Includes step-by-step instructions for easy assembly and cleaning</li>\n<li>COMPLETE YOUR SPACE: Purchase alone or with a high-quality Teamson side table and chair for a complete reading nook</li>\n<li>EFFICIENT SIZE: Measures just 30.9\" x 30.9\" x 63\" to add a stylish light source to almost any space in your home and uses a 60 watt type E26 base, 110V bulb (not included)</li>\n    </ul>\n<div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n\t<button type=\"button\" class=\"\n        label\n        collapsible-trigger\n        collapsible-trigger-btn\n        collapsible-trigger-btn--borders\n        \" aria-controls=\"VN-L00019A-Overview\" aria-expanded=\"false\">\n        Overview\n\t\t\n\t\t<span class=\"collapsible-trigger__icon collapsible-trigger__icon--open\" role=\"presentation\">\n\t\t\t<svg aria-hidden=\"true\" role=\"presentation\" class=\"icon icon--wide icon-chevron-down\" viewbox=\"0 0 28 16\" focusable=\"false\">\n\t\t\t\t<path d=\"M1.57 1.59l12.76 12.77L27.1 1.59\" stroke-width=\"1\" stroke=\"#000\" fill=\"none\" fill-rule=\"evenodd\"></path>\n\t\t\t</svg>\n\t\t</span>\n\t</button>\n\t<div id=\"VN-L00019A-Overview\" class=\"collapsible-content collapsible-content--all\" style=\"height: 0px\">\n\t\t<div class=\"collapsible-content__inner rte\">\n\t\t\t<p>Stacked with the appeal of classic mid-century design, the Fascino Tripod Floor Lamp instantly adds charm and brightness to any space. This timeless light fixture features a stunning, slender black metal tripod base that carries the eyes to the bold, industrial-style lampshade. Flick the floor switch on the Fascino luminary and enjoy the evenly spread efficient glow of a single bulb.\n\nTeamson is a global lifestyle home designs brand bringing joy into every home through beautiful, quality pieces made for stylishly comfortable everyday living. Teamson Home is our flagship brand continuing our tradition of quality design collections and pieces for the home including versatile indoor and outdoor furniture, lighting, and accessories. Our look is modern and refined yet simple and relaxed for every home.</p>\n\t\t</div>\n\t</div>\n</div>\n<div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n\t<button type=\"button\" class=\"\n        label\n        collapsible-trigger\n        collapsible-trigger-btn\n        collapsible-trigger-btn--borders\n        \" aria-controls=\"VN-L00019A-Dimensions-and-Care\" aria-expanded=\"false\">\n        Dimensions &amp; Care\n\t\t<span class=\"collapsible-trigger__icon collapsible-trigger__icon--open\" role=\"presentation\">\n\t\t\t<svg aria-hidden=\"true\" role=\"presentation\" class=\"icon icon--wide icon-chevron-down\" viewbox=\"0 0 28 16\" focusable=\"false\">\n\t\t\t\t<path d=\"M1.57 1.59l12.76 12.77L27.1 1.59\" stroke-width=\"1\" stroke=\"#000\" fill=\"none\" fill-rule=\"evenodd\"></path>\n\t\t\t</svg>\n\t\t</span>\n\t</button>\n\t<div id=\"VN-L00019A-Dimensions-and-Care\" class=\"collapsible-content collapsible-content--all\" style=\"height: 0px\">\n    <div class=\"collapsible-content__inner rte\">\n        <p>\n            <strong>Product</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 30.9x30.9x63 in</li>\n            <li>Weight: 10 lb(s)</li>\n        </ul>\n            \n                    <p>\n            <strong>Shipping Item 1</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 39.96x9.06x6.69 in</li>\n            <li>Weight: 7.48 lb(s)</li>\n        </ul>\n            \n                    <p>\n            <strong>Shipping Item 2</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 18.5x18.5x11.42 in</li>\n            <li>Weight: 5.94 lb(s)</li>\n        </ul>\n            \n    </div>\n    \n\t</div>\n</div>\n    \n        <div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n <button aria-expanded=\"false\" aria-controls=\"VN-L00019A-Assembly-Guide\" class=\"\n   label\n   collapsible-trigger collapsible-trigger-btn collapsible-trigger-btn--borders\n  \" type=\"button\">\n  Assembly Guide\n  <span role=\"presentation\" class=\"collapsible-trigger__icon collapsible-trigger__icon--open\">\n   <svg viewbox=\"0 0 28 16\" class=\"icon icon--wide icon-chevron-down\" role=\"presentation\" aria-hidden=\"true\" focusable=\"false\">\n    <path fill-rule=\"evenodd\" fill=\"none\" stroke=\"#000\" stroke-width=\"1\" d=\"M1.57 1.59l12.76 12.77L27.1 1.59\"></path>\n   </svg>\n  </span>\n </button>\n <div style=\"height: 0px;\" class=\"collapsible-content collapsible-content--all\" id=\"VN-L00019A-Assembly-Guide\">\n  <div class=\"collapsible-content__inner rte\">\n   <p>\n    <a href=\"http://images.salsify.com/image/upload/s--6APeeGNW--/xda57fnqgdpe2jl8g40v.pdf\" target=\"_blank\">Teamson Home Fascino Tripod Floor Lamp, Black/Gold</a>\n   </p>\n  </div>\n </div>\n</div>\n        \n    \n        <div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n <button aria-expanded=\"false\" aria-controls=\"ThreeD-Assembly-Guide\" class=\"\n   label\n   collapsible-trigger collapsible-trigger-btn collapsible-trigger-btn--borders\n  \" type=\"button\">\n  3D Assembly Guide\n  <span role=\"presentation\" class=\"collapsible-trigger__icon collapsible-trigger__icon--open\">\n   <svg viewbox=\"0 0 28 16\" class=\"icon icon--wide icon-chevron-down\" role=\"presentation\" aria-hidden=\"true\" focusable=\"false\">\n    <path fill-rule=\"evenodd\" fill=\"none\" stroke=\"#000\" stroke-width=\"1\" d=\"M1.57 1.59l12.76 12.77L27.1 1.59\"></path>\n   </svg>\n  </span>\n </button>\n <div style=\"height: 0px;\" class=\"collapsible-content collapsible-content--all\" id=\"ThreeD-Assembly-Guide\">\n  <div class=\"collapsible-content__inner rte\">\n   <iframe style=\"border: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%;\" src=\"https://g.makeree.com/teamson/guides/guide/6d58f859-4f4d-4508-be15-2a31ac1128c5\" webkitallowfullscreen=\"\" allowfullscreen=\"\"></iframe>\n  </div>\n </div>\n</div>\n        \n    "
+        },
+        "handle": "teamson-home-tripod-floor-lamps-vn-l00019a",
+        "rating": {
+          "value": 3.7,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 3
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0564/3150/9685/products/xdeotmukjjhc2enmpg09.jpg",
+            "alt_text": "Teamson Home Fascino Modern Spotlight Tripod Floor Lamp with a black with a metallic gold interior",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0564/3150/9685/products/xdeotmukjjhc2enmpg09.jpg",
+              "width": 2000,
+              "height": 2000
+            },
+            "width": 2000,
+            "height": 2000
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Black"
+              }
+            ]
+          },
+          {
+            "name": "Height",
+            "values": [
+              {
+                "label": "63 in"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Classic tripod design with a bold gold interior and durable metal construction for versatile, long-lasting lighting."
+          ],
+          "top_features": [
+            "Classic tripod base provides stability and versatile lighting for multiple spaces",
+            "Wide dish shade with bright gold interior offers even, diffused illumination",
+            "Quick assembly and easy cleaning for convenient use and maintenance",
+            "Slim, foldable design fits easily into tight spaces and allows for flexible room arrangement",
+            "Durable metal construction ensures long-term use in high-traffic areas"
+          ],
+          "tech_specs": [
+            "Dimensions: 30.9 x 30.9 x 63 in",
+            "Weight: 10 lb",
+            "Material: Metal",
+            "Bulb Type: E26, 60 W (bulb not included)",
+            "Power Source: AC-powered, 110V",
+            "Finish Options: Black/Gold, White/Gold"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/40189135061173",
+            "title": "Teamson Home Fascino 63\" Industrial Metal Tripod Floor Lamp with Dish Shade, Black/Gold",
+            "description": {
+              "plain": "\n<ul>\n    <li>INDUSTRIAL FLOOR LAMP: Features a classic black finish and a wide dish shade with a bright gold interior for a bold update to any space</li>\n<li>PROVIDES VERSATILE LIGHT: Tripod design provides a multi-use lighting solution for reading or to add a soft glow to your bedroom, office, or living area</li>\n<li>QUICK TO ASSEMBLE AND CLEAN: Includes step-by-step instructions for easy assembly and cleaning</li>\n<li>COMPLETE YOUR SPACE: Purchase alone or with a high-quality Teamson side table and chair for a complete reading nook</li>\n<li>EFFICIENT SIZE: Measures just 30.9\" x 30.9\" x 63\" to add a stylish light source to almost any space in your home and uses a 60 watt type E26 base, 110V bulb (not included)</li>\n    </ul>\n<div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n\t<button type=\"button\" class=\"\n        label\n        collapsible-trigger\n        collapsible-trigger-btn\n        collapsible-trigger-btn--borders\n        \" aria-controls=\"VN-L00019A-Overview\" aria-expanded=\"false\">\n        Overview\n\t\t\n\t\t<span class=\"collapsible-trigger__icon collapsible-trigger__icon--open\" role=\"presentation\">\n\t\t\t<svg aria-hidden=\"true\" role=\"presentation\" class=\"icon icon--wide icon-chevron-down\" viewbox=\"0 0 28 16\" focusable=\"false\">\n\t\t\t\t<path d=\"M1.57 1.59l12.76 12.77L27.1 1.59\" stroke-width=\"1\" stroke=\"#000\" fill=\"none\" fill-rule=\"evenodd\"></path>\n\t\t\t</svg>\n\t\t</span>\n\t</button>\n\t<div id=\"VN-L00019A-Overview\" class=\"collapsible-content collapsible-content--all\" style=\"height: 0px\">\n\t\t<div class=\"collapsible-content__inner rte\">\n\t\t\t<p>Stacked with the appeal of classic mid-century design, the Fascino Tripod Floor Lamp instantly adds charm and brightness to any space. This timeless light fixture features a stunning, slender black metal tripod base that carries the eyes to the bold, industrial-style lampshade. Flick the floor switch on the Fascino luminary and enjoy the evenly spread efficient glow of a single bulb.\n\nTeamson is a global lifestyle home designs brand bringing joy into every home through beautiful, quality pieces made for stylishly comfortable everyday living. Teamson Home is our flagship brand continuing our tradition of quality design collections and pieces for the home including versatile indoor and outdoor furniture, lighting, and accessories. Our look is modern and refined yet simple and relaxed for every home.</p>\n\t\t</div>\n\t</div>\n</div>\n<div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n\t<button type=\"button\" class=\"\n        label\n        collapsible-trigger\n        collapsible-trigger-btn\n        collapsible-trigger-btn--borders\n        \" aria-controls=\"VN-L00019A-Dimensions-and-Care\" aria-expanded=\"false\">\n        Dimensions &amp; Care\n\t\t<span class=\"collapsible-trigger__icon collapsible-trigger__icon--open\" role=\"presentation\">\n\t\t\t<svg aria-hidden=\"true\" role=\"presentation\" class=\"icon icon--wide icon-chevron-down\" viewbox=\"0 0 28 16\" focusable=\"false\">\n\t\t\t\t<path d=\"M1.57 1.59l12.76 12.77L27.1 1.59\" stroke-width=\"1\" stroke=\"#000\" fill=\"none\" fill-rule=\"evenodd\"></path>\n\t\t\t</svg>\n\t\t</span>\n\t</button>\n\t<div id=\"VN-L00019A-Dimensions-and-Care\" class=\"collapsible-content collapsible-content--all\" style=\"height: 0px\">\n    <div class=\"collapsible-content__inner rte\">\n        <p>\n            <strong>Product</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 30.9x30.9x63 in</li>\n            <li>Weight: 10 lb(s)</li>\n        </ul>\n            \n                    <p>\n            <strong>Shipping Item 1</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 39.96x9.06x6.69 in</li>\n            <li>Weight: 7.48 lb(s)</li>\n        </ul>\n            \n                    <p>\n            <strong>Shipping Item 2</strong>\n        </p>\n        <ul>\n            <li>Dimensions: 18.5x18.5x11.42 in</li>\n            <li>Weight: 5.94 lb(s)</li>\n        </ul>\n            \n    </div>\n    \n\t</div>\n</div>\n    \n        <div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n <button aria-expanded=\"false\" aria-controls=\"VN-L00019A-Assembly-Guide\" class=\"\n   label\n   collapsible-trigger collapsible-trigger-btn collapsible-trigger-btn--borders\n  \" type=\"button\">\n  Assembly Guide\n  <span role=\"presentation\" class=\"collapsible-trigger__icon collapsible-trigger__icon--open\">\n   <svg viewbox=\"0 0 28 16\" class=\"icon icon--wide icon-chevron-down\" role=\"presentation\" aria-hidden=\"true\" focusable=\"false\">\n    <path fill-rule=\"evenodd\" fill=\"none\" stroke=\"#000\" stroke-width=\"1\" d=\"M1.57 1.59l12.76 12.77L27.1 1.59\"></path>\n   </svg>\n  </span>\n </button>\n <div style=\"height: 0px;\" class=\"collapsible-content collapsible-content--all\" id=\"VN-L00019A-Assembly-Guide\">\n  <div class=\"collapsible-content__inner rte\">\n   <p>\n    <a href=\"http://images.salsify.com/image/upload/s--6APeeGNW--/xda57fnqgdpe2jl8g40v.pdf\" target=\"_blank\">Teamson Home Fascino Tripod Floor Lamp, Black/Gold</a>\n   </p>\n  </div>\n </div>\n</div>\n        \n    \n        <div class=\"collapsibles-wrapper collapsibles-wrapper--border-bottom\">\n <button aria-expanded=\"false\" aria-controls=\"ThreeD-Assembly-Guide\" class=\"\n   label\n   collapsible-trigger collapsible-trigger-btn collapsible-trigger-btn--borders\n  \" type=\"button\">\n  3D Assembly Guide\n  <span role=\"presentation\" class=\"collapsible-trigger__icon collapsible-trigger__icon--open\">\n   <svg viewbox=\"0 0 28 16\" class=\"icon icon--wide icon-chevron-down\" role=\"presentation\" aria-hidden=\"true\" focusable=\"false\">\n    <path fill-rule=\"evenodd\" fill=\"none\" stroke=\"#000\" stroke-width=\"1\" d=\"M1.57 1.59l12.76 12.77L27.1 1.59\"></path>\n   </svg>\n  </span>\n </button>\n <div style=\"height: 0px;\" class=\"collapsible-content collapsible-content--all\" id=\"ThreeD-Assembly-Guide\">\n  <div class=\"collapsible-content__inner rte\">\n   <iframe style=\"border: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%;\" src=\"https://g.makeree.com/teamson/guides/guide/6d58f859-4f4d-4508-be15-2a31ac1128c5\" webkitallowfullscreen=\"\" allowfullscreen=\"\"></iframe>\n  </div>\n </div>\n</div>\n        \n    "
+            },
+            "handle": "teamson-home-tripod-floor-lamps-vn-l00019a",
+            "url": "https://teamsonhome.com/products/teamson-home-tripod-floor-lamps-vn-l00019a?variant=40189135061173&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 11999,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Black"
+              },
+              {
+                "name": "Height",
+                "label": "63 in"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0564/3150/9685/products/xdeotmukjjhc2enmpg09.jpg",
+                "alt_text": "Teamson Home Fascino Modern Spotlight Tripod Floor Lamp with a black with a metallic gold interior",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0564/3150/9685/products/xdeotmukjjhc2enmpg09.jpg",
+                  "width": 2000,
+                  "height": 2000
+                },
+                "width": 2000,
+                "height": 2000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/56431509685",
+              "name": "US - Teamson Home",
+              "url": "https://teamsonhome.com",
+              "domain": "teamsonus.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/56431509685/policies/24324079797.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/56431509685/policies/24324112565.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/56431509685/policies/24324047029.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/56431509685/policies/24324145333.html"
+                }
+              ]
+            },
+            "checkout_url": "https://teamsonhome.com/buy/40189135061173:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 1
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 11999,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 11999,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/4ZlvT66BCpEwz4enZl2yKk",
+        "title": "Vintage Adjustable Metal Floor Lamp – Industrial Reading Lamp",
+        "description": {
+          "plain": "<p>WHY YOU'LL LOVE IT</p>\n<p>This vintage adjustable metal floor lamp combines classic industrial styling with everyday practicality. Crafted from durable metal and finished in Matte Black or Antique Brass, it features an adjustable shade that provides focused illumination exactly where you need it. Whether placed beside a sofa, reading chair, or desk, it creates a warm, inviting atmosphere while adding timeless character to your space.</p>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/13_1b27732d-6f9a-4478-8265-8fbba9f558d4.jpg?v=1783066249\" alt=\"\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Product Features</b></h3>\n<ul>\n<li data-section-id=\"yglmgv\" data-start=\"90\" data-end=\"172\">Vintage-inspired industrial design that adds timeless character to any space<span aria-hidden=\"true\" class=\"PDq2pG_selectionAnchor\"></span>\n</li>\n<li data-section-id=\"3cjn67\" data-start=\"173\" data-end=\"246\">Adjustable metal shade for precise and directional lighting control</li>\n<li data-section-id=\"vgr09d\" data-start=\"247\" data-end=\"309\">Crafted from durable metal for long-lasting everyday use</li>\n<li data-section-id=\"166kaiz\" data-start=\"310\" data-end=\"373\">Weighted round base ensures enhanced stability and safety</li>\n<li data-section-id=\"yaacyl\" data-start=\"374\" data-end=\"444\">Compatible with standard E27 bulbs including LED, Edison and CFL</li>\n<li data-section-id=\"qfsl38\" data-start=\"445\" data-end=\"504\">Convenient foot switch for easy, hands-free operation</li>\n<li data-section-id=\"1lkzpcj\" data-start=\"505\" data-end=\"566\">Plug-in design allows for quick and simple installation</li>\n<li data-section-id=\"pjkiwk\" data-start=\"567\" data-end=\"624\">Available in Matte Black and Antique Brass finishes<br>\n</li>\n</ul>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/9_087aa151-db3d-40f8-b6c7-b1bce22cdd4e.jpg?v=1783066249\" alt=\"\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Product Specifications</b></h3>\n<table style=\"width: 100%; height: 213.563px;\" width=\"100%\">\n<tbody>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; text-align: center; height: 35.5938px;\">\n<p style=\"text-align: left;\"><strong>Item</strong></p>\n</td>\n<td style=\"width: 66.065%; text-align: center; height: 35.5938px;\">\n<p style=\"text-align: left;\"><strong> Details</strong></p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Material</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Iron</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Finish</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Matte Black / Antique Brass</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Style</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Vintage Industrial</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Dimensions</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Height: 156 cm / Shade: 20 cm / Base: 26 cm</p>\n</td>\n</tr>\n<tr>\n<td style=\"width: 33.574%;\">\n<p><strong>Bulb Type</strong></p>\n</td>\n<td style=\"width: 66.065%;\">\n<p><span>E27 (Max 60W, Bulb Not Included)</span></p>\n</td>\n</tr>\n</tbody>\n</table>\n<p><img alt=\"\" src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/7_de6a0f50-39d6-4d69-9afa-1d70cf92fd26.jpg?v=1783066249\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Perfect Placement</b></h3>\n<ul>\n<li class=\"PDq2pG_selectionAnchorContainer\" data-end=\"690\" data-start=\"562\">\n<strong data-end=\"587\" data-start=\"562\">Reading Corner Accent</strong>: Perfect beside a sofa or armchair, providing focused directional lighting for reading and relaxing.<span class=\"PDq2pG_selectionAnchor\" aria-hidden=\"true\"></span>\n</li>\n<li data-end=\"810\" data-start=\"692\">\n<strong data-end=\"719\" data-start=\"692\">Bedroom Companion Light</strong>: Ideal next to the bed or nightstand as a stylish and practical floor lighting solution.</li>\n<li data-end=\"937\" data-start=\"812\">\n<strong data-end=\"841\" data-start=\"812\">Home Office Task Lighting</strong>: Works well beside a desk or workspace, offering adjustable lighting for studying or working.<img alt=\"\" src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/11_804e5df1-8856-4cc2-91e2-8ab3ee622e3c.jpg?v=1783066249\">\n</li>\n</ul>\n<p><b data-path-to-node=\"10\" data-index-in-node=\"0\">Installation &amp; Care</b><span style=\"font-size: 0.875rem;\"></span></p>\n<ul>\n<li>\n<strong>Simple Installation: </strong>Plug-in design for fast and easy setup with no hardwiring required.<br>\n</li>\n<li>\n<strong>Flexible Positioning:</strong> Adjustable gooseneck arm provides precise directional lighting.<br>\n</li>\n<li>\n<strong>Care Guide: </strong>Wipe gently with a dry soft cloth to preserve the finish.<br>\n</li>\n<li>\n<strong>Bulb Required:</strong> This lamp does not include a bulb and requires a standard E27 base bulb.</li>\n</ul>"
+        },
+        "handle": "vintage-adjustable-metal-floor-lamp-industrial-reading-lamp",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0606/5769/6937/files/c28e287a9bf9f756aa2630f332fdd228.jpg",
+            "alt_text": "Vintage Adjustable Metal Floor Lamp – Industrial Reading Lamp",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0606/5769/6937/files/c28e287a9bf9f756aa2630f332fdd228.jpg",
+              "width": 1024,
+              "height": 1024
+            },
+            "width": 1024,
+            "height": 1024
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Black"
+              },
+              {
+                "label": "Gold"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines classic industrial design with adjustable, directional lighting and a stable weighted base."
+          ],
+          "top_features": [
+            "Adjustable metal shade allows precise and directional lighting control for any room",
+            "Durable iron construction ensures long-lasting everyday use",
+            "Weighted round base provides enhanced stability and safety",
+            "Convenient foot switch enables easy hands-free operation",
+            "Compatible with standard E27 bulbs including LED, Edison, and CFL for versatile lighting options"
+          ],
+          "tech_specs": [
+            "Material: Iron",
+            "Finish: Matte black or antique brass",
+            "Height: 156 cm",
+            "Shade height: 20 cm",
+            "Base width: 26 cm",
+            "Bulb type: E27, max 60W (bulb not included)",
+            "Power source: AC-powered"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/47240709243049",
+            "title": "Vintage Adjustable Metal Floor Lamp – Industrial Reading Lamp",
+            "description": {
+              "plain": "<p>WHY YOU'LL LOVE IT</p>\n<p>This vintage adjustable metal floor lamp combines classic industrial styling with everyday practicality. Crafted from durable metal and finished in Matte Black or Antique Brass, it features an adjustable shade that provides focused illumination exactly where you need it. Whether placed beside a sofa, reading chair, or desk, it creates a warm, inviting atmosphere while adding timeless character to your space.</p>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/13_1b27732d-6f9a-4478-8265-8fbba9f558d4.jpg?v=1783066249\" alt=\"\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Product Features</b></h3>\n<ul>\n<li data-section-id=\"yglmgv\" data-start=\"90\" data-end=\"172\">Vintage-inspired industrial design that adds timeless character to any space<span aria-hidden=\"true\" class=\"PDq2pG_selectionAnchor\"></span>\n</li>\n<li data-section-id=\"3cjn67\" data-start=\"173\" data-end=\"246\">Adjustable metal shade for precise and directional lighting control</li>\n<li data-section-id=\"vgr09d\" data-start=\"247\" data-end=\"309\">Crafted from durable metal for long-lasting everyday use</li>\n<li data-section-id=\"166kaiz\" data-start=\"310\" data-end=\"373\">Weighted round base ensures enhanced stability and safety</li>\n<li data-section-id=\"yaacyl\" data-start=\"374\" data-end=\"444\">Compatible with standard E27 bulbs including LED, Edison and CFL</li>\n<li data-section-id=\"qfsl38\" data-start=\"445\" data-end=\"504\">Convenient foot switch for easy, hands-free operation</li>\n<li data-section-id=\"1lkzpcj\" data-start=\"505\" data-end=\"566\">Plug-in design allows for quick and simple installation</li>\n<li data-section-id=\"pjkiwk\" data-start=\"567\" data-end=\"624\">Available in Matte Black and Antique Brass finishes<br>\n</li>\n</ul>\n<p><img src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/9_087aa151-db3d-40f8-b6c7-b1bce22cdd4e.jpg?v=1783066249\" alt=\"\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Product Specifications</b></h3>\n<table style=\"width: 100%; height: 213.563px;\" width=\"100%\">\n<tbody>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; text-align: center; height: 35.5938px;\">\n<p style=\"text-align: left;\"><strong>Item</strong></p>\n</td>\n<td style=\"width: 66.065%; text-align: center; height: 35.5938px;\">\n<p style=\"text-align: left;\"><strong> Details</strong></p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Material</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Iron</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Finish</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Matte Black / Antique Brass</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Style</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Vintage Industrial</p>\n</td>\n</tr>\n<tr style=\"height: 35.5938px;\">\n<td style=\"width: 33.574%; height: 35.5938px;\">\n<p><strong>Dimensions</strong></p>\n</td>\n<td style=\"width: 66.065%; height: 35.5938px;\">\n<p>Height: 156 cm / Shade: 20 cm / Base: 26 cm</p>\n</td>\n</tr>\n<tr>\n<td style=\"width: 33.574%;\">\n<p><strong>Bulb Type</strong></p>\n</td>\n<td style=\"width: 66.065%;\">\n<p><span>E27 (Max 60W, Bulb Not Included)</span></p>\n</td>\n</tr>\n</tbody>\n</table>\n<p><img alt=\"\" src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/7_de6a0f50-39d6-4d69-9afa-1d70cf92fd26.jpg?v=1783066249\"></p>\n<h3 data-path-to-node=\"10\"><b data-path-to-node=\"10\" data-index-in-node=\"0\">Perfect Placement</b></h3>\n<ul>\n<li class=\"PDq2pG_selectionAnchorContainer\" data-end=\"690\" data-start=\"562\">\n<strong data-end=\"587\" data-start=\"562\">Reading Corner Accent</strong>: Perfect beside a sofa or armchair, providing focused directional lighting for reading and relaxing.<span class=\"PDq2pG_selectionAnchor\" aria-hidden=\"true\"></span>\n</li>\n<li data-end=\"810\" data-start=\"692\">\n<strong data-end=\"719\" data-start=\"692\">Bedroom Companion Light</strong>: Ideal next to the bed or nightstand as a stylish and practical floor lighting solution.</li>\n<li data-end=\"937\" data-start=\"812\">\n<strong data-end=\"841\" data-start=\"812\">Home Office Task Lighting</strong>: Works well beside a desk or workspace, offering adjustable lighting for studying or working.<img alt=\"\" src=\"https://cdn.shopify.com/s/files/1/0606/5769/6937/files/11_804e5df1-8856-4cc2-91e2-8ab3ee622e3c.jpg?v=1783066249\">\n</li>\n</ul>\n<p><b data-path-to-node=\"10\" data-index-in-node=\"0\">Installation &amp; Care</b><span style=\"font-size: 0.875rem;\"></span></p>\n<ul>\n<li>\n<strong>Simple Installation: </strong>Plug-in design for fast and easy setup with no hardwiring required.<br>\n</li>\n<li>\n<strong>Flexible Positioning:</strong> Adjustable gooseneck arm provides precise directional lighting.<br>\n</li>\n<li>\n<strong>Care Guide: </strong>Wipe gently with a dry soft cloth to preserve the finish.<br>\n</li>\n<li>\n<strong>Bulb Required:</strong> This lamp does not include a bulb and requires a standard E27 base bulb.</li>\n</ul>"
+            },
+            "handle": "vintage-adjustable-metal-floor-lamp-industrial-reading-lamp",
+            "url": "https://demolights.co.uk/products/vintage-adjustable-metal-floor-lamp-industrial-reading-lamp?variant=47240709243049&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 18600,
+              "currency": "GBP"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Black"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0606/5769/6937/files/c28e287a9bf9f756aa2630f332fdd228.jpg",
+                "alt_text": "Vintage Adjustable Metal Floor Lamp – Industrial Reading Lamp",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0606/5769/6937/files/c28e287a9bf9f756aa2630f332fdd228.jpg",
+                  "width": 1024,
+                  "height": 1024
+                },
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/60657696937",
+              "name": "Demolights UK",
+              "url": "https://demolights.co.uk",
+              "domain": "demolightsuk.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/60657696937/policies/25638502569.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/60657696937/policies/25638535337.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/60657696937/policies/25638469801.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/60657696937/policies/25638568105.html"
+                }
+              ]
+            },
+            "checkout_url": "https://demolights.co.uk/buy/47240709243049:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 18600,
+            "currency": "GBP"
+          },
+          "max": {
+            "amount": 18600,
+            "currency": "GBP"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/5zjv8Y8RvfbpkxxRrXVmYb",
+        "title": "Industrial Floor Lamp, Modern Standing Lamps with Hanging Clear Glass Shade",
+        "description": {
+          "plain": "<meta charset=\"UTF-8\">\n<h3>Product description</h3>\n<div class=\"aplus-v2 mobile celwidget\" cel_widget_id=\"m-aplus\" data-csa-c-id=\"vti1hr-h7yyjk-bm676e-j5u1gq\" data-cel-widget=\"m-aplus\">\n<div class=\"celwidget aplus-module launchpad-company-logo aplus-standard\" cel_widget_id=\"aplus-m-launchpad-company-logo\" data-csa-c-id=\"95s9jq-b2ybmq-b13twl-ilx172\" data-cel-widget=\"aplus-m-launchpad-company-logo\">\n<div class=\"a-section a-text-center launchpad-module launchpad-module-company-logo\"><img alt=\"MAXvolador - LED Bulb Table Lamp Floor Lamp Ceiling Light Pendant Light String Light Chandelier\" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/07b4fdc2-a6ba-4af4-bbe2-b48ff956ff3c.__CR0,0,600,180_PT0_SX600_V1___.jpg\" class=\"\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/07b4fdc2-a6ba-4af4-bbe2-b48ff956ff3c.__CR0,0,600,180_PT0_SX600_V1___.jpg\"></div>\n</div>\n<div class=\"celwidget aplus-module 3p-module-b aplus-standard\" cel_widget_id=\"aplus-m-3p-module-b\" data-csa-c-id=\"am65ab-t2oxzu-3h7wid-jnucqb\" data-cel-widget=\"aplus-m-3p-module-b\">\n<div class=\"aplus-3p-center-content\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/a7cfb454-76d2-4280-a5f4-ba5847828087.__CR0,0,970,600_PT0_SX970_V1___.png\" class=\"a-spacing-base\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/a7cfb454-76d2-4280-a5f4-ba5847828087.__CR0,0,970,600_PT0_SX970_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Modern Standing Lamp - Beautify Your Room!</h3>\n<p class=\"a-spacing-base\">With the modern minimalist design concept, our industrial floor lamp mixed anti-rust finished black tubular metal body and stylish clear glass shade fits perfectly in any room from mid-century modern to traditional décor.</p>\n</div>\n<div class=\"celwidget aplus-module module-1 aplus-standard\" cel_widget_id=\"aplus-m-module-1\" data-csa-c-id=\"2f90rg-6oe8cb-775qlt-v0i2og\" data-cel-widget=\"aplus-m-module-1\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"apm-spacing apm-wrap\">\n<div class=\"apm-wrap\">\n<div class=\"a-section a-text-center\">\n<img alt=\"floor lamp compatible with various bulbs like led incandescent cfl halogen\" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/3a30c4a3-69ac-451c-a2f5-eea6ac70345f.__CR0,0,350,175_PT0_SX350_V1___.jpg\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/3a30c4a3-69ac-451c-a2f5-eea6ac70345f.__CR0,0,350,175_PT0_SX350_V1___.jpg\">\n<h5 class=\"a-color-secondary a-text-center\">Note: Bulb Is NOT Included</h5>\n</div>\n<p class=\"a-spacing-small a-size-small a-color-secondary\"> </p>\n<ul class=\"a-unordered-list a-vertical\">\n<li><span class=\"a-list-item\">Voltage: AC100-130V</span></li>\n<li><span class=\"a-list-item\">Base Type: E26(Not Include Bulb)</span></li>\n<li><span class=\"a-list-item\">Wattage: Max 60W</span></li>\n<li><span class=\"a-list-item\">Switch Type: ON/OFF Switch On Cord</span></li>\n<li><span class=\"a-list-item\">Wire Length: 1.8m/5.9ft</span></li>\n<li><span class=\"a-list-item\">Height: 1.67m/5.5ft</span></li>\n<li><span class=\"a-list-item\">Not Dimmable</span></li>\n</ul>\n<p> </p>\n<div class=\"a-section a-text-center\">\n<img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7dbcf7bd-67be-420e-9132-e9d8b7416c8b.__CR0,0,300,400_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7dbcf7bd-67be-420e-9132-e9d8b7416c8b.__CR0,0,300,400_PT0_SX300_V1___.png\">\n<p> </p>\n</div>\n<div class=\"apm-wrap\">\n<h4 class=\"a-spacing-mini a-color-secondary a-text-italic\">A Classic Additon to Any Room</h4>\n<p class=\"a-spacing-base\"> </p>\n<ul class=\"a-unordered-list a-vertical\">\n<li><span class=\"a-list-item\"><span class=\"a-text-bold\">When light on</span> - Clear glass shade allows the standing lamp to emit bright, clean, overhead lighting when you sit aside in working or reading.</span></li>\n<li><span class=\"a-list-item\"><span class=\"a-text-bold\">When light off</span> - With sturdy black stranding pole and clear glass shade, this modern floor lamp brings an eye-catching, timeless look to your room.</span></li>\n</ul>\n<p> </p>\n</div>\n</div>\n</div>\n</div>\n<div></div>\n</div>\n<div class=\"celwidget aplus-module module-6 aplus-standard\" cel_widget_id=\"aplus-m-module-6\" data-csa-c-id=\"krbxpd-gtp4i2-jvz7lr-s1h7d\" data-cel-widget=\"aplus-m-module-6\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"a-section\">\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7f122774-c3f2-4391-a7c5-01127bc1fd84.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7f122774-c3f2-4391-a7c5-01127bc1fd84.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Elegant Clear Glass Shade</h3>\n<p class=\"a-spacing-base\">Comes with a sturdy clear glass lampshade that showcases the bulb your chose. Clear glass design allows your bulb to emit bright lighting to create a beautiful lighting atmosphere inside your house.</p>\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/40f708d3-380f-4758-8fb5-401ad8539b7a.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/40f708d3-380f-4758-8fb5-401ad8539b7a.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Sturdy Lamp Base &amp; Convenient Foot Switch</h3>\n<p class=\"a-spacing-base\">· A foot pedal switch located at the cord of the floor lamp, very convenient to turn on/off the corner lamp with your foot.</p>\n<p class=\"a-spacing-base\">· Designed with a weighted 9.84\" metal base, which can firmly hold the standing light, provides good stability and durability that prevents tipping for daily use. Safe to have around children, aged, and pets.</p>\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/33cd2b89-c7ba-44c0-af08-7c74aff425d0.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/33cd2b89-c7ba-44c0-af08-7c74aff425d0.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Versatile Lamp</h3>\n<p class=\"a-spacing-base\">The corner lamp is compatible with a wide range of decor styles like new Nordic, mid-century, modern, classic, art deco. Adds a vintage yet upscale look to your living room, bedroom, study room, kids room, dorm, nursery, office.</p>\n<div class=\"a-section a-text-center\"><img alt=\"classic black floor stand lamp best gift christmas birthday \" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/cb57a5ca-89cc-4165-be12-0679c4035407.__CR0,0,600,600_PT0_SX300_V1___.jpg\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/cb57a5ca-89cc-4165-be12-0679c4035407.__CR0,0,600,600_PT0_SX300_V1___.jpg\"></div>\n<h3 class=\"a-spacing-mini\">It's Also A Perfect Gift</h3>\n<p class=\"a-spacing-base\">Industrial standing tall lamp could be a wonderful present for your family or friends.</p>\n<p class=\"a-spacing-base\">The package has contained all components, just take a few minutes to screw all the parts of the lamp pole together.</p>\n</div>\n</div>\n</div>\n<div class=\"celwidget aplus-module module-9 aplus-standard\" cel_widget_id=\"aplus-m-module-9\" data-csa-c-id=\"qrljy4-y84nsk-gs40p2-s9xktf\" data-cel-widget=\"aplus-m-module-9\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"\">\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/0908f459-3f93-4c4f-a027-d79451f66b86.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/0908f459-3f93-4c4f-a027-d79451f66b86.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Corner Side Standing Lamp</h4>\n<p> </p>\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/c2fd0bec-b737-4080-aa48-02bdcec2f856.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/c2fd0bec-b737-4080-aa48-02bdcec2f856.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Living Room Floor Lamp</h4>\n<p> </p>\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/67e05040-1631-4dc9-9600-594640ba047d.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/67e05040-1631-4dc9-9600-594640ba047d.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Bedroom Tall Pole Lamp</h4>\n<p> </p>\n</div>\n</div>\n</div>\n<div class=\"celwidget aplus-module 3p-module-b aplus-standard\" cel_widget_id=\"aplus-m-3p-module-b\" data-csa-c-id=\"5x6npe-9eo1ny-2ntdc6-mq4ft9\" data-cel-widget=\"aplus-m-3p-module-b\">\n<div class=\"aplus-3p-center-content\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/01dcb4f2-ec14-4ce7-98a8-f59fa355a9eb.__CR0,0,970,600_PT0_SX970_V1___.png\" class=\"a-spacing-base\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/01dcb4f2-ec14-4ce7-98a8-f59fa355a9eb.__CR0,0,970,600_PT0_SX970_V1___.png\"></div>\n<p class=\"a-spacing-base\"><span class=\"a-text-bold\">Cautions</span></p>\n<p class=\"a-spacing-base\">1.Cut off power before installing or cleaning the floor lamp.</p>\n<p class=\"a-spacing-base\">2.Bulb does NOT include in the package.</p>\n<p class=\"a-spacing-base\">3.The floor lamp supports up to 60 watts maximum.</p>\n</div>\n<div class=\"celwidget aplus-module module-5 aplus-standard\" cel_widget_id=\"aplus-m-module-5\" data-csa-c-id=\"h8n52i-um70qj-6emp3j-2k6vgz\" data-cel-widget=\"aplus-m-module-5\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"apm-spacing\">\n<div class=\"apm-tablemodule\"></div>\n</div>\n</div>\n</div>\n</div>\n<p> </p>"
+        },
+        "handle": "industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0701/0553/0642/files/industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade-6382165.jpg",
+            "alt_text": "Industrial Floor Lamp, Modern Standing Lamps with Hanging Clear Glass Shade",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0701/0553/0642/files/industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade-6382165.jpg",
+              "width": 1242,
+              "height": 1236
+            },
+            "width": 1242,
+            "height": 1236
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Gold"
+              },
+              {
+                "label": "Oil-Rubbed Bronze"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines a clear glass shade with a weighted metal base for stable, bright, and elegant overhead lighting."
+          ],
+          "top_features": [
+            "Clear glass shade diffuses light evenly for a bright, clean overhead illumination",
+            "Weighted 9.84 kg metal base ensures stability and prevents tipping",
+            "Foot pedal switch located on the cord for convenient on/off control",
+            "Compatible with E26 bulbs up to 60 watts for flexible lighting options",
+            "Versatile design complements mid-century modern, Nordic, art deco, and traditional interiors"
+          ],
+          "tech_specs": [
+            "Height: 1.67 m (5.5 ft)",
+            "Base: Weighted 9.84 kg metal",
+            "Bulb Compatibility: E26 socket, max 60W (bulb not included)",
+            "Voltage: AC 100-130V",
+            "Cord Length: 1.8 m (5.9 ft)",
+            "Switch Type: On/off switch on cord"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/52375408410898",
+            "title": "Industrial Floor Lamp, Modern Standing Lamps with Hanging Clear Glass Shade",
+            "description": {
+              "plain": "<meta charset=\"UTF-8\">\n<h3>Product description</h3>\n<div class=\"aplus-v2 mobile celwidget\" cel_widget_id=\"m-aplus\" data-csa-c-id=\"vti1hr-h7yyjk-bm676e-j5u1gq\" data-cel-widget=\"m-aplus\">\n<div class=\"celwidget aplus-module launchpad-company-logo aplus-standard\" cel_widget_id=\"aplus-m-launchpad-company-logo\" data-csa-c-id=\"95s9jq-b2ybmq-b13twl-ilx172\" data-cel-widget=\"aplus-m-launchpad-company-logo\">\n<div class=\"a-section a-text-center launchpad-module launchpad-module-company-logo\"><img alt=\"MAXvolador - LED Bulb Table Lamp Floor Lamp Ceiling Light Pendant Light String Light Chandelier\" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/07b4fdc2-a6ba-4af4-bbe2-b48ff956ff3c.__CR0,0,600,180_PT0_SX600_V1___.jpg\" class=\"\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/07b4fdc2-a6ba-4af4-bbe2-b48ff956ff3c.__CR0,0,600,180_PT0_SX600_V1___.jpg\"></div>\n</div>\n<div class=\"celwidget aplus-module 3p-module-b aplus-standard\" cel_widget_id=\"aplus-m-3p-module-b\" data-csa-c-id=\"am65ab-t2oxzu-3h7wid-jnucqb\" data-cel-widget=\"aplus-m-3p-module-b\">\n<div class=\"aplus-3p-center-content\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/a7cfb454-76d2-4280-a5f4-ba5847828087.__CR0,0,970,600_PT0_SX970_V1___.png\" class=\"a-spacing-base\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/a7cfb454-76d2-4280-a5f4-ba5847828087.__CR0,0,970,600_PT0_SX970_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Modern Standing Lamp - Beautify Your Room!</h3>\n<p class=\"a-spacing-base\">With the modern minimalist design concept, our industrial floor lamp mixed anti-rust finished black tubular metal body and stylish clear glass shade fits perfectly in any room from mid-century modern to traditional décor.</p>\n</div>\n<div class=\"celwidget aplus-module module-1 aplus-standard\" cel_widget_id=\"aplus-m-module-1\" data-csa-c-id=\"2f90rg-6oe8cb-775qlt-v0i2og\" data-cel-widget=\"aplus-m-module-1\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"apm-spacing apm-wrap\">\n<div class=\"apm-wrap\">\n<div class=\"a-section a-text-center\">\n<img alt=\"floor lamp compatible with various bulbs like led incandescent cfl halogen\" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/3a30c4a3-69ac-451c-a2f5-eea6ac70345f.__CR0,0,350,175_PT0_SX350_V1___.jpg\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/3a30c4a3-69ac-451c-a2f5-eea6ac70345f.__CR0,0,350,175_PT0_SX350_V1___.jpg\">\n<h5 class=\"a-color-secondary a-text-center\">Note: Bulb Is NOT Included</h5>\n</div>\n<p class=\"a-spacing-small a-size-small a-color-secondary\"> </p>\n<ul class=\"a-unordered-list a-vertical\">\n<li><span class=\"a-list-item\">Voltage: AC100-130V</span></li>\n<li><span class=\"a-list-item\">Base Type: E26(Not Include Bulb)</span></li>\n<li><span class=\"a-list-item\">Wattage: Max 60W</span></li>\n<li><span class=\"a-list-item\">Switch Type: ON/OFF Switch On Cord</span></li>\n<li><span class=\"a-list-item\">Wire Length: 1.8m/5.9ft</span></li>\n<li><span class=\"a-list-item\">Height: 1.67m/5.5ft</span></li>\n<li><span class=\"a-list-item\">Not Dimmable</span></li>\n</ul>\n<p> </p>\n<div class=\"a-section a-text-center\">\n<img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7dbcf7bd-67be-420e-9132-e9d8b7416c8b.__CR0,0,300,400_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7dbcf7bd-67be-420e-9132-e9d8b7416c8b.__CR0,0,300,400_PT0_SX300_V1___.png\">\n<p> </p>\n</div>\n<div class=\"apm-wrap\">\n<h4 class=\"a-spacing-mini a-color-secondary a-text-italic\">A Classic Additon to Any Room</h4>\n<p class=\"a-spacing-base\"> </p>\n<ul class=\"a-unordered-list a-vertical\">\n<li><span class=\"a-list-item\"><span class=\"a-text-bold\">When light on</span> - Clear glass shade allows the standing lamp to emit bright, clean, overhead lighting when you sit aside in working or reading.</span></li>\n<li><span class=\"a-list-item\"><span class=\"a-text-bold\">When light off</span> - With sturdy black stranding pole and clear glass shade, this modern floor lamp brings an eye-catching, timeless look to your room.</span></li>\n</ul>\n<p> </p>\n</div>\n</div>\n</div>\n</div>\n<div></div>\n</div>\n<div class=\"celwidget aplus-module module-6 aplus-standard\" cel_widget_id=\"aplus-m-module-6\" data-csa-c-id=\"krbxpd-gtp4i2-jvz7lr-s1h7d\" data-cel-widget=\"aplus-m-module-6\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"a-section\">\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7f122774-c3f2-4391-a7c5-01127bc1fd84.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/7f122774-c3f2-4391-a7c5-01127bc1fd84.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Elegant Clear Glass Shade</h3>\n<p class=\"a-spacing-base\">Comes with a sturdy clear glass lampshade that showcases the bulb your chose. Clear glass design allows your bulb to emit bright lighting to create a beautiful lighting atmosphere inside your house.</p>\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/40f708d3-380f-4758-8fb5-401ad8539b7a.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/40f708d3-380f-4758-8fb5-401ad8539b7a.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Sturdy Lamp Base &amp; Convenient Foot Switch</h3>\n<p class=\"a-spacing-base\">· A foot pedal switch located at the cord of the floor lamp, very convenient to turn on/off the corner lamp with your foot.</p>\n<p class=\"a-spacing-base\">· Designed with a weighted 9.84\" metal base, which can firmly hold the standing light, provides good stability and durability that prevents tipping for daily use. Safe to have around children, aged, and pets.</p>\n<div class=\"a-section a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/33cd2b89-c7ba-44c0-af08-7c74aff425d0.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/33cd2b89-c7ba-44c0-af08-7c74aff425d0.__CR0,0,300,300_PT0_SX300_V1___.png\"></div>\n<h3 class=\"a-spacing-mini\">Versatile Lamp</h3>\n<p class=\"a-spacing-base\">The corner lamp is compatible with a wide range of decor styles like new Nordic, mid-century, modern, classic, art deco. Adds a vintage yet upscale look to your living room, bedroom, study room, kids room, dorm, nursery, office.</p>\n<div class=\"a-section a-text-center\"><img alt=\"classic black floor stand lamp best gift christmas birthday \" src=\"https://m.media-amazon.com/images/S/aplus-media/sc/cb57a5ca-89cc-4165-be12-0679c4035407.__CR0,0,600,600_PT0_SX300_V1___.jpg\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media/sc/cb57a5ca-89cc-4165-be12-0679c4035407.__CR0,0,600,600_PT0_SX300_V1___.jpg\"></div>\n<h3 class=\"a-spacing-mini\">It's Also A Perfect Gift</h3>\n<p class=\"a-spacing-base\">Industrial standing tall lamp could be a wonderful present for your family or friends.</p>\n<p class=\"a-spacing-base\">The package has contained all components, just take a few minutes to screw all the parts of the lamp pole together.</p>\n</div>\n</div>\n</div>\n<div class=\"celwidget aplus-module module-9 aplus-standard\" cel_widget_id=\"aplus-m-module-9\" data-csa-c-id=\"qrljy4-y84nsk-gs40p2-s9xktf\" data-cel-widget=\"aplus-m-module-9\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"\">\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/0908f459-3f93-4c4f-a027-d79451f66b86.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/0908f459-3f93-4c4f-a027-d79451f66b86.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Corner Side Standing Lamp</h4>\n<p> </p>\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/c2fd0bec-b737-4080-aa48-02bdcec2f856.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/c2fd0bec-b737-4080-aa48-02bdcec2f856.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Living Room Floor Lamp</h4>\n<p> </p>\n<p class=\"a-text-center\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/67e05040-1631-4dc9-9600-594640ba047d.__CR0,0,300,300_PT0_SX300_V1___.png\" class=\"a-spacing-mini\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/67e05040-1631-4dc9-9600-594640ba047d.__CR0,0,300,300_PT0_SX300_V1___.png\"></p>\n<h4 class=\"a-spacing-mini\">Bedroom Tall Pole Lamp</h4>\n<p> </p>\n</div>\n</div>\n</div>\n<div class=\"celwidget aplus-module 3p-module-b aplus-standard\" cel_widget_id=\"aplus-m-3p-module-b\" data-csa-c-id=\"5x6npe-9eo1ny-2ntdc6-mq4ft9\" data-cel-widget=\"aplus-m-3p-module-b\">\n<div class=\"aplus-3p-center-content\"><img alt=\"Industrial Floor Lamp\" src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/01dcb4f2-ec14-4ce7-98a8-f59fa355a9eb.__CR0,0,970,600_PT0_SX970_V1___.png\" class=\"a-spacing-base\" data-src=\"https://m.media-amazon.com/images/S/aplus-media-library-service-media/01dcb4f2-ec14-4ce7-98a8-f59fa355a9eb.__CR0,0,970,600_PT0_SX970_V1___.png\"></div>\n<p class=\"a-spacing-base\"><span class=\"a-text-bold\">Cautions</span></p>\n<p class=\"a-spacing-base\">1.Cut off power before installing or cleaning the floor lamp.</p>\n<p class=\"a-spacing-base\">2.Bulb does NOT include in the package.</p>\n<p class=\"a-spacing-base\">3.The floor lamp supports up to 60 watts maximum.</p>\n</div>\n<div class=\"celwidget aplus-module module-5 aplus-standard\" cel_widget_id=\"aplus-m-module-5\" data-csa-c-id=\"h8n52i-um70qj-6emp3j-2k6vgz\" data-cel-widget=\"aplus-m-module-5\">\n<div class=\"aplus-module-wrapper\">\n<div class=\"apm-spacing\">\n<div class=\"apm-tablemodule\"></div>\n</div>\n</div>\n</div>\n</div>\n<p> </p>"
+            },
+            "handle": "industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade",
+            "url": "https://burchhilltack.com/products/industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade?variant=52375408410898&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 7595,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 10995,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Oil-Rubbed Bronze"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0701/0553/0642/files/industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade-6382165.jpg",
+                "alt_text": "Industrial Floor Lamp, Modern Standing Lamps with Hanging Clear Glass Shade",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0701/0553/0642/files/industrial-floor-lamp-modern-standing-lamps-with-hanging-clear-glass-shade-6382165.jpg",
+                  "width": 1242,
+                  "height": 1236
+                },
+                "width": 1242,
+                "height": 1236
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/70105530642",
+              "name": "Burch HIll Tack",
+              "url": "https://burchhilltack.com",
+              "domain": "blazzing-bridles.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/70105530642/policies/29464723730.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/70105530642/policies/29464756498.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/70105530642/policies/29464690962.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/70105530642/policies/29464789266.html"
+                }
+              ]
+            },
+            "checkout_url": "https://burchhilltack.com/buy/52375408410898:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 7595,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 7595,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/7AoY3w8xd5UJpPuZqHFQWo",
+        "title": "O¡¯Bright Industrial Floor Lamp for Living Room, 100% Metal Lamp, UL Certified E26 Socket, Minimalist Design for Decorative Lighting, Stand Lamp for Bedroom/Office/Dorm, ETL Listed (Black)",
+        "description": {
+          "plain": "<hr aria-hidden=\"true\" class=\"a-divider-normal\">     <h1 class=\"a-size-base-plus a-text-bold\"> About this item </h1>                     <ul class=\"a-unordered-list a-vertical a-spacing-mini\">  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Made to Last; This stand lamp is made of metal; Strong metal stem and weighted base will firmly hold the standing light; This floor lamp not only represents stability and durability for daily use but brings elegant designs to your modern home decoration  </span></li>  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Minimalist Design; Minimalist design takes up the least space for you to place the floor lamp anywhere your need it; You may use the lamp as a bedside reading light, living room couch lamp, floor reading lamp or office standing lamp  </span></li>  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Safety First; This floor lamp passes Safety Standard Test; The safety standard ensures you a safe product for daily use  </span></li>  </ul>   <!-- Loading EDP related metadata -->\n                   <div id=\"product-details-jumplink\" class=\"a-section\"> <span class=\"caretnext\">?</span> <a id=\"seeMoreDetailsLink\" class=\"a-link-normal\" href=\"#productDetails\"> See more product details </a> </div>"
+        },
+        "handle": "obright-industrial-floor-lamp-for-living-room-100-metal-lamp-ul-certified-e26-socket-minimalist-design-for-decorative-lighting-stand-lamp-for-bedroomofficedorm-etl-listed-black",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0942/1779/7906/files/21e9TOs8R8L._SS500.jpg",
+            "alt_text": "O¡¯Bright Industrial Floor Lamp for Living Room, 100% Metal Lamp, UL Certified E26 Socket, Minimalist Design for Decorative Lighting, Stand Lamp for Bedroom/Office/Dorm, ETL Listed (Black)",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0942/1779/7906/files/21e9TOs8R8L._SS500.jpg",
+              "width": 500,
+              "height": 500
+            },
+            "width": 500,
+            "height": 500
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Constructed from 100% metal with a weighted base for stability and safety, featuring a minimalist design."
+          ],
+          "top_features": [
+            "100% metal construction ensures long-lasting durability and strength",
+            "Weighted base provides stable support for daily use",
+            "Minimalist design fits easily into modern interiors and small spaces",
+            "UL certified E26 socket offers safe and compatible lighting",
+            "Versatile placement for living room, bedroom, office, or dorm"
+          ],
+          "tech_specs": [
+            "Finish: Painted",
+            "Base Material: Metal",
+            "Bulb Base: E26",
+            "Bulb Size: A19",
+            "Product Dimensions: 10 D x 10 W x 70 H inches",
+            "Item Weight: 8.8 pounds",
+            "Color: Black"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/51722868490514",
+            "title": "O¡¯Bright Industrial Floor Lamp for Living Room, 100% Metal Lamp, UL Certified E26 Socket, Minimalist Design for Decorative Lighting, Stand Lamp for Bedroom/Office/Dorm, ETL Listed (Black)",
+            "description": {
+              "plain": "<hr aria-hidden=\"true\" class=\"a-divider-normal\">     <h1 class=\"a-size-base-plus a-text-bold\"> About this item </h1>                     <ul class=\"a-unordered-list a-vertical a-spacing-mini\">  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Made to Last; This stand lamp is made of metal; Strong metal stem and weighted base will firmly hold the standing light; This floor lamp not only represents stability and durability for daily use but brings elegant designs to your modern home decoration  </span></li>  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Minimalist Design; Minimalist design takes up the least space for you to place the floor lamp anywhere your need it; You may use the lamp as a bedside reading light, living room couch lamp, floor reading lamp or office standing lamp  </span></li>  <li class=\"a-spacing-mini\"><span class=\"a-list-item\"> Safety First; This floor lamp passes Safety Standard Test; The safety standard ensures you a safe product for daily use  </span></li>  </ul>   <!-- Loading EDP related metadata -->\n                   <div id=\"product-details-jumplink\" class=\"a-section\"> <span class=\"caretnext\">?</span> <a id=\"seeMoreDetailsLink\" class=\"a-link-normal\" href=\"#productDetails\"> See more product details </a> </div>"
+            },
+            "handle": "obright-industrial-floor-lamp-for-living-room-100-metal-lamp-ul-certified-e26-socket-minimalist-design-for-decorative-lighting-stand-lamp-for-bedroomofficedorm-etl-listed-black",
+            "url": "https://hubssense.com/products/obright-industrial-floor-lamp-for-living-room-100-metal-lamp-ul-certified-e26-socket-minimalist-design-for-decorative-lighting-stand-lamp-for-bedroomofficedorm-etl-listed-black?variant=51722868490514&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 6895,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 9499,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0942/1779/7906/files/21e9TOs8R8L._SS500.jpg",
+                "alt_text": "O¡¯Bright Industrial Floor Lamp for Living Room, 100% Metal Lamp, UL Certified E26 Socket, Minimalist Design for Decorative Lighting, Stand Lamp for Bedroom/Office/Dorm, ETL Listed (Black)",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0942/1779/7906/files/21e9TOs8R8L._SS500.jpg",
+                  "width": 500,
+                  "height": 500
+                },
+                "width": 500,
+                "height": 500
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/94217797906",
+              "name": "Hubssense",
+              "url": "https://hubssense.com",
+              "domain": "u39dsr-q2.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/94217797906/policies/46200815890.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/94217797906/policies/46526071058.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/94217797906/policies/46526038290.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/94217797906/policies/46526103826.html"
+                }
+              ]
+            },
+            "checkout_url": "https://hubssense.com/buy/51722868490514:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 6895,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 6895,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/2lWrhJRFdHAJJDCAW3CZxY",
+        "title": "Industrial Metal Franklin Floor Lamp w/ Tall Cylinder Shade - HLG13",
+        "description": {
+          "plain": "<p>McGowan &amp; Rutherford floor lamp, supplied under item code HLG13.</p><ul>\n<li>Width: 22cm</li>\n<li>Height: 150cm</li>\n<li>Depth: 22cm</li>\n<li>Commodity Code: 9405299090</li>\n<li>Carton Qty: 1</li>\n<li>Carton Width: 24cm</li>\n<li>Carton Height: 129cm</li>\n<li>Carton Depth: 24.5cm</li>\n<li>Carton GW: 5.65kg</li>\n<li>Product NW: 4.68kg</li>\n</ul>"
+        },
+        "handle": "industrial-metal-franklin-floor-lamp-w-tall-cylinder-shade-hlg13",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 1
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0576/8809/6927/files/5534-efd01d53-ac85-47c6-98c0-6bd6c6c08f14.jpg",
+            "alt_text": "Industrial Metal Franklin Floor Lamp w/ Tall Cylinder Shade - HLG13",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0576/8809/6927/files/5534-efd01d53-ac85-47c6-98c0-6bd6c6c08f14.jpg",
+              "width": 2344,
+              "height": 3000
+            },
+            "width": 2344,
+            "height": 3000
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Combines a sturdy metal frame with a tall, slim cylinder shade for both durability and a contemporary industrial look."
+          ],
+          "top_features": [
+            "High-quality metal construction ensures long-lasting durability",
+            "Tall cylinder shade provides soft, ambient lighting for any space",
+            "Slim profile allows versatile placement next to bars, counters, or in corners",
+            "Modern industrial style complements minimalist and vintage-inspired decor",
+            "Neutral color palette fits seamlessly with various home themes"
+          ],
+          "tech_specs": [
+            "Material: Metal",
+            "Color: Black, Gray, Bronze",
+            "Light Color: White",
+            "Light Pattern: Solid",
+            "Dimensions: Width 22 cm, Height 150 cm, Depth 22 cm",
+            "Style: Industrial"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/57460049215868",
+            "title": "Industrial Metal Franklin Floor Lamp w/ Tall Cylinder Shade - HLG13",
+            "description": {
+              "plain": "<p>McGowan &amp; Rutherford floor lamp, supplied under item code HLG13.</p><ul>\n<li>Width: 22cm</li>\n<li>Height: 150cm</li>\n<li>Depth: 22cm</li>\n<li>Commodity Code: 9405299090</li>\n<li>Carton Qty: 1</li>\n<li>Carton Width: 24cm</li>\n<li>Carton Height: 129cm</li>\n<li>Carton Depth: 24.5cm</li>\n<li>Carton GW: 5.65kg</li>\n<li>Product NW: 4.68kg</li>\n</ul>"
+            },
+            "handle": "industrial-metal-franklin-floor-lamp-w-tall-cylinder-shade-hlg13",
+            "url": "https://www.caradok.co.uk/products/industrial-metal-franklin-floor-lamp-w-tall-cylinder-shade-hlg13?variant=57460049215868&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 13700,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0576/8809/6927/files/5534-efd01d53-ac85-47c6-98c0-6bd6c6c08f14.jpg",
+                "alt_text": "Industrial Metal Franklin Floor Lamp w/ Tall Cylinder Shade - HLG13",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0576/8809/6927/files/5534-efd01d53-ac85-47c6-98c0-6bd6c6c08f14.jpg",
+                  "width": 2344,
+                  "height": 3000
+                },
+                "width": 2344,
+                "height": 3000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/57688096927",
+              "name": "Caradok",
+              "url": "https://www.caradok.co.uk",
+              "domain": "caradok.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/57688096927/policies/24980619423.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/57688096927/policies/24980652191.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/57688096927/policies/24980586655.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/57688096927/policies/24980684959.html"
+                }
+              ]
+            },
+            "checkout_url": "https://www.caradok.co.uk/buy/57460049215868:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 13700,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 13700,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/2rQaWrDb8AC9XU1TpUYK9",
+        "title": "Floor Lamp, Industrial Floor Lamp, 63 Inch Standing Lamp, E26 Socket, On/Off Footswitch, Whole Metal, ETL Listed, Modern Small Lamp for Bedroom, Living Room, Minimalist, Vintage, Mid Century",
+        "description": {
+          "plain": "<div> <div> <h2>Product description</h2> <div> <div> <div> <div> <div> <div> <div> <table> <tbody> <tr> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> </tr> <tr> <th> <span> Customer Reviews </span> </th> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,352</span> </div> </div> </td> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,202</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>914</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>1,647</span> </div> </div> </td> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,202</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>572</span> </div> </div> </td> </tr> <tr> <th> <span> Price </span> </th> <td> — <span>no data</span> </td> <td> <span><span>$29.99</span><span><span>$</span><span>29<span>.</span></span><span>99</span></span></span> </td> <td> <span><span>$54.99</span><span><span>$</span><span>54<span>.</span></span><span>99</span></span></span> </td> <td> — <span>no data</span> </td> <td> — <span>no data</span> </td> <td> <span><span>$37.99</span><span><span>$</span><span>37<span>.</span></span><span>99</span></span></span> </td> </tr> <tr> <th> <span> Wattage </span> </th> <td> <span> 20W+5W </span> </td> <td> <span> 15W </span> </td> <td> <span> 3*6W </span> </td> <td> <span> 6W </span> </td> <td> <span> 20W </span> </td> <td> <span> 6W </span> </td> </tr> <tr> <th> <span> Switch </span> </th> <td> <span> Double Rotary Switches </span> </td> <td> <span> Pull Chain Switch </span> </td> <td> <span> Rotary Switch </span> </td> <td> <span> On/Off Footswitch </span> </td> <td> <span> Touch Control </span> </td> <td> <span> On/Off Footswitch </span> </td> </tr> <tr> <th> <span> Material </span> </th> <td> <span> Metal </span> </td> <td> <span> Metal+Linen </span> </td> <td> <span> Whole Metal </span> </td> <td> <span> Metal </span> </td> <td> <span> Metal+Acrylic </span> </td> <td> <span> Whole Metal </span> </td> </tr> <tr> <th> <span> Lumens </span> </th> <td> <span> 2500 </span> </td> <td> <span> 1500 </span> </td> <td> <span> 2400 </span> </td> <td> <span> 800 </span> </td> <td> <span> 2000 </span> </td> <td> <span> 600 </span> </td> </tr> </tbody> </table> </div> </div> </div> </div> <div> <div> <p> <span>BoostArea Industrial Floor Lamp</span> </p> <p> BoostArea focusing on the development of lighting products; We have been providing the world with innovative and affordable products; This Industrial Floor Lamp combines contemporary component and metal material, offer our customer premium floor lamp with a vintage and stylish design </p> </div> </div> <div> <div> <p> <span>Change the Bulb, Change the Style</span> </p> <p> The vintage floor lamp is compatible with E26 Bulbs (Not included), you can choose an E26 Edison bulb or E26 LED bulb (Not included) as you like; BoostArea industrial floor lamp brings in some vintage charm and rustic appeal to your space </p> </div> </div> <div> <div> <p> <span>Creat Your Own Style</span> </p> <p> Are you looking for a floor lamp with a unique design and also a 100% match with your home style; BoostArea industrial floor lamp is your ideal answer; BoostArea standing lamp gives you much more space to design according to your home style and your own taste </p> </div> </div> <div> <div> <p> <span>Whole Metal, Convenient</span> <span>Footswitch</span> </p> <p> This standing lamp is made of metal from head to toe, comes with a stable base, matte black pole and a convenient footswitch; An innovative way of lighting up space, by means of a simple and long-lasting design; BoostArea floor lamp, designing a new, unique, visual ambient for your home </p> </div> </div> </div> </div> </div> </div> </div> <ul>\n<li>You Decide the Style; Are you looking for a black floor lamp with a unique design and also a 100% match with your home style; BoostArea industrial floor lamp is your ideal answer; This standing lamp comes with a built-in E26 Standard Base Socket (Bulb Not Included), which gives you much more space to design it according to your home style and your own taste; When using different shapes and colors of bulbs, the lamp gives various looks; Change the Bulb, Change the Look; Tips: Only for E26 bulbs</li>\n<li>Design, Less is More; BoostArea industrial floor lamp made with matte black metal, without complex adds, this cool minimalist floor lamp offers a comfortable and delightful ambiance to your home with the modern pole and exposed bulb (Bulb Not Included); Less is more, thanks for the simple design, this standing lamp leaves space for you to DIY, you are the designer for your unique room; Pick it as the floor lamps for bedroom or living room, enjoy with vintage, mid-century or contemporary styles</li>\n<li>Easy Assemble and Use; This 63 inches floor lamp is easy to assemble without any tools, you just need to screw all the parts together via following the instruction on the page; 6 ft cord and its compact base allow you to move the modern floor lamp in any corner of your room, sliding it behind a sofa or place it beside a cabinet as you like; Besides, combined with the footswitch, you can easily tap the cool floor lamp on or off with your foot; Easy to assemble and use, makes your life much easier</li>\n<li>Whole Metal and ETL Listed; This industrial floor lamp is 100% made of metal from head to toe; With a strong metal pole and weighted metal base, this vintage floor lamp provides good stability from falling, which is safe for you and your family; Besides, this black floor lamp passes ETL Safety Standard Test, it ensures the safety and quality of this Edison floor lamp</li>\n<li>Compatible with smart devices; You can plug this corner floor lamp in the smart plug (not included), add it to your home appliances group, and easily controlled it by your phone; This boho floor lamp stand also compatible with an E26 smart bulb (not included), intelligent design help you enjoy easier life and home automation</li>\n</ul>"
+        },
+        "handle": "floor-lamp-industrial-floor-lamp-63-inch-standing-lamp-e26-socket-on-off-footswitch-whole-metal-etl-listed-modern-small-lamp-for-bedroom-living-room-minimalist-vintage-mid-century",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0795/2600/2905/files/cb8582db2a7f9d34c7049d173061aba7.jpg",
+            "alt_text": "Floor Lamp, Industrial Floor Lamp, 63 Inch Standing Lamp, E26 Socket, On/Off Footswitch, Whole Metal, ETL Listed, Modern Small Lamp for Bedroom, Living Room, Minimalist, Vintage, Mid Century",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0795/2600/2905/files/cb8582db2a7f9d34c7049d173061aba7.jpg",
+              "width": 1337,
+              "height": 1500
+            },
+            "width": 1337,
+            "height": 1500
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Fully metal construction with exposed E26 bulb and convenient footswitch for easy on/off control."
+          ],
+          "top_features": [
+            "Whole metal build ensures durability and stability for safe use",
+            "Exposed E26 bulb allows for easy bulb replacement to match your style",
+            "Integrated footswitch enables simple on/off operation without a switch",
+            "63 inch length fits large spaces and provides ample lighting coverage",
+            "Compatible with smart plugs and E26 bulbs for future home automation"
+          ],
+          "tech_specs": [
+            "Height: 63 inches",
+            "Base: Weighted metal",
+            "Material: Metal",
+            "Socket: E26 standard base (bulb not included)",
+            "Switch: On/Off footswitch",
+            "Cord Length: 6 ft",
+            "Style: Modern, Industrial, Minimalist, Vintage, Mid Century"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/49185683275993",
+            "title": "Floor Lamp, Industrial Floor Lamp, 63 Inch Standing Lamp, E26 Socket, On/Off Footswitch, Whole Metal, ETL Listed, Modern Small Lamp for Bedroom, Living Room, Minimalist, Vintage, Mid Century",
+            "description": {
+              "plain": "<div> <div> <h2>Product description</h2> <div> <div> <div> <div> <div> <div> <div> <table> <tbody> <tr> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> <td> <form> <div> <span><span><span> Add to Cart </span></span></span> </div> </form> </td> </tr> <tr> <th> <span> Customer Reviews </span> </th> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,352</span> </div> </div> </td> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,202</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>914</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>1,647</span> </div> </div> </td> <td> <div> <div> <i><span>4.3 out of 5 stars</span></i> <span>2,202</span> </div> </div> </td> <td> <div> <div> <i><span>4.6 out of 5 stars</span></i> <span>572</span> </div> </div> </td> </tr> <tr> <th> <span> Price </span> </th> <td> — <span>no data</span> </td> <td> <span><span>$29.99</span><span><span>$</span><span>29<span>.</span></span><span>99</span></span></span> </td> <td> <span><span>$54.99</span><span><span>$</span><span>54<span>.</span></span><span>99</span></span></span> </td> <td> — <span>no data</span> </td> <td> — <span>no data</span> </td> <td> <span><span>$37.99</span><span><span>$</span><span>37<span>.</span></span><span>99</span></span></span> </td> </tr> <tr> <th> <span> Wattage </span> </th> <td> <span> 20W+5W </span> </td> <td> <span> 15W </span> </td> <td> <span> 3*6W </span> </td> <td> <span> 6W </span> </td> <td> <span> 20W </span> </td> <td> <span> 6W </span> </td> </tr> <tr> <th> <span> Switch </span> </th> <td> <span> Double Rotary Switches </span> </td> <td> <span> Pull Chain Switch </span> </td> <td> <span> Rotary Switch </span> </td> <td> <span> On/Off Footswitch </span> </td> <td> <span> Touch Control </span> </td> <td> <span> On/Off Footswitch </span> </td> </tr> <tr> <th> <span> Material </span> </th> <td> <span> Metal </span> </td> <td> <span> Metal+Linen </span> </td> <td> <span> Whole Metal </span> </td> <td> <span> Metal </span> </td> <td> <span> Metal+Acrylic </span> </td> <td> <span> Whole Metal </span> </td> </tr> <tr> <th> <span> Lumens </span> </th> <td> <span> 2500 </span> </td> <td> <span> 1500 </span> </td> <td> <span> 2400 </span> </td> <td> <span> 800 </span> </td> <td> <span> 2000 </span> </td> <td> <span> 600 </span> </td> </tr> </tbody> </table> </div> </div> </div> </div> <div> <div> <p> <span>BoostArea Industrial Floor Lamp</span> </p> <p> BoostArea focusing on the development of lighting products; We have been providing the world with innovative and affordable products; This Industrial Floor Lamp combines contemporary component and metal material, offer our customer premium floor lamp with a vintage and stylish design </p> </div> </div> <div> <div> <p> <span>Change the Bulb, Change the Style</span> </p> <p> The vintage floor lamp is compatible with E26 Bulbs (Not included), you can choose an E26 Edison bulb or E26 LED bulb (Not included) as you like; BoostArea industrial floor lamp brings in some vintage charm and rustic appeal to your space </p> </div> </div> <div> <div> <p> <span>Creat Your Own Style</span> </p> <p> Are you looking for a floor lamp with a unique design and also a 100% match with your home style; BoostArea industrial floor lamp is your ideal answer; BoostArea standing lamp gives you much more space to design according to your home style and your own taste </p> </div> </div> <div> <div> <p> <span>Whole Metal, Convenient</span> <span>Footswitch</span> </p> <p> This standing lamp is made of metal from head to toe, comes with a stable base, matte black pole and a convenient footswitch; An innovative way of lighting up space, by means of a simple and long-lasting design; BoostArea floor lamp, designing a new, unique, visual ambient for your home </p> </div> </div> </div> </div> </div> </div> </div> <ul>\n<li>You Decide the Style; Are you looking for a black floor lamp with a unique design and also a 100% match with your home style; BoostArea industrial floor lamp is your ideal answer; This standing lamp comes with a built-in E26 Standard Base Socket (Bulb Not Included), which gives you much more space to design it according to your home style and your own taste; When using different shapes and colors of bulbs, the lamp gives various looks; Change the Bulb, Change the Look; Tips: Only for E26 bulbs</li>\n<li>Design, Less is More; BoostArea industrial floor lamp made with matte black metal, without complex adds, this cool minimalist floor lamp offers a comfortable and delightful ambiance to your home with the modern pole and exposed bulb (Bulb Not Included); Less is more, thanks for the simple design, this standing lamp leaves space for you to DIY, you are the designer for your unique room; Pick it as the floor lamps for bedroom or living room, enjoy with vintage, mid-century or contemporary styles</li>\n<li>Easy Assemble and Use; This 63 inches floor lamp is easy to assemble without any tools, you just need to screw all the parts together via following the instruction on the page; 6 ft cord and its compact base allow you to move the modern floor lamp in any corner of your room, sliding it behind a sofa or place it beside a cabinet as you like; Besides, combined with the footswitch, you can easily tap the cool floor lamp on or off with your foot; Easy to assemble and use, makes your life much easier</li>\n<li>Whole Metal and ETL Listed; This industrial floor lamp is 100% made of metal from head to toe; With a strong metal pole and weighted metal base, this vintage floor lamp provides good stability from falling, which is safe for you and your family; Besides, this black floor lamp passes ETL Safety Standard Test, it ensures the safety and quality of this Edison floor lamp</li>\n<li>Compatible with smart devices; You can plug this corner floor lamp in the smart plug (not included), add it to your home appliances group, and easily controlled it by your phone; This boho floor lamp stand also compatible with an E26 smart bulb (not included), intelligent design help you enjoy easier life and home automation</li>\n</ul>"
+            },
+            "handle": "floor-lamp-industrial-floor-lamp-63-inch-standing-lamp-e26-socket-on-off-footswitch-whole-metal-etl-listed-modern-small-lamp-for-bedroom-living-room-minimalist-vintage-mid-century",
+            "url": "https://viralsonline.com/products/floor-lamp-industrial-floor-lamp-63-inch-standing-lamp-e26-socket-on-off-footswitch-whole-metal-etl-listed-modern-small-lamp-for-bedroom-living-room-minimalist-vintage-mid-century?variant=49185683275993&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 3122,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0795/2600/2905/files/cb8582db2a7f9d34c7049d173061aba7.jpg",
+                "alt_text": "Floor Lamp, Industrial Floor Lamp, 63 Inch Standing Lamp, E26 Socket, On/Off Footswitch, Whole Metal, ETL Listed, Modern Small Lamp for Bedroom, Living Room, Minimalist, Vintage, Mid Century",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0795/2600/2905/files/cb8582db2a7f9d34c7049d173061aba7.jpg",
+                  "width": 1337,
+                  "height": 1500
+                },
+                "width": 1337,
+                "height": 1500
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/79526002905",
+              "name": "ViralsOnline",
+              "url": "https://viralsonline.com",
+              "domain": "fu0u0g-1f.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/79526002905/policies/40905572569.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/79526002905/policies/44263407833.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/79526002905/policies/44263342297.html"
+                }
+              ]
+            },
+            "checkout_url": "https://viralsonline.com/buy/49185683275993:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 3122,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 3122,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/71uuPV1DYb1AwGKHipg5C5",
+        "title": "Floor Lamp for Living Room Bedroom Office Industrial Metal Torchiere Standing Lamp Adjustable Rotary Switch Shatter-Proof Shade Black",
+        "description": {
+          "plain": "<h2>Floor Lamp for Living Room &amp; Bedroom – Industrial Metal Torchiere</h2>\n\n<p>Elevate your space with this sleek industrial-style floor lamp. Featuring a sturdy metal base and a shatter-proof shade, this torchiere standing lamp delivers adjustable ambient lighting perfect for any room in your home or office.</p>\n\n<h3>Key Features</h3>\n\n<ul>\n\t<li>\n<strong>Industrial Metal Design:</strong> Durable metal base with lacquered finish for a modern, stylish look</li>\n\t<li>\n<strong>Shatter-Proof Lampshade:</strong> Safe and long-lasting plastic shade built to last</li>\n\t<li>\n<strong>Rotary Switch:</strong> Easy on/off control at your fingertips</li>\n\t<li>\n<strong>Adjustable Lighting:</strong> Torch-style head provides upward ambient illumination</li>\n\t<li>\n<strong>Versatile Placement:</strong> Ideal for living rooms, bedrooms, offices, and study rooms</li>\n\t<li>\n<strong>Tall Standing Design:</strong> High floor lamp adds vertical dimension to any space</li>\n</ul>\n\n<h3>Specifications</h3>\n\n<table>\n\t<tbody>\n\t\t<tr>\n\t\t\t<th>Feature</th>\n\t\t\t<th>Details</th>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Base Material</td>\n\t\t\t<td>Metal</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Shade Material</td>\n\t\t\t<td>Plastic (Shatter-Proof)</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Finish</td>\n\t\t\t<td>Lacquered</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Switch Type</td>\n\t\t\t<td>Rotary Switch</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Bulb</td>\n\t\t\t<td>Not Included</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Color</td>\n\t\t\t<td>Black</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Style</td>\n\t\t\t<td>Industrial / Torchiere</td>\n\t\t</tr>\n\t</tbody>\n</table>\n\n<h3>Perfect For</h3>\n\n<ul>\n\t<li>Living room corner lighting</li>\n\t<li>Bedroom reading and ambient light</li>\n\t<li>Home office or study room illumination</li>\n\t<li>Rental apartments and dorm rooms</li>\n\t<li>Modern industrial interior decor</li>\n</ul>\n<img referrerpolicy=\"no-referrer\" src=\"https://img.kwcdn.com/product/fancy/a6eb5122-142c-4e7a-931c-4780a076657a.jpg\"><br>\n<div><img referrerpolicy=\"no-referrer\" src=\"https://img.kwcdn.com/product/fancy/345b12b8-c524-4334-b3b7-06254f8f2ede.jpg\"></div>"
+        },
+        "handle": "floor-lamp-industrial-metal-torchiere-living-room-bedroom",
+        "rating": {
+          "value": 5,
+          "scale_min": 1,
+          "scale_max": 5,
+          "count": 4
+        },
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0745/9310/8156/files/0cff6a95-f852-4678-a086-8c19692462da.jpg",
+            "alt_text": "Floor Lamp for Living Room Bedroom Office Industrial Metal Torchiere Standing Lamp Adjustable Rotary Switch Shatter-Proof Shade Black",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0745/9310/8156/files/0cff6a95-f852-4678-a086-8c19692462da.jpg",
+              "width": 1600,
+              "height": 1600
+            },
+            "width": 1600,
+            "height": 1600
+          }
+        ],
+        "options": [
+          {
+            "name": "Color",
+            "values": [
+              {
+                "label": "Black"
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "unique_selling_points": [
+            "Features a durable metal base, shatter-proof plastic shade, and easy rotary switch control for safe, adjustable lighting."
+          ],
+          "top_features": [
+            "Industrial metal base with lacquered finish provides a modern, stylish look",
+            "Shatter-proof plastic shade ensures safety and long-lasting durability",
+            "Rotary switch offers easy on/off control at your fingertips",
+            "Adjustable torch-style head delivers upward ambient illumination",
+            "Versatile placement ideal for living rooms, bedrooms, offices, and study rooms"
+          ],
+          "tech_specs": [
+            "Base Material: Metal",
+            "Shade Material: Plastic, Shatter-Proof",
+            "Finish: Lacquered",
+            "Switch Type: Rotary",
+            "Color: Black",
+            "Style: Industrial, Torchiere"
+          ]
+        },
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/46931224428732",
+            "title": "Floor Lamp for Living Room Bedroom Office Industrial Metal Torchiere Standing Lamp Adjustable Rotary Switch Shatter-Proof Shade Black",
+            "description": {
+              "plain": "<h2>Floor Lamp for Living Room &amp; Bedroom – Industrial Metal Torchiere</h2>\n\n<p>Elevate your space with this sleek industrial-style floor lamp. Featuring a sturdy metal base and a shatter-proof shade, this torchiere standing lamp delivers adjustable ambient lighting perfect for any room in your home or office.</p>\n\n<h3>Key Features</h3>\n\n<ul>\n\t<li>\n<strong>Industrial Metal Design:</strong> Durable metal base with lacquered finish for a modern, stylish look</li>\n\t<li>\n<strong>Shatter-Proof Lampshade:</strong> Safe and long-lasting plastic shade built to last</li>\n\t<li>\n<strong>Rotary Switch:</strong> Easy on/off control at your fingertips</li>\n\t<li>\n<strong>Adjustable Lighting:</strong> Torch-style head provides upward ambient illumination</li>\n\t<li>\n<strong>Versatile Placement:</strong> Ideal for living rooms, bedrooms, offices, and study rooms</li>\n\t<li>\n<strong>Tall Standing Design:</strong> High floor lamp adds vertical dimension to any space</li>\n</ul>\n\n<h3>Specifications</h3>\n\n<table>\n\t<tbody>\n\t\t<tr>\n\t\t\t<th>Feature</th>\n\t\t\t<th>Details</th>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Base Material</td>\n\t\t\t<td>Metal</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Shade Material</td>\n\t\t\t<td>Plastic (Shatter-Proof)</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Finish</td>\n\t\t\t<td>Lacquered</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Switch Type</td>\n\t\t\t<td>Rotary Switch</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Bulb</td>\n\t\t\t<td>Not Included</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Color</td>\n\t\t\t<td>Black</td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Style</td>\n\t\t\t<td>Industrial / Torchiere</td>\n\t\t</tr>\n\t</tbody>\n</table>\n\n<h3>Perfect For</h3>\n\n<ul>\n\t<li>Living room corner lighting</li>\n\t<li>Bedroom reading and ambient light</li>\n\t<li>Home office or study room illumination</li>\n\t<li>Rental apartments and dorm rooms</li>\n\t<li>Modern industrial interior decor</li>\n</ul>\n<img referrerpolicy=\"no-referrer\" src=\"https://img.kwcdn.com/product/fancy/a6eb5122-142c-4e7a-931c-4780a076657a.jpg\"><br>\n<div><img referrerpolicy=\"no-referrer\" src=\"https://img.kwcdn.com/product/fancy/345b12b8-c524-4334-b3b7-06254f8f2ede.jpg\"></div>"
+            },
+            "handle": "floor-lamp-industrial-metal-torchiere-living-room-bedroom",
+            "url": "https://veranesthome.com/products/floor-lamp-industrial-metal-torchiere-living-room-bedroom?variant=46931224428732&_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 5299,
+              "currency": "USD"
+            },
+            "list_price": {
+              "amount": 10599,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Color",
+                "label": "Black"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0745/9310/8156/files/0cff6a95-f852-4678-a086-8c19692462da.jpg",
+                "alt_text": "Floor Lamp for Living Room Bedroom Office Industrial Metal Torchiere Standing Lamp Adjustable Rotary Switch Shatter-Proof Shade Black",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0745/9310/8156/files/0cff6a95-f852-4678-a086-8c19692462da.jpg",
+                  "width": 1600,
+                  "height": 1600
+                },
+                "width": 1600,
+                "height": 1600
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/74593108156",
+              "name": "Vera Nest Home",
+              "url": "https://veranesthome.com",
+              "domain": "vgyypu-v8.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/74593108156/policies/38918652092.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/74593108156/policies/39173193916.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/74593108156/policies/39173030076.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/74593108156/policies/39173226684.html"
+                }
+              ]
+            },
+            "checkout_url": "https://veranesthome.com/buy/46931224428732:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "rating": {
+              "value": 5,
+              "scale_min": 1,
+              "scale_max": 5,
+              "count": 4
+            },
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 5299,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 5299,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/p/51fSxqS69iVadCzB6Qa4sR",
+        "title": "Industrial Metal Floor Lamp with Adjustable Arm",
+        "description": {
+          "plain": "<h3>Overview</h3><p>This metal floor lamp has a balance arm in a black and gold finish that brings an industrial look to your living space. The lamp head, pole, and height can all be adjusted to direct light where you need it.</p><h3>Features</h3><ul>\n<li>Balance arm with a black and gold finish</li>\n<li>Adjustable lighting: lamp head rotates 90°, lamp pole tilts 45°, and lamp height can be changed</li>\n<li>Footswitch for convenient on/off control when your hands are full</li>\n<li>5.9 ft. power cable</li>\n<li>Sturdy metal base that stays upright</li>\n<li>Simple assembly required</li>\n<li>E26 bulb base (bulb not included)</li>\n</ul><h3>Dimensions</h3><ul>\n<li>Overall Dimensions: 31.5\" L x 11.75\" W x 48.75\" -65\" H</li>\n<li>Lampshade Size: Dia 10\" x 5\" H</li>\n<li>Base Size: Dia 11.75\" x 0.5\" H</li>\n<li>Cord Length: 5.9 ft</li>\n<li>Bulb Power: 40 W</li>\n<li>Input: 100-120 V, 60 Hz</li>\n</ul><h3>Materials &amp; Care</h3><p>Constructed from metal in a black and gold color scheme.</p><p><strong>Package includes:</strong> 1 x Floor Lamp, 1 x Manual.</p>"
+        },
+        "handle": "industrial-metal-floor-lamp-with-adjustable-arm",
+        "media": [
+          {
+            "type": "image",
+            "url": "https://cdn.shopify.com/s/files/1/0663/9946/9662/files/1edcdc503f8b455e92ad198dc1f1f026.jpg",
+            "alt_text": "Industrial Metal Floor Lamp with Adjustable Arm",
+            "preview": {
+              "url": "https://cdn.shopify.com/s/files/1/0663/9946/9662/files/1edcdc503f8b455e92ad198dc1f1f026.jpg",
+              "width": 2000,
+              "height": 2000
+            },
+            "width": 2000,
+            "height": 2000
+          }
+        ],
+        "options": [
+          {
+            "name": "Default",
+            "values": [
+              {
+                "label": "16268390"
+              }
+            ]
+          }
+        ],
+        "variants": [
+          {
+            "id": "gid://shopify/ProductVariant/67825028333662",
+            "title": "Industrial Metal Floor Lamp with Adjustable Arm",
+            "description": {
+              "plain": "<h3>Overview</h3><p>This metal floor lamp has a balance arm in a black and gold finish that brings an industrial look to your living space. The lamp head, pole, and height can all be adjusted to direct light where you need it.</p><h3>Features</h3><ul>\n<li>Balance arm with a black and gold finish</li>\n<li>Adjustable lighting: lamp head rotates 90°, lamp pole tilts 45°, and lamp height can be changed</li>\n<li>Footswitch for convenient on/off control when your hands are full</li>\n<li>5.9 ft. power cable</li>\n<li>Sturdy metal base that stays upright</li>\n<li>Simple assembly required</li>\n<li>E26 bulb base (bulb not included)</li>\n</ul><h3>Dimensions</h3><ul>\n<li>Overall Dimensions: 31.5\" L x 11.75\" W x 48.75\" -65\" H</li>\n<li>Lampshade Size: Dia 10\" x 5\" H</li>\n<li>Base Size: Dia 11.75\" x 0.5\" H</li>\n<li>Cord Length: 5.9 ft</li>\n<li>Bulb Power: 40 W</li>\n<li>Input: 100-120 V, 60 Hz</li>\n</ul><h3>Materials &amp; Care</h3><p>Constructed from metal in a black and gold color scheme.</p><p><strong>Package includes:</strong> 1 x Floor Lamp, 1 x Manual.</p>"
+            },
+            "handle": "industrial-metal-floor-lamp-with-adjustable-arm",
+            "url": "https://www.casaventi.com/products/industrial-metal-floor-lamp-with-adjustable-arm?_gsid=wtX2yz4xiGYs&utm_source=shopify&utm_medium=catalog",
+            "price": {
+              "amount": 13076,
+              "currency": "USD"
+            },
+            "availability": {
+              "available": true
+            },
+            "options": [
+              {
+                "name": "Default",
+                "label": "16268390"
+              }
+            ],
+            "media": [
+              {
+                "type": "image",
+                "url": "https://cdn.shopify.com/s/files/1/0663/9946/9662/files/1edcdc503f8b455e92ad198dc1f1f026.jpg",
+                "alt_text": "Industrial Metal Floor Lamp with Adjustable Arm",
+                "preview": {
+                  "url": "https://cdn.shopify.com/s/files/1/0663/9946/9662/files/1edcdc503f8b455e92ad198dc1f1f026.jpg",
+                  "width": 2000,
+                  "height": 2000
+                },
+                "width": 2000,
+                "height": 2000
+              }
+            ],
+            "seller": {
+              "id": "gid://shopify/Shop/66399469662",
+              "name": "Casaventi",
+              "url": "https://www.casaventi.com",
+              "domain": "w0irhx-hg.myshopify.com",
+              "links": [
+                {
+                  "type": "privacy_policy",
+                  "url": "https://checkout.shopify.com/66399469662/policies/35421978718.html"
+                },
+                {
+                  "type": "terms_of_service",
+                  "url": "https://checkout.shopify.com/66399469662/policies/35533160542.html"
+                },
+                {
+                  "type": "refund_policy",
+                  "url": "https://checkout.shopify.com/66399469662/policies/35533127774.html"
+                },
+                {
+                  "type": "shipping_policy",
+                  "url": "https://checkout.shopify.com/66399469662/policies/35533193310.html"
+                }
+              ]
+            },
+            "checkout_url": "https://w0irhx-hg.myshopify.com/buy/67825028333662:1?ucp/version=2026-08-25&attribution/utm_source=shopify&attribution/utm_medium=catalog&channel=headless&attribution/click_id_tag=_gsid&attribution/click_id_value=wtX2yz4xiGYs&_gsid=wtX2yz4xiGYs",
+            "condition": [
+              "new"
+            ],
+            "eligible": {
+              "native_checkout": false
+            },
+            "source": "shopify"
+          }
+        ],
+        "price_range": {
+          "min": {
+            "amount": 13076,
+            "currency": "USD"
+          },
+          "max": {
+            "amount": 13076,
+            "currency": "USD"
+          }
+        }
+      }
+    ],
+    "messages": [],
+    "pagination": {
+      "has_next_page": true,
+      "total_count": 557,
+      "cursor": "eyJvZmZzZXQiOjgsInRvdGFsX2NvdW50Ijo1NTcsInJldHVybmVkIjo4fQ"
+    }
+  },
+  "cta": {
+    "description": "Extensions: global catalog active — variants carry `seller.domain` (for `--business`), `url` (PDP), and `checkout_url` (buy-now) for cross-business routing; the seller identity lives at `variants[*].seller.domain`; run --input-schema to see the full accepted catalog payload, including `like`, context, filters, and extension fields. Cross-business results — each variant belongs to its own seller. Pick the seller AND variant the buyer wants (products[N].variants[M]) before proceeding. To create a cart, pass --business=<products[N].variants[M].seller.domain>. If chosen items span multiple seller.domain values, create one cart/checkout per seller. Buyer handoff: open products[N].variants[M].url for the PDP when the buyer is still browsing; open products[N].variants[M].checkout_url for buy-now handoff when the buyer wants business-hosted checkout. More results available (showing 8 of 557); paginate only if you need them.",
+    "commands": [
+      {
+        "command": "ucp cart create --business <seller-domain> --input '{\"line_items\":[{\"item\":{\"id\":\"<variant-id>\"},\"quantity\":1}]}'",
+        "description": "create a cart at the chosen business — substitute <seller-domain> from products[N].variants[M].seller.domain and <variant-id> from products[N].variants[M].id."
+      },
+      {
+        "command": "ucp catalog search --input '<previous search body>' --set-string /pagination/cursor=<cursor>",
+        "description": "fetch next page — more of the same ranking: re-send your previous search body unchanged (query, filters, context, limit) with pagination.cursor set to result.pagination.cursor, copied verbatim; cursors are opaque and may invalidate across inventory changes; if results are weak or off-target, change query/context.intent instead and omit the cursor"
+      }
+    ]
+  }
+}

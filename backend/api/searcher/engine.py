@@ -1,0 +1,339 @@
+"""The searcher loop: one deterministic step at a time.
+
+`next_round` queries the catalog and stores filtered candidates; `judge`
+records accept/reject verdicts; `run_deterministic` is the no-LLM fallback.
+The accepted count is always computed from Candidate rows.
+"""
+import time
+
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+
+from ..models import (
+    Candidate,
+    CatalogQuery,
+    RunStatus,
+    RunStep,
+    SearchRun,
+    Verdict,
+)
+from ..serializers import object_to_json
+from . import filters, query_builder, ucp_client
+from .normalize import normalize_product
+
+REASON_LEN = 200
+MAX_COMPACT_SPECS = 6
+SUMMARY_LEN = 200
+
+
+class SearcherError(Exception):
+    def __init__(self, message, **extra):
+        super().__init__(message)
+        self.message = message
+        self.extra = extra
+
+
+# ------------------------------------------------------------------ helpers
+
+def _accepted(run):
+    return run.candidates.filter(verdict=Verdict.ACCEPTED).count()
+
+
+def _pending(run):
+    return run.candidates.filter(passes_filters=True, verdict=Verdict.PENDING).count()
+
+
+def _previous_queries(run):
+    return [
+        {
+            'round': q.round, 'strategy': q.strategy,
+            'query': (q.payload or {}).get('query', ''),
+            'payload': q.payload, 'response_meta': q.response_meta,
+            'passing_count': q.passing_count,
+        }
+        for q in run.queries.all()
+    ]
+
+
+def available_strategies(run):
+    prev = _previous_queries(run)
+    used = [q['query'] for q in prev]
+    return query_builder.strategies(run.object_snapshot, used, prev)
+
+
+def _set_step(run, step):
+    run.step = step
+    run.save(update_fields=['step'])
+
+
+def _price(cents):
+    return f'${cents / 100:,.2f}'
+
+
+def _num(v):
+    return f'{round(float(v), 2):g}'
+
+
+def _size_text(c):
+    dims = c.dims or {}
+    if dims.get('x') is not None and dims.get('y') is not None:
+        txt = ' x '.join(_num(dims[k]) for k in ('x', 'y', 'z') if dims.get(k) is not None) + ' in'
+        return f'{txt} ({c.size_status})'
+    if dims:
+        letters = {'x': 'W', 'y': 'D', 'z': 'H'}
+        txt = ', '.join(f'{_num(dims[k])} in {letters[k]}' for k in ('x', 'y', 'z') if k in dims)
+        return f'{txt} ({c.size_status})'
+    if c.dims_longest is not None:
+        return f'~{_num(c.dims_longest)} in longest ({c.size_status})'
+    return c.size_status
+
+
+def _compact(c):
+    return {
+        'id': c.pk,
+        'title': c.title,
+        'seller': c.seller_name,
+        'price': _price(c.price_cents),
+        'size': _size_text(c),
+        'weight': f'{_num(c.weight_lb)} lb' if c.weight_lb is not None else None,
+        'materials': c.material_text or ', '.join(c.materials) or None,
+        'specs': list(c.specs)[:MAX_COMPACT_SPECS],
+        'summary': (c.description or '')[:SUMMARY_LEN],
+    }
+
+
+def _stop(reason, run):
+    return {
+        'stop': True, 'reason': reason, 'status': run.status,
+        'accepted': _accepted(run), 'target': run.target,
+    }
+
+
+# ------------------------------------------------------------------- runs
+
+def create_run(space_object):
+    snapshot = object_to_json(space_object)
+    placement = space_object.placements.select_related('space').order_by('pk').first()
+    if placement is not None:
+        snapshot['space'] = {'type': placement.space.type, 'dims': placement.space.dims}
+    return SearchRun.objects.create(
+        object=space_object,
+        object_snapshot=snapshot,
+        status=RunStatus.RUNNING,
+        step=RunStep.PLANNING,
+        target=settings.SEARCHER_TARGET,
+        max_rounds=settings.SEARCHER_MAX_ROUNDS,
+        started_at=timezone.now(),
+    )
+
+
+def next_round(run, strategy=None):
+    run.refresh_from_db()
+    if run.status != RunStatus.RUNNING:
+        return _stop(f'run is not running (status: {run.status})', run)
+    accepted = _accepted(run)
+    if accepted >= run.target:
+        return _stop('target reached', run)
+    if run.round_count >= run.max_rounds:
+        return _stop('max rounds reached', run)
+    available = available_strategies(run)
+    if not available:
+        return _stop('no strategies left', run)
+    if strategy is None:
+        strategy = available[0]
+    elif strategy not in available:
+        raise SearcherError(
+            f'unknown or unavailable strategy: {strategy}', available=available
+        )
+
+    snapshot = run.object_snapshot
+    _set_step(run, RunStep.BUILDING_QUERY)
+    payload = query_builder.build_payload(snapshot, strategy, _previous_queries(run))
+    _set_step(run, RunStep.QUERYING_CATALOG)
+
+    run.round_count += 1
+    run.save(update_fields=['round_count'])
+    started = time.monotonic()
+    error = ''
+    envelope = None
+    try:
+        envelope = ucp_client.search_catalog(payload)
+    except ucp_client.UcpError as exc:
+        error = str(exc)
+    duration_ms = int((time.monotonic() - started) * 1000)
+
+    if envelope is None:
+        CatalogQuery.objects.create(
+            run=run, round=run.round_count, strategy=strategy, payload=payload,
+            response_meta={}, error=error, duration_ms=duration_ms,
+        )
+        _set_step(run, RunStep.RANKING)
+        return {
+            'error': error, 'round': run.round_count, 'strategy': strategy,
+            'query': payload['query'], 'accepted': accepted, 'target': run.target,
+            'rounds_left': run.max_rounds - run.round_count,
+            'strategies_left': available_strategies(run),
+        }
+
+    result = envelope['result']
+    products = [p for p in (result.get('products') or []) if isinstance(p, dict)]
+    pagination = result.get('pagination') or {}
+    meta = {
+        'total_count': pagination.get('total_count'),
+        'has_next_page': bool(pagination.get('has_next_page')),
+        'cursor': pagination.get('cursor'),
+        'messages': (result.get('messages') or [])[:10],
+    }
+
+    known = set(run.candidates.values_list('product_gid', flat=True))
+    rows = []
+    with transaction.atomic():
+        cq = CatalogQuery.objects.create(
+            run=run, round=run.round_count, strategy=strategy, payload=payload,
+            response_meta=meta, returned_count=len(products), duration_ms=duration_ms,
+        )
+        for product in products:
+            fields = normalize_product(product)
+            gid = fields['product_gid']
+            if not gid or not fields['title'] or gid in known:
+                continue
+            known.add(gid)
+            passes, reasons, size_status, weight_status = filters.evaluate(
+                fields, snapshot, settings.SEARCHER_SIZE_TOLERANCE
+            )
+            rows.append(Candidate(
+                run=run, query=cq, size_status=size_status, weight_status=weight_status,
+                passes_filters=passes, filter_reasons=reasons, **fields,
+            ))
+        Candidate.objects.bulk_create(rows)
+        passing = sum(1 for r in rows if r.passes_filters)
+        cq.new_count = len(rows)
+        cq.passing_count = passing
+        cq.save(update_fields=['new_count', 'passing_count'])
+    _set_step(run, RunStep.RANKING)
+
+    new_passing = list(
+        run.candidates.filter(query=cq, passes_filters=True).order_by('pk')
+    )
+    return {
+        'round': run.round_count,
+        'strategy': strategy,
+        'query': payload['query'],
+        'returned': len(products),
+        'new': len(rows),
+        'passing': passing,
+        'filtered_out': len(rows) - passing,
+        'accepted': accepted,
+        'target': run.target,
+        'rounds_left': run.max_rounds - run.round_count,
+        'strategies_left': available_strategies(run),
+        'candidates': [_compact(c) for c in new_passing],
+    }
+
+
+def judge(run, accept_ids=(), rejects=None):
+    accept_ids = [int(i) for i in accept_ids or []]
+    rejects = {int(k): v for k, v in (rejects or {}).items()}
+    both = set(accept_ids) & set(rejects)
+    if both:
+        raise SearcherError(f'ids both accepted and rejected: {sorted(both)}')
+    wanted = set(accept_ids) | set(rejects)
+    with transaction.atomic():
+        found = {c.pk: c for c in Candidate.objects.filter(run=run, pk__in=wanted)}
+        missing = sorted(wanted - set(found))
+        if missing:
+            raise SearcherError(f'candidate ids not in this run: {missing}')
+        failing = sorted(i for i in accept_ids if not found[i].passes_filters)
+        if failing:
+            raise SearcherError(
+                f'cannot accept candidates that failed hard filters: {failing}'
+            )
+        for i in set(accept_ids):
+            c = found[i]
+            c.verdict, c.verdict_reason = Verdict.ACCEPTED, ''
+            c.save(update_fields=['verdict', 'verdict_reason'])
+        for i, reason in rejects.items():
+            c = found[i]
+            c.verdict = Verdict.REJECTED
+            c.verdict_reason = str(reason or '').strip()[:REASON_LEN]
+            c.save(update_fields=['verdict', 'verdict_reason'])
+        run.step = RunStep.RANKING
+        run.save(update_fields=['step'])
+    accepted = _accepted(run)
+    return {
+        'accepted': accepted, 'target': run.target,
+        'done': accepted >= run.target, 'pending': _pending(run),
+    }
+
+
+def status(run):
+    run.refresh_from_db()
+    snap = run.object_snapshot
+    d = snap.get('dims') or {}
+    return {
+        'run': str(run.id),
+        'status': run.status,
+        'step': run.step,
+        'round': run.round_count,
+        'max_rounds': run.max_rounds,
+        'accepted': _accepted(run),
+        'target': run.target,
+        'pending': _pending(run),
+        'strategies_left': available_strategies(run) if run.status == RunStatus.RUNNING else [],
+        'object': {
+            'name': snap.get('name'), 'type': snap.get('type'),
+            'style': snap.get('style'), 'material': snap.get('material'),
+            'dims': d, 'priceLimit': snap.get('priceLimit'),
+        },
+    }
+
+
+def _rank_key(c):
+    return (0 if c.size_status == 'fits' else 1, c.price_cents, c.pk)
+
+
+def run_deterministic(run):
+    """No-LLM fallback: accept the best new passing candidates each round."""
+    rounds, errors = [], 0
+    while True:
+        out = next_round(run)
+        if out.get('stop'):
+            stop_reason = out['reason']
+            break
+        if out.get('error'):
+            errors += 1
+            rounds.append({'round': out['round'], 'strategy': out['strategy'],
+                           'query': out['query'], 'error': out['error']})
+            continue
+        rounds.append({k: out[k] for k in ('round', 'strategy', 'query', 'returned',
+                                           'new', 'passing', 'filtered_out')})
+        need = run.target - _accepted(run)
+        ids = [c['id'] for c in out['candidates']]
+        best = sorted(Candidate.objects.filter(pk__in=ids), key=_rank_key)[:max(need, 0)]
+        if best:
+            judge(run, [c.pk for c in best])
+
+    run.refresh_from_db()
+    accepted_qs = run.candidates.filter(verdict=Verdict.ACCEPTED)
+    accepted = accepted_qs.count()
+    if run.status == RunStatus.RUNNING:  # leave canceled/failed runs alone
+        if accepted == 0 and rounds and errors == len(rounds):
+            run.status = RunStatus.FAILED
+            run.error = 'every catalog query failed'
+        else:
+            run.status = RunStatus.DONE if accepted else RunStatus.EMPTY
+    run.step = None
+    run.finished_at = timezone.now()
+    run.save(update_fields=['status', 'step', 'finished_at', 'error'])
+    return {
+        'run': str(run.id),
+        'status': str(run.status),
+        'accepted': accepted,
+        'target': run.target,
+        'rounds_used': run.round_count,
+        'fits': accepted_qs.filter(size_status='fits').count(),
+        'unverified': accepted_qs.filter(size_status='unverified').count(),
+        'stopped': stop_reason,
+        'rounds': rounds,
+    }
