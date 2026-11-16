@@ -1,20 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   RiCheckboxCircleFill,
-  RiCodeSSlashLine,
   RiDatabase2Fill,
   RiErrorWarningLine,
-  RiHomeLine,
   RiPulseFill,
   RiRefreshLine,
   RiRouteFill,
   RiSearchLine,
   RiServerFill,
 } from "@remixicon/react";
-import {
-  DashboardSidebar,
-  type DashboardNavItem,
-} from "@/components/application/dashboard/dashboard-sidebar";
 import { StatCards, type Stat } from "@/components/application/dashboard/stat-cards";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Chip } from "@/components/base/badges/chip";
@@ -35,12 +29,7 @@ import { Tab, TabList, TabPanel, Tabs } from "@/components/base/tabs/tabs";
 import { fetchWorkspaceSnapshot, type WorkspaceSnapshot } from "@/lib/api";
 import { cx } from "@/utils/cx";
 
-const NAV_ITEMS: DashboardNavItem[] = [
-  { key: "overview", label: "Overview", icon: RiHomeLine, href: "#overview" },
-  { key: "endpoints", label: "API Routes", icon: RiCodeSSlashLine, href: "#endpoints", badge: 3 },
-];
-
-export default function App() {
+export function BackendStatusPage() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -141,14 +130,7 @@ export default function App() {
   }, [routeFilter, snapshot]);
 
   return (
-    <div className="flex min-h-screen bg-background-full">
-      <div className="hidden shrink-0 p-3 lg:block">
-        <div className="sticky top-3 h-[calc(100vh-24px)]">
-          <DashboardSidebar selected="overview" items={NAV_ITEMS} />
-        </div>
-      </div>
-
-      <main
+      <div
         id="overview"
         className="mx-auto flex min-w-0 w-full max-w-[1300px] flex-1 flex-col gap-6 p-4 sm:p-6"
       >
@@ -160,7 +142,7 @@ export default function App() {
                 {snapshot?.overview.project ?? "Shopify APM Workspace"}
               </span>
             </div>
-            <h1 className="text-title-1-medium text-text-primary">Overview</h1>
+            <h1 className="text-title-1-medium text-text-primary">Backend status</h1>
             <p className="text-body-regular text-text-secondary">
               Django JSON API wired to a Vite, React, TypeScript, and BoardUI frontend.
             </p>
@@ -349,7 +331,6 @@ export default function App() {
             </TabPanel>
           </Tabs>
         </section>
-      </main>
-    </div>
+      </div>
   );
 }

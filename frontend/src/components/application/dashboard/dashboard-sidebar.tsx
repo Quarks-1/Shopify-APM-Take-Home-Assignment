@@ -37,9 +37,8 @@ import { cx } from "@/utils/cx";
  * Floating sidebar panel. Expanded: 260px wide, p 12, radius/3xl (24px),
  * white 1px border, "Background/Sidebar Elevation" shadow, bg
  * background/secondary. Collapsed: 60px wide (36px icon items + 12px
- * padding); collapse button sits centered above the workspace avatar, quick
- * search becomes a 36px neutral-200 square, nav items become icon-only
- * squares, the team card reduces to its avatar.
+ * padding); collapse button sits at the top, quick search becomes a 36px
+ * neutral-200 square, nav items become icon-only squares.
  *
  * The two states morph into each other: the panel width animates while
  * labels / badges / kbd collapse via max-width + opacity.
@@ -80,6 +79,7 @@ function NavItem({
   collapsed = false,
   href = "#",
   onClick,
+  onNavigate,
 }: {
   icon: IconComponent;
   label: string;
@@ -89,6 +89,8 @@ function NavItem({
   href?: string;
   /** Action rows intercept the navigation. */
   onClick?: () => void;
+  /** Called for plain left-clicks on internal nav rows, so a client router can navigate without a full page load. */
+  onNavigate?: (href: string) => void;
 }) {
   const localize = useTemplateCopy();
   return localize((
@@ -100,7 +102,22 @@ function NavItem({
               event.preventDefault();
               onClick();
             }
-          : undefined
+          : onNavigate && href.startsWith("/")
+            ? (event) => {
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                onNavigate(href);
+              }
+            : undefined
       }
       aria-current={isSelected ? "page" : undefined}
       aria-label={label}
@@ -170,11 +187,13 @@ function NavRows({
   query,
   selected,
   collapsed,
+  onNavigate,
 }: {
   items: DashboardNavItem[];
   query: string;
   selected: string;
   collapsed: boolean;
+  onNavigate?: (href: string) => void;
 }) {
   const localize = useTemplateCopy();
   const shown = items.filter((item) => item.label.toLocaleLowerCase().includes(query));
@@ -189,6 +208,7 @@ function NavRows({
           icon={item.icon}
           label={item.label}
           href={item.href}
+          onNavigate={onNavigate}
           isSelected={isSelected}
           collapsed={collapsed}
           badge={
@@ -210,6 +230,7 @@ export function DashboardSidebar({
   items = DASHBOARD_NAV,
   flat = false,
   className,
+  onNavigate,
 }: {
   /** Rendered inside the mobile drawer: always expanded, close button instead of collapse. */
   mobile?: boolean;
@@ -229,6 +250,8 @@ export function DashboardSidebar({
   /** Removes the floating panel treatment for a sidebar revealed beneath mobile content. */
   flat?: boolean;
   className?: string;
+  /** Called for plain left-clicks on internal nav rows, so a client router can navigate without a full page load. */
+  onNavigate?: (href: string) => void;
 } = {}) {
   const localize = useTemplateCopy();
   const [collapsedState, setCollapsed] = useState(false);
@@ -303,8 +326,8 @@ export function DashboardSidebar({
       )}
     >
       {/* `overflow-y: auto` forces the x axis to clip too, and this box hugs
-          its contents on every side — so the selected item's 1px ring, the
-          profile's hover pill (which outsets 6px) and focus rings all landed
+          its contents on every side — so the selected item's 1px ring and
+          focus rings all landed
           outside it. Padding moves the clip edge out; the matching negative
           margin borrows that space back from the rail's own padding, leaving
           every child exactly where it was. */}
@@ -472,6 +495,7 @@ export function DashboardSidebar({
               query={normalizedQuery}
               selected={selected}
               collapsed={collapsed}
+              onNavigate={onNavigate}
             />
           </nav>
         </div>
