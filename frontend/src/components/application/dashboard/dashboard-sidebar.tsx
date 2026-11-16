@@ -86,6 +86,7 @@ function NavItem({
   collapsed = false,
   href = "#",
   onClick,
+  onNavigate,
 }: {
   icon: IconComponent;
   label: string;
@@ -95,6 +96,8 @@ function NavItem({
   href?: string;
   /** Action rows (e.g. Settings → modal) intercept the navigation. */
   onClick?: () => void;
+  /** Called for plain left-clicks on internal nav rows, so a client router can navigate without a full page load. */
+  onNavigate?: (href: string) => void;
 }) {
   const localize = useTemplateCopy();
   return localize((
@@ -106,7 +109,22 @@ function NavItem({
               event.preventDefault();
               onClick();
             }
-          : undefined
+          : onNavigate && href.startsWith("/")
+            ? (event) => {
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                onNavigate(href);
+              }
+            : undefined
       }
       aria-current={isSelected ? "page" : undefined}
       aria-label={label}
@@ -178,6 +196,7 @@ function NavRows({
   selected,
   collapsed,
   secondaryMatch,
+  onNavigate,
 }: {
   items: DashboardNavItem[];
   query: string;
@@ -185,6 +204,7 @@ function NavRows({
   collapsed: boolean;
   /** Whether Support or Settings matches, so "No results" only shows when nothing does. */
   secondaryMatch: boolean;
+  onNavigate?: (href: string) => void;
 }) {
   const localize = useTemplateCopy();
   const shown = items.filter((item) => item.label.toLocaleLowerCase().includes(query));
@@ -199,6 +219,7 @@ function NavRows({
           icon={item.icon}
           label={item.label}
           href={item.href}
+          onNavigate={onNavigate}
           isSelected={isSelected}
           collapsed={collapsed}
           badge={
@@ -220,6 +241,7 @@ export function DashboardSidebar({
   items = DASHBOARD_NAV,
   flat = false,
   className,
+  onNavigate,
 }: {
   /** Rendered inside the mobile drawer: always expanded, close button instead of collapse. */
   mobile?: boolean;
@@ -239,6 +261,8 @@ export function DashboardSidebar({
   /** Removes the floating panel treatment for a sidebar revealed beneath mobile content. */
   flat?: boolean;
   className?: string;
+  /** Called for plain left-clicks on internal nav rows, so a client router can navigate without a full page load. */
+  onNavigate?: (href: string) => void;
 } = {}) {
   const localize = useTemplateCopy();
   const [collapsedState, setCollapsed] = useState(false);
@@ -513,6 +537,7 @@ export function DashboardSidebar({
               selected={selected}
               collapsed={collapsed}
               secondaryMatch={secondaryMatch}
+              onNavigate={onNavigate}
             />
           </nav>
         </div>

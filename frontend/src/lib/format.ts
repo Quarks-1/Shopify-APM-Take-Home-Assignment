@@ -1,0 +1,40 @@
+import type { Dims, LengthUnit } from "@/mocks/types";
+
+const CM_PER_INCH = 2.54;
+
+export function formatPrice(amount: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+  }).format(amount);
+}
+
+export function toDisplayLength(inches: number, unit: LengthUnit): number {
+  return unit === "cm" ? Math.round(inches * CM_PER_INCH) : Math.round(inches * 10) / 10;
+}
+
+export function fromDisplayLength(value: number, unit: LengthUnit): number {
+  return unit === "cm" ? Math.round((value / CM_PER_INCH) * 100) / 100 : value;
+}
+
+export function formatLength(inches: number, unit: LengthUnit): string {
+  return unit === "cm" ? `${toDisplayLength(inches, "cm")} cm` : `${toDisplayLength(inches, "in")}″`;
+}
+
+export function formatDims(dims: Dims, unit: LengthUnit): string {
+  const parts = [dims.x, dims.y];
+  if (dims.z !== undefined) parts.push(dims.z);
+  return `${parts.map((p) => toDisplayLength(p, unit)).join(" × ")} ${unit === "cm" ? "cm" : "in"}`;
+}
+
+export function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const minutes = Math.floor((Date.now() - then) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  return new Date(then).toLocaleDateString();
+}
