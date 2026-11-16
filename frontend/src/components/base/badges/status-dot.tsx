@@ -9,7 +9,6 @@ import { cx, sortCx } from "@/utils/cx";
  *   green  → halo color/green/100,  dot color/green/500
  *   yellow → halo color/yellow/200, dot color/yellow/500
  *   indigo → halo color/indigo/100, dot color/indigo/500
- * In dark mode only the halo drops to 40% opacity; the center dot stays solid.
  */
 
 type StatusDotColor = "green" | "yellow" | "indigo";

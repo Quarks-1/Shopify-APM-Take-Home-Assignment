@@ -10,7 +10,6 @@ import {
   RiServerFill,
 } from "@remixicon/react";
 import { StatCards, type Stat } from "@/components/application/dashboard/stat-cards";
-import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Chip } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
 import { Button } from "@/components/base/buttons/button";
@@ -149,7 +148,6 @@ export function BackendStatusPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle appearance="segmented" />
             <Button
               variant="secondary"
               leadingIcon={refreshing ? undefined : RiRefreshLine}

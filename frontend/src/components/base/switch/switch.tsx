@@ -22,8 +22,7 @@ import { cx, sortCx } from "@/utils/cx";
  *   thumb   theme-stable white gradient + contact shadow,
  *           slides by (w − thumb − 2·pad) between states.
  *   chip    small embossed inset in the thumb centre:
- *           off → white→neutral-100 in light mode; in dark mode it matches
- *                 the track so the mark reads like a hole through the thumb;
+ *           off → white→neutral-100;
  *           on  → switch-on-chip-start→end (accent mixes matching Figma's
  *                 raw #2473fe→#0450e2 for blue), accent/600 border.
  *

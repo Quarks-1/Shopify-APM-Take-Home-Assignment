@@ -16,13 +16,13 @@ This project uses BoardUI in `frontend/` (React + Tailwind CSS v4, source-owned 
 
 ## Color: semantic tokens only
 
-- Never use raw palette classes (`text-gray-500`, `bg-white`, `border-neutral-200`) or hex/oklch literals. Every color rides a BoardUI semantic token, which also makes dark mode automatic.
+- Never use raw palette classes (`text-gray-500`, `bg-white`, `border-neutral-200`) or hex/oklch literals. Every color rides a BoardUI semantic token.
 - Text: `text-text-primary`, `text-text-secondary`, `text-text-tertiary`, `text-text-placeholder`, errors `text-text-error-primary`.
 - Surfaces: `bg-background-primary-default`, `bg-background-secondary-default` / `-hover`, `bg-background-tertiary-default`, page ground `bg-background-full`.
 - Borders: `border-border-button-default` / `-hover`, hairlines `border-separator-border`, tables `border-border-table`, errors `border-border-error-default`.
 - Icons: `text-foreground-icon-primary` through `text-foreground-icon-quaternary`.
 - Charts: the `chart-1` … `chart-5` tokens (plus `-active` variants). CTAs and selection states: the `accent-50` … `accent-950` ramp.
-- Dark mode flips tokens via the `.dark` class on `<html>`. Do not write `dark:` overrides with raw colors; if a token pair looks wrong in dark mode, pick a different token, not a literal.
+- Light mode only. The app has no dark theme: do not add `.dark` token overrides, `dark:` variants, a theme toggle, or `prefers-color-scheme` handling, and do not check or verify UI in dark mode. This overrides any BoardUI guidance about dark mode.
 
 ## Typography: composite utilities only
 

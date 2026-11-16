@@ -10,8 +10,7 @@ import { cx, sortCx } from "@/utils/cx";
  *   <SkeletonText lines={3} />
  *   <Skeleton isLoaded={user != null}><Avatar … /></Skeleton>
  *
- * Blocks are tinted from the text colour at 8%, so they show on any surface
- * in both themes (a fixed grey disappears on dark cards). A soft band of
+ * Blocks are tinted from the text colour at 8%, so they show on any surface. A soft band of
  * light, eased to its peak with no hard edge, sweeps them at one steady pace,
  * so the blocks of a card light up in step as a single wave. It mirrors in
  * RTL and gives way to a gentle opacity pulse under reduced motion. The
