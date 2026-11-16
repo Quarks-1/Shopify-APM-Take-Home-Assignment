@@ -16,23 +16,19 @@ import {
   RiCalendarLine,
   RiChatAiLine,
   RiCloseLine,
-  RiCustomerServiceLine,
   RiHomeLine,
   RiImageAiLine,
   RiKanbanView2,
   RiMegaphoneLine,
   RiSearchLine,
-  RiSettings4Line,
   RiSideBarFill,
   RiUserSmileLine,
 } from "@remixicon/react";
-import { SettingsModal } from "@/components/application/settings/settings-modal";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Counter } from "@/components/base/badges/counter";
 import { CloseButton } from "@/components/base/buttons/close-button";
 import { Kbd } from "@/components/base/kbd/kbd";
 import { cx } from "@/utils/cx";
-import { DashboardTeamMenu } from "./dashboard-team-menu";
 import { DashboardUserMenu } from "./dashboard-user-menu";
 
 /**
@@ -93,7 +89,7 @@ function NavItem({
   isSelected?: boolean;
   collapsed?: boolean;
   href?: string;
-  /** Action rows (e.g. Settings → modal) intercept the navigation. */
+  /** Optional click handler instead of following `href`. */
   onClick?: () => void;
 }) {
   const localize = useTemplateCopy();
@@ -177,18 +173,15 @@ function NavRows({
   query,
   selected,
   collapsed,
-  secondaryMatch,
 }: {
   items: DashboardNavItem[];
   query: string;
   selected: string;
   collapsed: boolean;
-  /** Whether Support or Settings matches, so "No results" only shows when nothing does. */
-  secondaryMatch: boolean;
 }) {
   const localize = useTemplateCopy();
   const shown = items.filter((item) => item.label.toLocaleLowerCase().includes(query));
-  if (shown.length === 0 && !secondaryMatch && !collapsed) {
+  if (shown.length === 0 && !collapsed) {
     return localize(<p className="px-2 py-3 text-body-regular text-text-tertiary">No results</p>);
   }
   return shown.map((item) => {
@@ -242,7 +235,6 @@ export function DashboardSidebar({
 } = {}) {
   const localize = useTemplateCopy();
   const [collapsedState, setCollapsed] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [suppressUserHover, setSuppressUserHover] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [query, setQuery] = useState("");
@@ -251,9 +243,6 @@ export function DashboardSidebar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const collapsed = mobile ? false : collapsedState;
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const matches = (label: string) => label.toLocaleLowerCase().includes(normalizedQuery);
-  const secondaryLabels = ["Support", "Settings"];
-  const secondaryMatch = secondaryLabels.some(matches);
 
   const activateSearch = useCallback(() => {
     if (!mobile) setCollapsed(false);
@@ -512,49 +501,23 @@ export function DashboardSidebar({
               query={normalizedQuery}
               selected={selected}
               collapsed={collapsed}
-              secondaryMatch={secondaryMatch}
             />
           </nav>
         </div>
       </div>
 
-      <div className="flex w-full shrink-0 flex-col gap-3">
-        {showThemeToggle &&
-          (collapsed ? (
+      {showThemeToggle ? (
+        <div className="flex w-full shrink-0 flex-col gap-3">
+          {collapsed ? (
             <ThemeToggle collapsed />
           ) : (
             <ThemeToggle
               appearance="sidebar-segmented"
               className={flat ? "!bg-background-secondary-default" : undefined}
             />
-          ))}
-        {/* Secondary nav */}
-        <nav className="flex w-full flex-col gap-1">
-          {matches("Support") && (
-            <NavItem icon={RiCustomerServiceLine} label="Support" collapsed={collapsed} />
           )}
-          {matches("Settings") && (
-            <NavItem
-              icon={RiSettings4Line}
-              label="Settings"
-              collapsed={collapsed}
-              onClick={() => setSettingsOpen(true)}
-            />
-          )}
-        </nav>
-
-        {/* Team card → opens the profile menu next to the sidebar */}
-        <DashboardTeamMenu
-          collapsed={collapsed}
-          className={flat ? "!bg-background-secondary-default" : undefined}
-        />
-      </div>
-
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        planArtSrc="/templates/settings-plan-art.png"
-      />
+        </div>
+      ) : null}
     </aside>
   ));
 }
