@@ -37,7 +37,7 @@ import { cx } from "@/utils/cx";
 
 const NAV_ITEMS: DashboardNavItem[] = [
   { key: "overview", label: "Overview", icon: RiHomeLine, href: "#overview" },
-  { key: "endpoints", label: "API Routes", icon: RiCodeSSlashLine, href: "#endpoints", badge: 3 },
+  { key: "endpoints", label: "API Routes", icon: RiCodeSSlashLine, href: "#endpoints", badge: 2 },
 ];
 
 export default function App() {

@@ -30,6 +30,7 @@ class ApiEndpointsTests(TestCase):
         paths = [item['path'] for item in payload['endpoints']]
         self.assertIn('/api/health/', paths)
         self.assertIn('/api/overview/', paths)
+        self.assertEqual(len(paths), 2)
 
     def test_cors_header_included_for_frontend_dev_origin(self):
         response = self.client.get(

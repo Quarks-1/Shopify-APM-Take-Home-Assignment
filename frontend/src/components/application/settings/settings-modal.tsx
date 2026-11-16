@@ -4,9 +4,7 @@ import { useDirection } from "@/components/foundations/direction/direction";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  RiBankCardLine,
   RiBookOpenLine,
-  RiCheckboxCircleFill,
   RiCloseLine,
   RiCodeBlock,
   RiDatabase2Line,
@@ -14,7 +12,6 @@ import {
   RiOrganizationChart,
   RiPaletteLine,
   RiPlugLine,
-  RiSchoolLine,
   RiSettings6Line,
   RiSettingsLine,
   RiToolsFill,
@@ -22,13 +19,11 @@ import {
 } from "@remixicon/react";
 import { cx } from "@/utils/cx";
 import { SettingsGeneral } from "./settings-general";
-import { SettingsProfile } from "./settings-profile";
 import { SettingsStorage } from "./settings-storage";
 import { SettingsTools } from "./settings-tools";
 
 /**
- * Figma sources: Board UI → "Settings/Profile" (node 4081:13943) and
- * "Settings/General" (node 4079:13037).
+ * Figma source: Board UI → "Settings/General" (node 4079:13037).
  *
  * The app-wide settings modal, opened from any sidebar's "Settings" item.
  *
@@ -47,7 +42,7 @@ import { SettingsTools } from "./settings-tools";
  * and the modal unmounts only after the exit transition finishes.
  */
 
-export type SettingsPage = "general" | "profile" | "storage" | "tools" | "marketplace";
+export type SettingsPage = "general" | "storage" | "tools" | "marketplace";
 
 export interface SettingsModalProps {
   /** Controlled open state, owned by the host page, sidebar, or menu. */
@@ -79,10 +74,8 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
     label: "Settings",
     items: [
       { label: "General", icon: RiSettings6Line, page: "general" },
-      { label: "Profile", icon: RiSchoolLine, page: "profile" },
       { label: "Marketplace", icon: RiStore2Line, page: "marketplace" },
       { label: "Appearance", icon: RiPaletteLine },
-      { label: "Billing", icon: RiBankCardLine },
       { label: "Rules and Workflows", icon: RiOrganizationChart },
       { label: "Tools", icon: RiToolsFill, page: "tools" },
       { label: "Storage", icon: RiDatabase2Line, page: "storage" },
@@ -107,7 +100,6 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
 
 const PAGE_TITLES: Record<SettingsPage, string> = {
   general: "General",
-  profile: "Profile",
   storage: "Storage",
   tools: "Tools",
   marketplace: "Marketplace",
@@ -130,23 +122,6 @@ export function SettingsModal({
   const unmountTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // "Saved" toast — floats half-out of the panel's bottom edge for ~2s
-  // whenever a profile field commits a change (Enter / blur). Three phases
-  // so the motion is directional: it rises in from below ("hidden" starting
-  // offset) and keeps drifting upward while fading out ("leaving" offset).
-  const [savedPhase, setSavedPhase] = useState<"hidden" | "shown" | "leaving">("hidden");
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showSavedToast = () => {
-    if (savedTimer.current) clearTimeout(savedTimer.current);
-    setSavedPhase("shown");
-    savedTimer.current = setTimeout(() => {
-      setSavedPhase("leaving");
-      // Reset to the below-the-edge start once the fade-out finished, so the
-      // next save rises in from the bottom again (invisible: opacity 0 → 0).
-      savedTimer.current = setTimeout(() => setSavedPhase("hidden"), 220);
-    }, 2000);
-  };
-
   // Top fade over the scrolling page so rows dissolve under the title row
   // instead of cutting sharply (same recipe as the medical alerts feed).
   const [contentScrolled, setContentScrolled] = useState(false);
@@ -161,12 +136,10 @@ export function SettingsModal({
       requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     } else {
       setVisible(false);
-      setSavedPhase("hidden");
       unmountTimer.current = setTimeout(() => setMounted(false), 320);
     }
     return () => {
       if (unmountTimer.current) clearTimeout(unmountTimer.current);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- defaultPage only matters at the open transition
   }, [isOpen]);
@@ -311,9 +284,7 @@ export function SettingsModal({
               className="h-full overflow-y-auto px-8 pb-8"
               onScroll={(e) => setContentScrolled(e.currentTarget.scrollTop > 0)}
             >
-              {page === "profile" ? (
-                <SettingsProfile onSaved={showSavedToast} />
-              ) : page === "storage" ? (
+              {page === "storage" ? (
                 <SettingsStorage />
               ) : page === "tools" ? (
                 <SettingsTools />
@@ -336,22 +307,6 @@ export function SettingsModal({
         </div>
       </div>
 
-      {/* Saved toast — straddles the panel's bottom edge, half in / half out. */}
-      <div
-        aria-live="polite"
-        className={cx(
-          "pointer-events-none absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1",
-          "rounded-full border border-border-button-default bg-background-primary-default py-1 pe-2.5 ps-1.5 shadow-dropdown",
-          "transition-[opacity,transform,filter] duration-200 ease-out",
-          savedPhase === "shown" && "translate-y-1/2 opacity-100 scale-100 blur-0",
-          // Starts below the resting spot, rises in; keeps drifting up on exit.
-          savedPhase === "hidden" && "translate-y-[calc(50%+12px)] opacity-0 scale-90 blur-[2px]",
-          savedPhase === "leaving" && "translate-y-[calc(50%-10px)] opacity-0 scale-90 blur-[2px]",
-        )}
-      >
-        <RiCheckboxCircleFill className="size-4 shrink-0 text-lime-600" aria-hidden />
-        <span className="text-body-2-medium whitespace-nowrap text-text-primary">Saved</span>
-      </div>
       </div>
     </div>,
     document.body,
