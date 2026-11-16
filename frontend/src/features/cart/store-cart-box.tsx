@@ -72,6 +72,7 @@ export function StoreCartBox({ group }: { group: CartStoreGroup }) {
                   <div className="flex items-center justify-between gap-2">
                     <NumberField
                       aria-label="Quantity"
+                      className="min-w-0 flex-1"
                       size="small"
                       minValue={0}
                       maxValue={20}
