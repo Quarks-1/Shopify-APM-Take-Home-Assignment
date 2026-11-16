@@ -367,11 +367,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                 vectorEffect="non-scaling-stroke"
               />
             </pattern>
-            {items.map(({ object, rect }) => (
-              <clipPath key={object.id} id={`${uid}-clip-${object.id}`}>
-                <rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} />
-              </clipPath>
-            ))}
           </defs>
 
           <rect x={0} y={0} width={dims.x} height={dims.y} fill="var(--color-background-primary-default)" />
@@ -393,7 +388,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
             const selected = object.id === selectedObjectId;
             const overlaps = overlapping.has(object.id);
             const sizeText = formatDims({ x: rect.w, y: rect.h }, unit);
-            const showLabel = rect.w >= fontSize * 4 && rect.h >= fontSize * 1.6;
             const label = `${object.name}, ${sizeText}, at ${toDisplayLength(rect.x, unit)}, ${toDisplayLength(rect.y, unit)}${overlaps ? ", overlaps another object" : ""}`;
             const stroke = selected
               ? "var(--color-accent-500)"
@@ -426,18 +420,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                   strokeDasharray={overlaps && !selected ? "6 4" : undefined}
                   vectorEffect="non-scaling-stroke"
                 />
-                {showLabel ? (
-                  <g clipPath={`url(#${uid}-clip-${object.id})`} className="pointer-events-none">
-                    <text
-                      x={rect.x + fontSize * 0.5}
-                      y={rect.y + fontSize * 1.2}
-                      fontSize={fontSize * 0.85}
-                      style={{ fill: "var(--color-text-secondary)" }}
-                    >
-                      {sizeText}
-                    </text>
-                  </g>
-                ) : null}
                 <rect
                   x={rect.x - fontSize * 0.25}
                   y={rect.y - fontSize * 0.25}
@@ -455,7 +437,9 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
           <g aria-hidden="true" className="pointer-events-none">
             {items.map(({ object, rect }) => {
-              const flip = rect.x + object.name.length * fontSize * 0.6 > dims.x;
+              const sizeText = formatDims({ x: rect.w, y: rect.h }, unit);
+              const lineWidth = object.name.length * fontSize * 0.6 + fontSize * 0.4 + sizeText.length * fontSize * 0.85 * 0.55;
+              const flip = rect.x + lineWidth > dims.x;
               return (
                 <text
                   key={object.id}
@@ -472,7 +456,15 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                     fill: object.id === selectedObjectId ? "var(--color-accent-600)" : "var(--color-text-primary)",
                   }}
                 >
-                  {object.name}
+                  <tspan>{object.name}</tspan>
+                  <tspan
+                    dx={fontSize * 0.4}
+                    fontSize={fontSize * 0.85}
+                    fontWeight={400}
+                    style={{ fill: "var(--color-text-secondary)" }}
+                  >
+                    {sizeText}
+                  </tspan>
                 </text>
               );
             })}
