@@ -45,6 +45,10 @@ export interface CarouselProps
   "aria-label": string;
   /** Prev/next buttons above the track. */
   showArrows?: boolean;
+  /** Content at the start of the controls row (e.g. a section title). */
+  header?: ReactNode;
+  /** Content at the end of the controls row, just before the arrows. */
+  actions?: ReactNode;
   /** Position indicator below the track. */
   showDots?: boolean;
   /** Where a card comes to rest when it snaps. */
@@ -87,6 +91,8 @@ export function CarouselItem({ children, className, ref, ...props }: CarouselIte
 export function Carousel({
   children,
   showArrows = true,
+  header,
+  actions,
   showDots = true,
   align = "start",
   gap = 16,
@@ -195,22 +201,30 @@ export function Carousel({
       className={cx("flex w-full flex-col gap-4", className)}
       {...props}
     >
-      {showArrows && count > 0 ? (
-        <div className="flex items-center justify-end gap-2">
-          <IconButton
-            icon={RiArrowLeftSLine}
-            size="small"
-            aria-label="Previous slide"
-            disabled={atStart}
-            onClick={() => scrollToIndex(active - 1)}
-          />
-          <IconButton
-            icon={RiArrowRightSLine}
-            size="small"
-            aria-label="Next slide"
-            disabled={atEnd}
-            onClick={() => scrollToIndex(active + 1)}
-          />
+      {header || actions || (showArrows && count > 0) ? (
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          {header ? <div className="min-w-0">{header}</div> : null}
+          <div className="ms-auto flex items-center gap-2">
+            {actions}
+            {showArrows && count > 0 ? (
+              <>
+                <IconButton
+                  icon={RiArrowLeftSLine}
+                  size="small"
+                  aria-label="Previous slide"
+                  disabled={atStart}
+                  onClick={() => scrollToIndex(active - 1)}
+                />
+                <IconButton
+                  icon={RiArrowRightSLine}
+                  size="small"
+                  aria-label="Next slide"
+                  disabled={atEnd}
+                  onClick={() => scrollToIndex(active + 1)}
+                />
+              </>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
