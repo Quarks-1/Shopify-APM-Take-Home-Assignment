@@ -1,4 +1,4 @@
-import type { Dims, LengthUnit } from "@/mocks/types";
+import type { Dims, LengthUnit, ObjectDims } from "@/mocks/types";
 
 const CM_PER_INCH = 2.54;
 const INCHES_PER_FOOT = 12;
@@ -45,8 +45,9 @@ export function formatLength(inches: number, unit: LengthUnit): string {
   }
 }
 
-export function formatDims(dims: Dims, unit: LengthUnit): string {
-  const parts = [dims.x, dims.y];
+export function formatDims(dims: Dims | ObjectDims, unit: LengthUnit): string {
+  const parts = [dims.x];
+  if (dims.y !== undefined) parts.push(dims.y);
   if (dims.z !== undefined) parts.push(dims.z);
   return `${parts.map((p) => toDisplayLength(p, unit)).join(" × ")} ${unit}`;
 }

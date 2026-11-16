@@ -2,6 +2,7 @@
 // A space's `unit` is only a display preference.
 
 export type Dims = { x: number; y: number; z?: number }; // x = width, y = depth, z = height (optional)
+export type ObjectDims = { x: number; y?: number; z?: number }; // x = width, y = depth (optional on walls), z = height (optional)
 export type SpaceType = "floor" | "shelf" | "wall" | "other";
 export type LengthUnit = "in" | "ft" | "cm";
 export type ObjectType = "furniture" | "lighting" | "rug" | "wall-art" | "storage" | "decor";
@@ -45,7 +46,7 @@ export interface OwnedInfo {
 export interface SpaceObject {
   id: string;
   name: string;
-  dims: Dims;
+  dims: ObjectDims;
   weight?: number;
   type: ObjectType;
   material?: Material;

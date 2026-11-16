@@ -9,7 +9,7 @@ import { toast } from "@/components/base/toast/toast";
 import { OBJECT_TYPE_SVG } from "@/features/objects/object-type-visuals";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
 import { formatDims, formatLength, formatPrice, toDisplayLength } from "@/lib/format";
-import type { Dims, Space } from "@/mocks/types";
+import type { Dims, ObjectDims, Space } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import {
   footprint,
@@ -66,9 +66,9 @@ function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number): { x: 
   return { x: p.x, y: p.y };
 }
 
-/** Object dims for a footprint on this space's plane (wall: x and z, otherwise x and y). */
-function dimsForFootprint(space: Space, w: number, h: number, step: number): Dims {
-  return space.type === "wall" ? { x: w, y: step, z: h } : { x: w, y: h };
+/** Object dims for a footprint on this space's plane (wall: x and z, otherwise x and y). Never invents a depth. */
+function dimsForFootprint(space: Space, w: number, h: number): ObjectDims {
+  return space.type === "wall" ? { x: w, z: h } : { x: w, y: h };
 }
 
 type Drag =
@@ -134,7 +134,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     const id = actions.createObject({
       name: "New object",
       type: "furniture",
-      dims: dimsForFootprint(space, w, h, step),
+      dims: dimsForFootprint(space, w, h),
     });
     actions.placeObject(spaceId, id, pos);
     onSelectObject(id);
