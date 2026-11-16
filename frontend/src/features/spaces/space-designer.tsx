@@ -33,14 +33,21 @@ interface Rect {
 type Mode = "select" | "draw";
 
 const IN_STEPS = [1, 2, 3, 6, 12, 24];
+const FT_STEPS = [0.5, 1, 2, 5, 10];
 const CM_STEPS = [2, 5, 10, 20, 50];
+const INCHES_PER_FOOT = 12;
 const CM_PER_INCH = 2.54;
 const MAX_CELLS = 40;
 
 /** Visible grid-line step in inches: the smallest candidate that keeps the long side under 40 cells. */
 function pickGridStep(dims: Dims, unit: Space["unit"]): number {
   const longest = Math.max(dims.x, dims.y);
-  const candidates = unit === "cm" ? CM_STEPS.map((cm) => cm / CM_PER_INCH) : IN_STEPS;
+  const candidates =
+    unit === "cm"
+      ? CM_STEPS.map((cm) => cm / CM_PER_INCH)
+      : unit === "ft"
+        ? FT_STEPS.map((ft) => ft * INCHES_PER_FOOT)
+        : IN_STEPS;
   return candidates.find((step) => longest / step <= MAX_CELLS) ?? candidates[candidates.length - 1];
 }
 
@@ -106,6 +113,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const pad = longest * 0.03;
   const fontSize = longest / 45;
   const handleSize = longest / 45;
+  const labelRoom = fontSize * 1.3;
 
   const items = space.placements.flatMap((p) => {
     const object = getObject(state, p.objectId);
@@ -341,7 +349,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
           ref={svgRef}
           role="group"
           aria-label={`Designer for ${space.name}`}
-          viewBox={`${-pad} ${-pad} ${dims.x + pad * 2} ${dims.y + pad * 2}`}
+          viewBox={`${-pad} ${-pad - labelRoom} ${dims.x + pad * 2} ${dims.y + pad * 2 + labelRoom}`}
           preserveAspectRatio="xMidYMid meet"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -385,7 +393,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
             const selected = object.id === selectedObjectId;
             const overlaps = overlapping.has(object.id);
             const sizeText = formatDims({ x: rect.w, y: rect.h }, unit);
-            const showLabel = rect.w >= fontSize * 4 && rect.h >= fontSize * 2.6;
+            const showLabel = rect.w >= fontSize * 4 && rect.h >= fontSize * 1.6;
             const label = `${object.name}, ${sizeText}, at ${toDisplayLength(rect.x, unit)}, ${toDisplayLength(rect.y, unit)}${overlaps ? ", overlaps another object" : ""}`;
             const stroke = selected
               ? "var(--color-accent-500)"
@@ -422,16 +430,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
                   <g clipPath={`url(#${uid}-clip-${object.id})`} className="pointer-events-none">
                     <text
                       x={rect.x + fontSize * 0.5}
-                      y={rect.y + fontSize * 1.4}
-                      fontSize={fontSize}
-                      fontWeight={600}
-                      style={{ fill: "var(--color-text-primary)" }}
-                    >
-                      {object.name}
-                    </text>
-                    <text
-                      x={rect.x + fontSize * 0.5}
-                      y={rect.y + fontSize * 2.6}
+                      y={rect.y + fontSize * 1.2}
                       fontSize={fontSize * 0.85}
                       style={{ fill: "var(--color-text-secondary)" }}
                     >
@@ -453,6 +452,31 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
               </g>
             );
           })}
+
+          <g aria-hidden="true" className="pointer-events-none">
+            {items.map(({ object, rect }) => {
+              const flip = rect.x + object.name.length * fontSize * 0.6 > dims.x;
+              return (
+                <text
+                  key={object.id}
+                  x={flip ? rect.x + rect.w : rect.x}
+                  y={rect.y - fontSize * 0.35}
+                  textAnchor={flip ? "end" : "start"}
+                  fontSize={fontSize}
+                  fontWeight={600}
+                  stroke="var(--color-background-primary-default)"
+                  strokeWidth={fontSize * 0.3}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
+                  style={{
+                    fill: object.id === selectedObjectId ? "var(--color-accent-600)" : "var(--color-text-primary)",
+                  }}
+                >
+                  {object.name}
+                </text>
+              );
+            })}
+          </g>
 
           {mode === "select"
             ? items

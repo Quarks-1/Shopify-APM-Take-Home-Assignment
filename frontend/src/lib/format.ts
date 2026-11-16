@@ -1,6 +1,7 @@
 import type { Dims, LengthUnit } from "@/mocks/types";
 
 const CM_PER_INCH = 2.54;
+const INCHES_PER_FOOT = 12;
 
 export function formatPrice(amount: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", {
@@ -11,21 +12,43 @@ export function formatPrice(amount: number, currency = "USD"): string {
 }
 
 export function toDisplayLength(inches: number, unit: LengthUnit): number {
-  return unit === "cm" ? Math.round(inches * CM_PER_INCH) : Math.round(inches * 10) / 10;
+  switch (unit) {
+    case "cm":
+      return Math.round(inches * CM_PER_INCH);
+    case "ft":
+      return Math.round((inches / INCHES_PER_FOOT) * 100) / 100;
+    case "in":
+      return Math.round(inches * 10) / 10;
+  }
 }
 
 export function fromDisplayLength(value: number, unit: LengthUnit): number {
-  return unit === "cm" ? Math.round((value / CM_PER_INCH) * 100) / 100 : value;
+  switch (unit) {
+    case "cm":
+      return Math.round((value / CM_PER_INCH) * 100) / 100;
+    case "ft":
+      return Math.round(value * INCHES_PER_FOOT * 100) / 100;
+    case "in":
+      return value;
+  }
 }
 
 export function formatLength(inches: number, unit: LengthUnit): string {
-  return unit === "cm" ? `${toDisplayLength(inches, "cm")} cm` : `${toDisplayLength(inches, "in")}″`;
+  switch (unit) {
+    case "cm":
+      return `${toDisplayLength(inches, "cm")} cm`;
+    case "ft":
+      // Under a foot reads better in inches.
+      return inches >= INCHES_PER_FOOT ? `${toDisplayLength(inches, "ft")}′` : `${toDisplayLength(inches, "in")}″`;
+    case "in":
+      return `${toDisplayLength(inches, "in")}″`;
+  }
 }
 
 export function formatDims(dims: Dims, unit: LengthUnit): string {
   const parts = [dims.x, dims.y];
   if (dims.z !== undefined) parts.push(dims.z);
-  return `${parts.map((p) => toDisplayLength(p, unit)).join(" × ")} ${unit === "cm" ? "cm" : "in"}`;
+  return `${parts.map((p) => toDisplayLength(p, unit)).join(" × ")} ${unit}`;
 }
 
 export function formatRelativeTime(iso: string): string {

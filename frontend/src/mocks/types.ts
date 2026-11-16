@@ -3,7 +3,7 @@
 
 export type Dims = { x: number; y: number; z?: number }; // x = width, y = depth, z = height (optional)
 export type SpaceType = "floor" | "shelf" | "wall" | "other";
-export type LengthUnit = "in" | "cm";
+export type LengthUnit = "in" | "ft" | "cm";
 export type ObjectType = "furniture" | "lighting" | "rug" | "wall-art" | "storage" | "decor";
 export type Material = "metal" | "wood" | "fabric" | "glass" | "ceramic" | "mixed";
 export type Style = "modern" | "vintage" | "brutalist" | "scandinavian" | "industrial" | "mid-century";
@@ -132,6 +132,7 @@ export const STYLE_OPTIONS: { value: Style; label: string }[] = [
 
 export const UNIT_OPTIONS: { value: LengthUnit; label: string }[] = [
   { value: "in", label: "Inches" },
+  { value: "ft", label: "Feet" },
   { value: "cm", label: "Centimeters" },
 ];
 

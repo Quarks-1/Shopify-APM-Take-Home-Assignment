@@ -51,6 +51,12 @@ export interface CarouselProps
   align?: "start" | "center";
   /** Gap between cards, in px. */
   gap?: number;
+  /**
+   * When this value changes after mount, the track scrolls back to the first
+   * card (smoothly, or instantly under reduced motion). Use it when the items
+   * are reordered and the new first item should be brought into view.
+   */
+  scrollResetKey?: unknown;
   ref?: Ref<HTMLDivElement>;
 }
 
@@ -84,6 +90,7 @@ export function Carousel({
   showDots = true,
   align = "start",
   gap = 16,
+  scrollResetKey,
   className,
   ref,
   ...props
@@ -100,6 +107,18 @@ export function Carousel({
     () => Array.from(trackRef.current?.children ?? []) as HTMLElement[],
     [],
   );
+
+  // Skip the first run: only a *change* of the key scrolls back to the start.
+  const lastResetKey = useRef(scrollResetKey);
+  useEffect(() => {
+    if (Object.is(lastResetKey.current, scrollResetKey)) return;
+    lastResetKey.current = scrollResetKey;
+    const track = trackRef.current;
+    if (!track) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // 0 is the inline start in both LTR and RTL in current browsers.
+    track.scrollTo({ left: 0, behavior: reduce ? "auto" : "smooth" });
+  }, [scrollResetKey]);
 
   const measure = useCallback(() => {
     const track = trackRef.current;

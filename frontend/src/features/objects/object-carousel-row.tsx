@@ -118,7 +118,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
     );
   } else {
     body = (
-      <Carousel aria-label={`${object.name} matches`} showDots={false} gap={12}>
+      <Carousel aria-label={`${object.name} matches`} showDots={false} gap={12} scrollResetKey={object.selectedProductId}>
         {candidates.map((product) => (
           <CarouselItem key={product.id} className={CARD_WIDTH}>
             {product.id === object.selectedProductId ? (
