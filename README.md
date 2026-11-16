@@ -2,6 +2,8 @@
 
 Full-stack starter workspace combining a Django JSON API backend with a Vite, React, TypeScript, and BoardUI frontend.
 
+This is a single-user local app. It has no login, accounts, sessions, or Django admin. All data lives in the SQLite database at `backend/db.sqlite3`.
+
 ## Project Structure
 
 - `backend/` houses the Django 5.2 project (`config`) and starter JSON API app (`api`).
