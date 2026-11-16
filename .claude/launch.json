@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--strictPort"],
+      "port": 5173,
+      "autoPort": false
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["backend/manage.py", "runserver", "127.0.0.1:8000"],
+      "port": 8000,
+      "autoPort": false
+    }
+  ]
+}
