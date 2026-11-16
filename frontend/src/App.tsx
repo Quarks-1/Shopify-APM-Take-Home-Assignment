@@ -5,6 +5,7 @@ import {
   RiDatabase2Fill,
   RiErrorWarningLine,
   RiHomeLine,
+  RiLayoutGridLine,
   RiPulseFill,
   RiRefreshLine,
   RiRouteFill,
@@ -16,6 +17,7 @@ import {
   type DashboardNavItem,
 } from "@/components/application/dashboard/dashboard-sidebar";
 import { StatCards, type Stat } from "@/components/application/dashboard/stat-cards";
+import { SpaceEditor } from "@/components/application/space-editor/space-editor";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Chip } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
@@ -37,8 +39,13 @@ import { cx } from "@/utils/cx";
 
 const NAV_ITEMS: DashboardNavItem[] = [
   { key: "overview", label: "Overview", icon: RiHomeLine, href: "#overview" },
-  { key: "endpoints", label: "API Routes", icon: RiCodeSSlashLine, href: "#endpoints", badge: 3 },
+  { key: "editor", label: "Space editor", icon: RiLayoutGridLine, href: "#space-editor" },
+  { key: "endpoints", label: "API Routes", icon: RiCodeSSlashLine, href: "#endpoints", badge: 6 },
 ];
+
+function viewFromHash(): "overview" | "editor" {
+  return window.location.hash === "#space-editor" ? "editor" : "overview";
+}
 
 export default function App() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
@@ -46,6 +53,7 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [routeFilter, setRouteFilter] = useState("");
+  const [view, setView] = useState(viewFromHash);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -60,6 +68,17 @@ export default function App() {
       setRefreshing(false);
     }
   }, []);
+
+  useEffect(() => {
+    const syncView = () => setView(viewFromHash());
+    window.addEventListener("hashchange", syncView);
+    return () => window.removeEventListener("hashchange", syncView);
+  }, []);
+
+  useEffect(() => {
+    if (view !== "overview" || window.location.hash !== "#endpoints") return;
+    document.getElementById("endpoints")?.scrollIntoView();
+  }, [view]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -144,7 +163,7 @@ export default function App() {
     <div className="flex min-h-screen bg-background-full">
       <div className="hidden shrink-0 p-3 lg:block">
         <div className="sticky top-3 h-[calc(100vh-24px)]">
-          <DashboardSidebar selected="overview" items={NAV_ITEMS} />
+          <DashboardSidebar selected={view === "editor" ? "editor" : "overview"} items={NAV_ITEMS} />
         </div>
       </div>
 
@@ -152,6 +171,10 @@ export default function App() {
         id="overview"
         className="mx-auto flex min-w-0 w-full max-w-[1300px] flex-1 flex-col gap-6 p-4 sm:p-6"
       >
+        {view === "editor" ? (
+          <SpaceEditor />
+        ) : (
+          <>
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -349,6 +372,8 @@ export default function App() {
             </TabPanel>
           </Tabs>
         </section>
+          </>
+        )}
       </main>
     </div>
   );
