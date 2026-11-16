@@ -11,6 +11,8 @@ export interface ObjectCarouselListProps {
   emptyState?: ReactNode;
   /** Make the list its own vertical scroll region (needs a bounded-height parent). */
   scrollable?: boolean;
+  /** Surface behind the scroll region; used by {@link ScrollFade}. */
+  scrollFadeSurfaceClassName?: string;
   className?: string;
 }
 
@@ -21,6 +23,7 @@ export function ObjectCarouselList({
   onHighlight,
   emptyState,
   scrollable = false,
+  scrollFadeSurfaceClassName = "from-background-primary-default",
   className,
 }: ObjectCarouselListProps) {
   const fade = useScrollFade();
@@ -56,7 +59,7 @@ export function ObjectCarouselList({
       <div onScroll={fade.onScroll} className="h-full min-h-0 overflow-y-auto overscroll-contain p-1">
         {rows}
       </div>
-      <ScrollFade progress={fade.progress} surfaceClassName="from-background-primary-default" />
+      <ScrollFade progress={fade.progress} surfaceClassName={scrollFadeSurfaceClassName} />
     </div>
   );
 }

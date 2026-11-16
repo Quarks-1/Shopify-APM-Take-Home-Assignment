@@ -8,7 +8,6 @@ import {
   RiSettings3Line,
   RiShoppingCart2Line,
 } from "@remixicon/react";
-import { Counter } from "@/components/base/badges/counter";
 import { Breadcrumb, BreadcrumbItem } from "@/components/base/breadcrumb/breadcrumb";
 import { Button } from "@/components/base/buttons/button";
 import { AlertDialog } from "@/components/base/modal/modal";
@@ -197,18 +196,15 @@ function EditSpace({ spaceId }: { spaceId: string }) {
         <PanelResizer panelSplit={panelSplit} controlsId={DESIGNER_ID} />
         <section
           aria-label="Objects in this space"
-          className={`${CARD} flex min-h-0 min-w-0 flex-col gap-3 p-4 lg:h-full`}
+          className="flex min-h-0 min-w-0 flex-col gap-3 lg:h-full"
         >
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <h2 className="text-headline-medium text-text-primary">Objects in this space</h2>
-            <Counter>{objectIds.length}</Counter>
-          </div>
           <ObjectCarouselList
             objectIds={objectIds}
             spaceId={space.id}
             highlightedId={selectedId}
             onHighlight={setSelectedId}
             scrollable
+            scrollFadeSurfaceClassName="from-background-full"
             emptyState={
               <p className="text-body-regular text-text-secondary">
                 No objects yet. Draw a rectangle on the plan or press Add object.
