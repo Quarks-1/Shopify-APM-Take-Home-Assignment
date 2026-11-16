@@ -42,6 +42,16 @@ cd backend
 ../.venv/bin/python manage.py test
 ```
 
+#### Searcher
+
+`POST /api/objects/<id>/searches/` starts a background product search for an object; poll `GET /api/searches/<run id>/` until `status` is `done`, `empty`, `failed` or `canceled`. Accepted candidates come back best first; add `?include=all` to see rejected and filtered ones. `POST /api/searches/<run id>/cancel/` stops a run and `POST /api/objects/<id>/select/` with `{"candidateId": …}` picks one. `GET /api/overview/` lists every route.
+
+- Each run is a worker process (`manage.py run_search <run id>`) that drives a headless Claude Code session (`claude -p`, model `sonnet`) through the `searcher next / judge / status` commands. The session uses your Claude subscription login (no API key) with a scrubbed environment, an empty working directory outside the repo (`SEARCHER_AGENT_CWD`, default `$TMPDIR/shopify-searcher/agent-cwd`) and `--safe-mode`, so no CLAUDE.md, memory, hooks or plugins load.
+- If the agent fails, times out or can't start before reaching the target, the deterministic loop takes over from where it stopped (`SEARCHER_FALLBACK=none` disables this). `SEARCHER_AGENT=deterministic` skips the agent entirely.
+- At most `SEARCHER_MAX_CONCURRENT` (2) runs execute at once; the rest queue. The agent gets `SEARCHER_RUN_TIMEOUT` (420 s) of wall clock and `SEARCHER_MAX_TURNS` (40) turns.
+- Logs, the agent's raw JSON output and the generated `searcher` wrapper live in `backend/var/` (`SEARCHER_VAR_DIR`): see `backend/var/searches/<run id>.log`.
+- SQLite runs in WAL mode so the server, the workers and the agent's commands can share `db.sqlite3`. Tests use a file database (`backend/test_db.sqlite3`); pass `--noinput` if an interrupted run left one behind.
+
 ### Frontend
 
 Install npm packages in `frontend/` and start the Vite development server (port 5173 in the main checkout). Requests to `/api/*` proxy automatically to this checkout's backend port (8000 in the main checkout).

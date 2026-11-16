@@ -10,7 +10,7 @@ import uuid
 
 from django.core.management.base import BaseCommand
 
-from api.models import SearchRun, SpaceObject
+from api.models import AgentMode, SearchRun, SpaceObject
 from api.searcher import engine
 
 
@@ -72,7 +72,8 @@ class Command(BaseCommand):
                     obj = SpaceObject.objects.get(pk=options['object_id'])
                 except SpaceObject.DoesNotExist:
                     raise _Fail(f'object not found: {options["object_id"]}')
-                doc = {'run': str(engine.create_run(obj).id)}
+                run = engine.create_run(obj, agent_mode=AgentMode.MANUAL)
+                doc = {'run': str(run.id)}
             else:
                 run = _run_from_env()
                 if action == 'next':

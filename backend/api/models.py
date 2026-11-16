@@ -94,7 +94,12 @@ class SpaceObject(models.Model):
     # A later phase replaces them with real search runs.
     candidate_ids = models.JSONField(default=list)
     selected_product_id = models.CharField(max_length=128, null=True, blank=True)
+    # Mirrors the object's latest SearchRun; see api.searcher.object_state.
     search = models.JSONField(default=default_search)
+    # The accepted search candidate the user picked.
+    selected_candidate = models.ForeignKey(
+        'Candidate', on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
 
     class Meta:
         ordering = ['position', 'id']
@@ -152,6 +157,12 @@ class Verdict(models.TextChoices):
     REJECTED = 'rejected'
 
 
+class AgentMode(models.TextChoices):
+    CLAUDE = 'claude'
+    DETERMINISTIC = 'deterministic'
+    MANUAL = 'manual'  # CLI `searcher start`: no worker, never reaped
+
+
 class SearchRun(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     object = models.ForeignKey(
@@ -171,6 +182,17 @@ class SearchRun(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
+
+    # Background execution (api.searcher.runner). Each pid leads its own
+    # process group, so cancel/timeout signal the whole group.
+    worker_pid = models.IntegerField(null=True, blank=True)
+    agent_pid = models.IntegerField(null=True, blank=True)
+    agent_mode = models.CharField(max_length=16, choices=AgentMode.choices, blank=True, default='')
+    agent_model = models.CharField(max_length=64, blank=True, default='')
+    # claude's final JSON, minus most of the bulky `result` text.
+    agent_result = models.JSONField(null=True, blank=True)
+    # Why the agent was replaced by the deterministic loop, if it was.
+    fallback_reason = models.TextField(blank=True, default='')
 
     class Meta:
         ordering = ['-created_at']

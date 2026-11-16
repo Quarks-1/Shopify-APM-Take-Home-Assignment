@@ -6,7 +6,8 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Placement, Space, SpaceObject, default_search
+from .models import Placement, RunStatus, Space, SpaceObject, default_search
+from .searcher.runner import cancel_run
 from .serializers import (
     ValidationFailed,
     generate_id,
@@ -172,6 +173,8 @@ def object_detail(request, object_id):
     if request.method == 'GET':
         return JsonResponse(object_to_json(obj))
     if request.method == 'DELETE':
+        for run in obj.search_runs.filter(status__in=(RunStatus.QUEUED, RunStatus.RUNNING)):
+            cancel_run(run)  # kills its worker and agent before the rows go away
         obj.delete()
         return HttpResponse(status=204)
     data, err = _body(request)

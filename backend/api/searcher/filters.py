@@ -45,28 +45,33 @@ def evaluate(fields, snapshot, tolerance):
     wall = is_wall_mode(snapshot)
     odims = snapshot.get('dims') or {}
     ox, oy, oz = odims.get('x'), odims.get('y'), odims.get('z')
+    # Mirror the frontend's footprint(): depth defaults to width on the
+    # floor, and a wall object's height is z ?? y ?? x.
+    oh = next((v for v in (oz, oy, ox) if v is not None), None)
+    if not wall and oy is None:
+        oy = ox
     pdims = fields.get('dims') or {}
     px, py, pz = pdims.get('x'), pdims.get('y'), pdims.get('z')
     longest = fields.get('dims_longest')
     violations = []
 
-    if wall and ox is not None and oz is not None:
+    if wall and ox is not None:
         face = sorted(v for v in (px, py, pz) if v is not None)[-2:]
         if len(face) == 2:
-            of = sorted([ox, oz])
+            of = sorted([ox, oh])
             if any(p > o * tolerance for p, o in zip(face, of)):
                 violations.append(
                     f'too large: {_n(face[0])} x {_n(face[1])} in face exceeds '
                     f'{_n(of[0])} x {_n(of[1])} in ({tol_txt})'
                 )
-        elif len(face) == 1 and face[0] > max(ox, oz) * tolerance:
+        elif len(face) == 1 and face[0] > max(ox, oh) * tolerance:
             violations.append(
-                f'too large: {_n(face[0])} in face side exceeds {_n(max(ox, oz))} in ({tol_txt})'
+                f'too large: {_n(face[0])} in face side exceeds {_n(max(ox, oh))} in ({tol_txt})'
             )
-        if longest is not None and longest > max(ox, oz) * tolerance:
+        if longest is not None and longest > max(ox, oh) * tolerance:
             violations.append(
                 f'too large: ~{_n(longest)} in longest side exceeds '
-                f'{_n(max(ox, oz))} in ({tol_txt})'
+                f'{_n(max(ox, oh))} in ({tol_txt})'
             )
     elif ox is not None and oy is not None:
         if px is not None and py is not None:

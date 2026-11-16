@@ -21,6 +21,7 @@ from ..models import (
 from ..serializers import object_to_json
 from . import filters, query_builder, ucp_client
 from .normalize import normalize_product
+from .object_state import sync_object_search
 
 REASON_LEN = 200
 MAX_COMPACT_SPECS = 6
@@ -65,6 +66,7 @@ def available_strategies(run):
 def _set_step(run, step):
     run.step = step
     run.save(update_fields=['step'])
+    sync_object_search(run.object_id)
 
 
 def _price(cents):
@@ -112,20 +114,25 @@ def _stop(reason, run):
 
 # ------------------------------------------------------------------- runs
 
-def create_run(space_object):
+def create_run(space_object, status=RunStatus.RUNNING, agent_mode=''):
+    """A running run (CLI `start`, tests) or a queued one for the runner."""
     snapshot = object_to_json(space_object)
     placement = space_object.placements.select_related('space').order_by('pk').first()
     if placement is not None:
         snapshot['space'] = {'type': placement.space.type, 'dims': placement.space.dims}
-    return SearchRun.objects.create(
+    running = status == RunStatus.RUNNING
+    run = SearchRun.objects.create(
         object=space_object,
         object_snapshot=snapshot,
-        status=RunStatus.RUNNING,
-        step=RunStep.PLANNING,
+        status=status,
+        step=RunStep.PLANNING if running else None,
         target=settings.SEARCHER_TARGET,
         max_rounds=settings.SEARCHER_MAX_ROUNDS,
-        started_at=timezone.now(),
+        started_at=timezone.now() if running else None,
+        agent_mode=agent_mode,
     )
+    sync_object_search(space_object.pk)
+    return run
 
 
 def next_round(run, strategy=None):
@@ -260,6 +267,7 @@ def judge(run, accept_ids=(), rejects=None):
             c.save(update_fields=['verdict', 'verdict_reason'])
         run.step = RunStep.RANKING
         run.save(update_fields=['step'])
+    sync_object_search(run.object_id)
     accepted = _accepted(run)
     return {
         'accepted': accepted, 'target': run.target,
@@ -317,15 +325,20 @@ def run_deterministic(run):
     run.refresh_from_db()
     accepted_qs = run.candidates.filter(verdict=Verdict.ACCEPTED)
     accepted = accepted_qs.count()
+    finished = timezone.now()
     if run.status == RunStatus.RUNNING:  # leave canceled/failed runs alone
         if accepted == 0 and rounds and errors == len(rounds):
-            run.status = RunStatus.FAILED
-            run.error = 'every catalog query failed'
+            status, error = RunStatus.FAILED, 'every catalog query failed'
         else:
-            run.status = RunStatus.DONE if accepted else RunStatus.EMPTY
-    run.step = None
-    run.finished_at = timezone.now()
-    run.save(update_fields=['status', 'step', 'finished_at', 'error'])
+            status, error = (RunStatus.DONE if accepted else RunStatus.EMPTY), run.error
+        # Conditional, so a concurrent cancel is never overwritten.
+        SearchRun.objects.filter(pk=run.pk, status=RunStatus.RUNNING).update(
+            status=status, error=error, step=None, finished_at=finished)
+    else:
+        SearchRun.objects.filter(pk=run.pk, finished_at__isnull=True).update(finished_at=finished)
+        SearchRun.objects.filter(pk=run.pk).update(step=None)
+    run.refresh_from_db()
+    sync_object_search(run.object_id)
     return {
         'run': str(run.id),
         'status': str(run.status),

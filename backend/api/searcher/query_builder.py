@@ -124,6 +124,26 @@ def _article(word):
     return 'an' if word[:1].lower() in 'aeiou' else 'a'
 
 
+def _size_phrase(snapshot):
+    """'46 W x 24 D x 17 H', or on a wall '24 W x 36 H'. Only states the
+    sides the user gave: an object may have no depth (y) or height (z)."""
+    from .filters import is_wall_mode
+    d = snapshot.get('dims') or {}
+    if d.get('x') is None:
+        return ''
+    sides = [f'{_fmt(d["x"])} W']
+    if is_wall_mode(snapshot):
+        height = d.get('z') if d.get('z') is not None else d.get('y')
+        if height is not None:
+            sides.append(f'{_fmt(height)} H')
+    else:
+        if d.get('y') is not None:
+            sides.append(f'{_fmt(d["y"])} D')
+        if d.get('z') is not None:
+            sides.append(f'{_fmt(d["z"])} H')
+    return ' x '.join(sides)
+
+
 def build_intent(snapshot):
     name = _name(snapshot).lower()
     parts = []
@@ -136,15 +156,9 @@ def build_intent(snapshot):
     material = snapshot.get('material')
     if material:
         parts.append('made of mixed materials' if material == 'mixed' else f'made of {material}')
-    d = snapshot.get('dims') or {}
-    from .filters import is_wall_mode
-    if is_wall_mode(snapshot) and d.get('x') is not None and d.get('z') is not None:
-        parts.append(f'fitting within {_fmt(d["x"])} W x {_fmt(d["z"])} H inches')
-    elif d.get('x') is not None and d.get('y') is not None:
-        dims = f'{_fmt(d["x"])} W x {_fmt(d["y"])} D'
-        if d.get('z') is not None:
-            dims += f' x {_fmt(d["z"])} H'
-        parts.append(f'fitting within {dims} inches')
+    size = _size_phrase(snapshot)
+    if size:
+        parts.append(f'fitting within {size} inches')
     if snapshot.get('weight') is not None:
         parts.append(f'weighing at most {_fmt(snapshot["weight"])} lb')
     limit = snapshot.get('priceLimit')

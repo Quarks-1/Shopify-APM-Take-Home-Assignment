@@ -11,8 +11,10 @@ from .models import (
     Material,
     ObjectSource,
     ObjectType,
+    RunStatus,
     SpaceType,
     Style,
+    Verdict,
 )
 
 ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
@@ -30,6 +32,9 @@ SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
 OBJECT_KEYS = {
     'name', 'dims', 'weight', 'type', 'material', 'style', 'priceLimit',
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
+    # Read-only: accepted (so fetched objects and snapshots round-trip) and
+    # ignored. Selection changes only via POST /api/objects/<id>/select/.
+    'selectedCandidateId',
 }
 
 
@@ -46,9 +51,11 @@ def iso(dt):
 
 
 def dims_to_json(dims):
-    out = {'x': dims['x'], 'y': dims['y']}
-    if dims.get('z') is not None:
-        out['z'] = dims['z']
+    """Space dims always carry x and y; object dims may omit y (depth) and z."""
+    out = {'x': dims['x']}
+    for k in ('y', 'z'):
+        if dims.get(k) is not None:
+            out[k] = dims[k]
     return out
 
 
@@ -90,8 +97,126 @@ def object_to_json(obj):
     if obj.selected_product_id is not None:
         out['selectedProductId'] = obj.selected_product_id
     out['search'] = obj.search
+    if obj.selected_candidate_id is not None:
+        out['selectedCandidateId'] = obj.selected_candidate_id
     out['createdAt'] = iso(obj.created_at)
     return out
+
+
+# ------------------------------------------------------- search runs
+
+SIZE_ORDER = {'fits': 0, 'unverified': 1, 'too_big': 2}
+
+
+def candidate_sort_key(c):
+    """Verified fits first, then unverified, then cheapest."""
+    return (SIZE_ORDER.get(c.size_status, 3), c.price_cents, c.pk)
+
+
+def _iso_or_none(dt):
+    return iso(dt) if dt is not None else None
+
+
+def candidate_to_json(c):
+    out = {
+        'id': c.pk,
+        'productId': c.product_gid,
+        'variantId': c.variant_gid or None,
+        'title': c.title,
+        'seller': {
+            'name': c.seller_name or None,
+            'domain': c.seller_domain or None,
+            'url': c.seller_url or None,
+        },
+        'price': c.price_cents / 100,
+        'currency': c.currency,
+        'url': c.pdp_url or None,
+        'checkoutUrl': c.checkout_url or None,
+        'imageUrl': c.image_url or None,
+    }
+    if c.rating_value is not None:
+        out['rating'] = {'value': c.rating_value, 'count': c.rating_count}
+    if c.dims:
+        out['dims'] = c.dims
+    if c.dims_longest is not None:
+        out['dimsLongest'] = c.dims_longest
+    out['sizeStatus'] = c.size_status
+    if c.weight_lb is not None:
+        out['weight'] = c.weight_lb
+    out['weightStatus'] = c.weight_status
+    out['materials'] = list(c.materials or [])
+    out['verdict'] = c.verdict
+    out['verdictReason'] = c.verdict_reason or None
+    out['filterReasons'] = list(c.filter_reasons or [])
+    out['query'] = c.query.round
+    return out
+
+
+def _denied_commands(denials):
+    out = []
+    for d in denials or []:
+        if isinstance(d, dict):
+            tool_input = d.get('tool_input') or {}
+            cmd = tool_input.get('command') if isinstance(tool_input, dict) else None
+            out.append(str(cmd if cmd else d.get('tool_name') or d))
+        else:
+            out.append(str(d))
+    return out
+
+
+def run_to_json(run, include_all=False):
+    """By default only accepted candidates, best first. include_all adds
+    pending, rejected and filtered-out ones (for debugging)."""
+    qs = run.candidates.select_related('query')
+    if not include_all:
+        qs = qs.filter(verdict=Verdict.ACCEPTED)
+    cands = list(qs)
+    accepted = [c for c in cands if c.verdict == Verdict.ACCEPTED]
+    accepted.sort(key=candidate_sort_key)
+    rest = sorted((c for c in cands if c.verdict != Verdict.ACCEPTED), key=lambda c: c.pk)
+
+    result = run.agent_result or {}
+    structured = result.get('structured_output') or {}
+    if not isinstance(structured, dict):
+        structured = {}
+    return {
+        'id': str(run.id),
+        'objectId': run.object_id,
+        'status': run.status,
+        'step': run.step,
+        'round': run.round_count,
+        'maxRounds': run.max_rounds,
+        'accepted': len(accepted),
+        'target': run.target,
+        'partial': run.status == RunStatus.DONE and len(accepted) < run.target,
+        'createdAt': _iso_or_none(run.created_at),
+        'startedAt': _iso_or_none(run.started_at),
+        'finishedAt': _iso_or_none(run.finished_at),
+        'error': run.error or None,
+        'agent': {
+            'mode': run.agent_mode or None,
+            'model': run.agent_model or None,
+            'turns': result.get('num_turns'),
+            'sessionId': result.get('session_id'),
+            'outcome': structured.get('outcome'),
+            'notes': structured.get('notes'),
+            'fallbackReason': run.fallback_reason or None,
+            'deniedCommands': _denied_commands(result.get('permission_denials')),
+        },
+        'queries': [
+            {
+                'round': q.round,
+                'strategy': q.strategy,
+                'query': (q.payload or {}).get('query', ''),
+                'returned': q.returned_count,
+                'new': q.new_count,
+                'passing': q.passing_count,
+                'error': q.error or None,
+            }
+            for q in run.queries.all()
+        ],
+        'candidates': [candidate_to_json(c) for c in accepted + rest],
+    }
 
 
 # ------------------------------------------------------------ validators
@@ -147,7 +272,9 @@ def _enum(v, allowed, path, errors, nullable=False):
     return True, v
 
 
-def _dims(v, path, errors):
+def _dims(v, path, errors, require_y=True):
+    """x is always required. y (depth) is required for spaces but optional
+    (missing or null) for objects, which may hang on a wall."""
     if not isinstance(v, dict):
         errors[path] = 'must be an object'
         return None
@@ -157,22 +284,17 @@ def _dims(v, path, errors):
             errors[f'{path}.{k}'] = 'unknown key'
             ok = False
     out = {}
-    for k in ('x', 'y'):
-        if k not in v:
+    required = ('x', 'y') if require_y else ('x',)
+    for k in ('x', 'y', 'z'):
+        if k in required and k not in v:
             errors[f'{path}.{k}'] = 'is required'
             ok = False
-        else:
+        elif k in v and (k in required or v[k] is not None):
             n = _num(v[k], f'{path}.{k}', errors, 0, strict=True)
             if n is None:
                 ok = False
             else:
                 out[k] = n
-    if 'z' in v and v['z'] is not None:
-        n = _num(v['z'], f'{path}.z', errors, 0, strict=True)
-        if n is None:
-            ok = False
-        else:
-            out['z'] = n
     return out if ok else None
 
 
@@ -343,7 +465,7 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
         if ok:
             out['type'] = v
     if has('dims'):
-        v = _dims(data['dims'], prefix + 'dims', errors)
+        v = _dims(data['dims'], prefix + 'dims', errors, require_y=kind == 'space')
         if v is not None:
             out['dims'] = v
 

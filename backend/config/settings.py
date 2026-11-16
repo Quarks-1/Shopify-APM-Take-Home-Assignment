@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,10 +69,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Several processes share this file: runserver, the search workers and the
+# searcher agent's `searcher` subcommands. DJANGO_DB_PATH lets the search
+# runner point every child process at the parent's database (the test DB
+# under `manage.py test`). WAL plus IMMEDIATE transactions serialize writers
+# instead of failing with "database is locked".
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.environ.get('DJANGO_DB_PATH') or BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,
+            'init_command': 'PRAGMA journal_mode=WAL;',
+            'transaction_mode': 'IMMEDIATE',
+        },
+        # A file (not in-memory) so subprocesses spawned by tests can open it.
+        'TEST': {'NAME': BASE_DIR / 'test_db.sqlite3'},
     }
 }
 
@@ -115,3 +129,25 @@ SEARCHER_TARGET = int(os.environ.get('SEARCHER_TARGET', '10'))
 SEARCHER_MAX_ROUNDS = int(os.environ.get('SEARCHER_MAX_ROUNDS', '8'))
 SEARCHER_SIZE_TOLERANCE = float(os.environ.get('SEARCHER_SIZE_TOLERANCE', '1.15'))
 SEARCHER_UCP_TIMEOUT = float(os.environ.get('SEARCHER_UCP_TIMEOUT', '60'))
+
+# Search runner (api.searcher.runner): background runs driven by a headless
+# Claude Code session on the user's subscription login (no API key).
+SEARCHER_AGENT = os.environ.get('SEARCHER_AGENT', 'claude').strip().lower()  # claude | deterministic
+SEARCHER_CLAUDE_BIN = os.path.abspath(
+    os.environ.get('SEARCHER_CLAUDE_BIN')
+    or shutil.which('claude')
+    or '/opt/homebrew/bin/claude'
+)
+SEARCHER_MODEL = os.environ.get('SEARCHER_MODEL', 'sonnet')
+SEARCHER_MAX_TURNS = int(os.environ.get('SEARCHER_MAX_TURNS', '40'))
+SEARCHER_RUN_TIMEOUT = float(os.environ.get('SEARCHER_RUN_TIMEOUT', '420'))  # agent wall clock, s
+SEARCHER_MAX_CONCURRENT = int(os.environ.get('SEARCHER_MAX_CONCURRENT', '2'))
+SEARCHER_FALLBACK = os.environ.get('SEARCHER_FALLBACK', 'deterministic').strip().lower()  # deterministic | none
+SEARCHER_VAR_DIR = Path(os.environ.get('SEARCHER_VAR_DIR') or BASE_DIR / 'var')
+# The agent's (empty) working directory. Must be outside any git repo: with
+# --setting-sources project,local Claude Code would load the repo's
+# .claude/settings*.json, including permission allow rules.
+SEARCHER_AGENT_CWD = Path(
+    os.environ.get('SEARCHER_AGENT_CWD')
+    or Path(tempfile.gettempdir()) / 'shopify-searcher' / 'agent-cwd'
+)
