@@ -87,7 +87,9 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
   const [drag, setDragState] = useState<Drag | null>(null);
-  const [mode, setMode] = useState<Mode>("select");
+  const [mode, setMode] = useState<Mode>(() =>
+    (getSpace(state, spaceId)?.placements.length ?? 0) === 0 ? "draw" : "select",
+  );
 
   const setDrag = useCallback((next: Drag | null) => {
     dragRef.current = next;
@@ -294,6 +296,23 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   const gridId = `${uid}-grid`;
   const drawing = drag?.kind === "draw" ? drag.rect : null;
+  const drawingSizeText =
+    drawing && (drawing.w > 0 || drawing.h > 0) ? formatDims({ x: drawing.w, y: drawing.h }, unit) : "";
+  const sizeLabel = (() => {
+    if (!drawing || !drawingSizeText) return null;
+    const labelFontSize = fontSize * 0.85;
+    const width = drawingSizeText.length * labelFontSize * 0.6 + labelFontSize * 1.2;
+    const height = labelFontSize * 1.8;
+    const gap = labelFontSize * 0.4;
+    let y: number;
+    if (drawing.y - gap - height >= -pad) y = drawing.y - gap - height;
+    else if (drawing.y + drawing.h + gap + height <= dims.y + pad) y = drawing.y + drawing.h + gap;
+    else y = drawing.y + gap;
+    const minX = -pad + width / 2;
+    const maxX = dims.x + pad - width / 2;
+    const centerX = Math.min(Math.max(drawing.x + drawing.w / 2, minX), Math.max(minX, maxX));
+    return { labelFontSize, width, height, x: centerX - width / 2, y, cx: centerX };
+  })();
   const count = items.length;
 
   return (
@@ -489,7 +508,36 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
               className="pointer-events-none"
             />
           ) : null}
+
+          {sizeLabel ? (
+            <g className="pointer-events-none" aria-hidden="true">
+              <rect
+                x={sizeLabel.x}
+                y={sizeLabel.y}
+                width={sizeLabel.width}
+                height={sizeLabel.height}
+                rx={sizeLabel.height / 2}
+                fill="var(--color-accent-600)"
+              />
+              <text
+                x={sizeLabel.cx}
+                y={sizeLabel.y + sizeLabel.height / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={sizeLabel.labelFontSize}
+                fontWeight={600}
+                fill="var(--color-text-white)"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {drawingSizeText}
+              </text>
+            </g>
+          ) : null}
         </svg>
+
+        <span className="sr-only" aria-live="polite">
+          {drawingSizeText}
+        </span>
 
         {count === 0 && !drawing ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
