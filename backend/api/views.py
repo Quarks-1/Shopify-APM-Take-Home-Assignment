@@ -48,7 +48,7 @@ def workspace_overview(_request):
                     'id': 'state',
                     'method': 'GET',
                     'path': '/api/state/',
-                    'description': 'Full snapshot of spaces and objects',
+                    'description': 'Full snapshot of spaces, objects and their current search candidates',
                     'status': 'operational',
                 },
                 {

@@ -117,9 +117,13 @@ def _iso_or_none(dt):
     return iso(dt) if dt is not None else None
 
 
-def candidate_to_json(c):
+def candidate_to_json(c, object_id=None):
+    """Reads c.query (select_related it). Without object_id it reads
+    c.run.object_id, which is free when fetched through run.candidates."""
     out = {
         'id': c.pk,
+        'objectId': object_id if object_id is not None else c.run.object_id,
+        'runId': str(c.run_id),
         'productId': c.product_gid,
         'variantId': c.variant_gid or None,
         'title': c.title,

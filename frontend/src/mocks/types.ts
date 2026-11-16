@@ -55,7 +55,9 @@ export interface SpaceObject {
   similarItems: string[];
   source: "search" | "imported";
   owned?: OwnedInfo;
+  /** Product ids of the latest search's accepted candidates (`cand_<id>`), selection first. Derived client-side. */
   candidateIds: string[];
+  /** Product id of the selected candidate (`cand_<id>`). Derived from the backend's selectedCandidateId. */
   selectedProductId?: string;
   search: SearchState;
   createdAt: string;
@@ -67,18 +69,40 @@ export interface Store {
   domain: string;
 }
 
+export type SizeStatus = "fits" | "unverified";
+
+export interface ProductRating {
+  value: number;
+  count: number | null;
+}
+
+/**
+ * Either a real search candidate (id `cand_<candidate id>`, store id = seller
+ * domain) or a mock owned product from `mocks/catalog.ts` (id `prd_…`).
+ */
 export interface Product {
   id: string;
   title: string;
   storeId: string;
   price: number;
   currency: "USD";
-  dims: Dims;
+  /** Inches. Candidates may know only some sides, or none. */
+  dims?: Partial<Dims>;
+  /** Longest side in inches, when the catalog only gave one size. */
+  dimsLongest?: number;
+  /** Whether the size was verified to fit the object (candidates only). */
+  sizeStatus?: SizeStatus;
   weight?: number;
+  /** For candidates, the owning object's type. */
   type: ObjectType;
-  material: Material;
-  style: Style;
-  tags: string[];
+  material?: Material;
+  style?: Style;
+  tags?: string[];
+  imageUrl?: string;
+  /** Product page. */
+  url?: string;
+  checkoutUrl?: string;
+  rating?: ProductRating;
 }
 
 export interface CartLine {
@@ -88,13 +112,29 @@ export interface CartLine {
   qty: number;
 }
 
-export interface AppState {
-  version: 1;
-  spaces: Space[];
-  objects: SpaceObject[];
+/** The part of the state kept in this browser's localStorage. */
+export interface LocalState {
   cart: CartLine[];
   checkoutOpened: Record<string, string>;
   importedAt?: string;
+}
+
+/** In-memory cache of the backend (spaces, objects, candidates) plus the local part. */
+export interface AppState extends LocalState {
+  version: 1;
+  spaces: Space[];
+  objects: SpaceObject[];
+  /** Search candidates as products, keyed by product id (`cand_<id>`). */
+  products: Record<string, Product>;
+  /** Stores of those candidates, keyed by seller domain. */
+  stores: Record<string, Store>;
+}
+
+/** What the mock-only app kept under localStorage "wireframe-state-v1". */
+export interface LegacyAppState extends LocalState {
+  version: 1;
+  spaces: Space[];
+  objects: SpaceObject[];
 }
 
 export const SPACE_TYPE_OPTIONS: { value: SpaceType; label: string }[] = [

@@ -11,7 +11,7 @@ from unittest import mock
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import Candidate, SearchRun, SpaceObject, Verdict
+from .models import Candidate, Placement, SearchRun, Space, SpaceObject, Verdict
 from .searcher import engine, runner
 
 FAKE_UCP = str(Path(__file__).parent / 'test_fixtures' / 'fake_ucp.py')
@@ -126,10 +126,11 @@ class SearchApiTests(TestCase):
         self.assertEqual(order, sorted(order))
         self.assertIn('fits', [c['sizeStatus'] for c in cands])
         c = next(c for c in cands if c['sizeStatus'] == 'fits')
-        for key in ('id', 'productId', 'variantId', 'title', 'seller', 'price', 'currency', 'url',
-                    'checkoutUrl', 'imageUrl', 'sizeStatus', 'weightStatus', 'materials', 'verdict',
-                    'verdictReason', 'filterReasons', 'query'):
+        for key in ('id', 'objectId', 'runId', 'productId', 'variantId', 'title', 'seller', 'price',
+                    'currency', 'url', 'checkoutUrl', 'imageUrl', 'sizeStatus', 'weightStatus',
+                    'materials', 'verdict', 'verdictReason', 'filterReasons', 'query'):
             self.assertIn(key, c)
+        self.assertEqual((c['objectId'], c['runId']), ('obj1', str(run.pk)))
         self.assertEqual(set(c['seller']), {'name', 'domain', 'url'})
         self.assertIsInstance(c['price'], float)
         self.assertEqual(c['currency'], 'USD')
@@ -271,6 +272,62 @@ class SearchApiTests(TestCase):
                       ('GET', '/api/searches/<id>/'),
                       ('POST', '/api/searches/<id>/cancel/')]:
             self.assertIn(route, routes)
+
+    # ------------------------------------------------------------ state
+    def state_candidates(self):
+        return self.client.get('/api/state/').json()['candidates']
+
+    def test_state_candidates_follow_newest_accepted_run(self):
+        self.assertEqual(self.state_candidates(), [])
+        make_object('obj2', name='Rug', type='rug', dims={'x': 96, 'y': 120})  # never searched
+        old, old_ids = self.judged_run()
+        run_cands = self.client.get(f'/api/searches/{old.pk}/').json()['candidates']
+        self.assertEqual(self.state_candidates(), run_cands)
+        self.assertEqual({(c['objectId'], c['runId']) for c in run_cands}, {('obj1', str(old.pk))})
+
+        # Selection from the old run survives a newer run and comes last.
+        self.post('/api/objects/obj1/select/', {'candidateId': old_ids[0]})
+        new, _ = self.judged_run()
+        new_cands = self.client.get(f'/api/searches/{new.pk}/').json()['candidates']
+        state = self.state_candidates()
+        self.assertEqual([c['id'] for c in state], [c['id'] for c in new_cands] + [old_ids[0]])
+        self.assertEqual(state[-1]['runId'], str(old.pk))
+
+        # A newer run without accepted candidates does not hide them.
+        empty = engine.create_run(self.obj)
+        runner.finalize(empty)
+        self.assertEqual(SearchRun.objects.get(pk=empty.pk).status, 'empty')
+        self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in state])
+
+        # Selecting one of the newest run's candidates is not listed twice.
+        self.post('/api/objects/obj1/select/', {'candidateId': new_cands[1]['id']})
+        self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in new_cands])
+
+    def test_state_candidates_in_object_order(self):
+        second = make_object('obj0', position=5)
+        self.judged_run(second)
+        self.judged_run()
+        objects = [o['id'] for o in self.client.get('/api/state/').json()['objects']]
+        self.assertEqual(objects, ['obj1', 'obj0'])
+        owners = [c['objectId'] for c in self.state_candidates()]
+        self.assertEqual(owners, sorted(owners, key=objects.index))
+        self.assertEqual(set(owners), {'obj1', 'obj0'})
+
+    def test_state_query_count_is_constant(self):
+        space = Space.objects.create(id='s1', name='Room', type='floor', unit='in',
+                                     dims={'x': 100, 'y': 100}, created_at=timezone.now(),
+                                     updated_at=timezone.now())
+        Placement.objects.create(space=space, object=self.obj, x=0, y=0)
+        self.judged_run()
+        with self.assertNumQueries(5):
+            self.client.get('/api/state/')
+        for i in range(3):
+            obj = make_object(f'more{i}')
+            run, ids = self.judged_run(obj)
+            self.post(f'/api/objects/{obj.pk}/select/', {'candidateId': ids[0]})
+            self.judged_run(obj)  # the selection is now from an older run
+        with self.assertNumQueries(5):
+            self.assertEqual(len(self.client.get('/api/state/').json()['candidates']), 3 + 3 * 4)
 
     def test_detail_query_count_is_constant(self):
         run, _ = self.judged_run()

@@ -1,8 +1,7 @@
 import { Chip, type ChipColor } from "@/components/base/badges/chip";
 import { formatPrice } from "@/lib/format";
-import { getProductById } from "@/mocks/catalog";
 import { useAppState } from "@/state/app-store";
-import { getObject, getObjectStatus, getParentSpaces, type ObjectStatus } from "@/state/selectors";
+import { getObject, getObjectProduct, getObjectStatus, getParentSpaces, type ObjectStatus } from "@/state/selectors";
 import { cx } from "@/utils/cx";
 import { OBJECT_TYPE_VISUALS } from "./object-type-visuals";
 import { ProductTile } from "./product-tile";
@@ -41,8 +40,7 @@ export function ObjectCard({ objectId, className }: ObjectCardProps) {
   if (!object) return null;
 
   const status = getObjectStatus(state, objectId);
-  const productId = object.owned?.productId ?? object.selectedProductId;
-  const product = productId ? getProductById(productId) : undefined;
+  const product = getObjectProduct(state, object);
   const chip = statusChip(status, object.candidateIds.length);
   const spaces = getParentSpaces(state, objectId);
   const showPrice = product && (status === "selected" || status === "owned" || status === "in-cart");
@@ -60,7 +58,7 @@ export function ObjectCard({ objectId, className }: ObjectCardProps) {
         className,
       )}
     >
-      <ProductTile type={product?.type ?? object.type} size="md" />
+      <ProductTile type={product?.type ?? object.type} imageUrl={product?.imageUrl} size="md" />
       <span className="flex min-w-0 flex-col gap-2">
         <span className="flex items-start justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">

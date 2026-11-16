@@ -5,8 +5,10 @@ import { Counter } from "@/components/base/badges/counter";
 import { IconButton } from "@/components/base/buttons/icon-button";
 import { Drawer } from "@/components/base/drawer/drawer";
 import { DashboardSidebar, type DashboardNavItem } from "@/components/application/dashboard/dashboard-sidebar";
+import { AppErrorView, AppLoadingView } from "@/app/load-states";
 import { ObjectDetailsDrawer } from "@/features/objects/object-details-drawer";
 import { useCartCount } from "@/state/app-store";
+import { useAppStatus } from "@/state/store-context";
 
 function navKeyFor(pathname: string): string {
   if (pathname.startsWith("/spaces")) return "spaces";
@@ -20,7 +22,10 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const cartCount = useCartCount();
+  const { status, retry } = useAppStatus();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Pages need spaces and objects from the backend; the dev status page is what diagnoses a missing one.
+  const ready = status.phase === "ready" || pathname.startsWith("/dev/");
 
   const [menuPath, setMenuPath] = useState(pathname);
   if (menuPath !== pathname) {
@@ -69,7 +74,13 @@ export function AppLayout() {
         </div>
 
         <main className="flex w-full min-w-0 flex-1 flex-col gap-6 p-4 sm:p-6">
-          <Outlet />
+          {ready ? (
+            <Outlet />
+          ) : status.phase === "error" ? (
+            <AppErrorView error={status.error} onRetry={retry} />
+          ) : (
+            <AppLoadingView />
+          )}
         </main>
       </div>
 
@@ -83,7 +94,8 @@ export function AppLayout() {
         />
       </Drawer>
 
-      <ObjectDetailsDrawer />
+      {/* Only once loaded: it closes itself for object ids it can't find. */}
+      {status.phase === "ready" ? <ObjectDetailsDrawer /> : null}
     </div>
   );
 }

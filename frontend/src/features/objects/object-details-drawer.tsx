@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { RiAddLine } from "@remixicon/react";
-import { Button } from "@/components/base/buttons/button";
+import { RiAddLine, RiExternalLinkLine } from "@remixicon/react";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Drawer, DrawerBody, DrawerFooter, DrawerHeader } from "@/components/base/drawer/drawer";
 import { Input } from "@/components/base/input/input";
@@ -9,7 +9,6 @@ import { NumberField } from "@/components/base/number-field/number-field";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { Tag, TagGroup } from "@/components/base/tag-group/tag-group";
 import { formatPrice, formatRelativeTime, fromDisplayLength, toDisplayLength } from "@/lib/format";
-import { getProductById, getStoreById } from "@/mocks/catalog";
 import {
   MATERIAL_OPTIONS,
   OBJECT_TYPE_OPTIONS,
@@ -19,7 +18,9 @@ import {
   type SpaceObject,
 } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
-import { getObject, getParentSpaces } from "@/state/selectors";
+import { getObject, getParentSpaces, getProduct, getSelectedProduct, getStore } from "@/state/selectors";
+import { ProductSize } from "./product-card";
+import { ProductTile } from "./product-tile";
 import { useObjectDrawer } from "./use-object-drawer";
 import { useObjectSearch } from "./use-object-search";
 
@@ -61,8 +62,11 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const isWall = parentSpace?.type === "wall";
   const owned = object.source === "imported";
   const purchase = object.owned;
-  const ownedProduct = purchase ? getProductById(purchase.productId) : undefined;
-  const ownedStore = ownedProduct ? getStoreById(ownedProduct.storeId) : undefined;
+  const ownedProduct = purchase ? getProduct(state, purchase.productId) : undefined;
+  const ownedStore = ownedProduct ? getStore(state, ownedProduct.storeId) : undefined;
+  // The live object: a search may finish (and pick a product) while the drawer is open.
+  const selectedProduct = owned ? undefined : getSelectedProduct(state, getObject(state, object.id) ?? object);
+  const selectedStore = selectedProduct ? getStore(state, selectedProduct.storeId) : undefined;
 
   const [name, setName] = useState(object.name);
   const [type, setType] = useState<ObjectType>(object.type);
@@ -262,6 +266,42 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
             </div>
           )}
         </Section>
+
+        {selectedProduct ? (
+          <Section title="Selected product">
+            <div className="flex items-start gap-3">
+              <ProductTile type={selectedProduct.type} imageUrl={selectedProduct.imageUrl} size="sm" />
+              <dl className="grid min-w-0 flex-1 grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-body-regular">
+                <dt className="text-text-secondary">Product</dt>
+                <dd className="min-w-0 text-text-primary">{selectedProduct.title}</dd>
+                <dt className="text-text-secondary">Store</dt>
+                <dd className="min-w-0 text-text-primary">{selectedStore?.name ?? "Unknown store"}</dd>
+                <dt className="text-text-secondary">Price</dt>
+                <dd className="text-text-primary">
+                  <bdi>{formatPrice(selectedProduct.price)}</bdi>
+                </dd>
+                <dt className="text-text-secondary">Size</dt>
+                <dd>
+                  <ProductSize product={selectedProduct} className="text-body-regular" />
+                </dd>
+              </dl>
+            </div>
+            {selectedProduct.url ? (
+              <ButtonLink
+                href={selectedProduct.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="secondary"
+                size="small"
+                trailingIcon={RiExternalLinkLine}
+                className="self-start"
+              >
+                View product page
+                <span className="sr-only"> (opens in a new tab)</span>
+              </ButtonLink>
+            ) : null}
+          </Section>
+        ) : null}
 
         {owned && purchase ? (
           <Section title="Purchase">

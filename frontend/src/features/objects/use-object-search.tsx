@@ -1,6 +1,9 @@
-import { createContext, useCallback, useLayoutEffect, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { mockSearch } from "@/mocks/catalog";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { toast } from "@/components/base/toast/toast";
+import * as api from "@/lib/api";
+import { ACTIVE_RUN_STATUSES, ApiError, describeError, type ApiSearchRun } from "@/lib/api";
 import { useAppActions, useAppState } from "@/state/app-store";
+import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
 export interface ObjectSearchApi {
   search(objectId: string): void;
@@ -11,129 +14,221 @@ export interface ObjectSearchApi {
 
 const ObjectSearchContext = createContext<ObjectSearchApi | null>(null);
 
-const STAGGER_MS = 300;
+const POLL_MS = 1500;
+/** Polling backs off to this while the backend keeps failing, and never gives up. */
+const MAX_RETRY_MS = 10_000;
 
-/** Runs searches outside of page components so they survive navigation. Render inside AppStoreProvider. */
+/** One object's run being followed. Without `runId` the run is still being started or looked up. */
+interface Tracker {
+  objectId: string;
+  runId?: string;
+  stopped: boolean;
+  /** Cancel was pressed before the start request returned a run id. */
+  cancelRequested: boolean;
+  failures: number;
+  timer?: ReturnType<typeof setTimeout>;
+}
+
+/**
+ * Starts backend search runs and polls them, outside of page components so
+ * they survive navigation. Runs already going (after a reload, or started in
+ * another tab) are picked up from the object's search state. Render inside
+ * AppStoreProvider.
+ */
 export function ObjectSearchProvider({ children }: { children: ReactNode }) {
   const state = useAppState();
   const actions = useAppActions();
+  const { status } = useAppStatus();
+  const { getState, enqueue, onReset } = useStoreInternals();
 
-  const stateRef = useRef(state);
-  useLayoutEffect(() => {
-    stateRef.current = state;
-  });
-
-  const controllers = useRef(new Map<string, AbortController>());
-  const staggerTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const pending = useRef(new Set<string>());
+  const trackers = useRef(new Map<string, Tracker>());
   // Bumped whenever a run starts or ends so isRunning consumers re-render.
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
 
-  const bump = useCallback(() => setVersion((v) => v + 1), []);
+  const engine = useMemo(() => {
+    const bump = () => setVersion((v) => v + 1);
+    const findObject = (objectId: string) => getState().objects.find((o) => o.id === objectId);
 
-  const run = useCallback(
-    (objectId: string) => {
-      const object = stateRef.current.objects.find((o) => o.id === objectId);
-      if (!object || object.source === "imported") return;
-
-      controllers.current.get(objectId)?.abort();
-      const controller = new AbortController();
-      controllers.current.set(objectId, controller);
-
-      actions.setSearchState(objectId, { status: "running", step: "planning", lastRunAt: object.search.lastRunAt });
-      bump();
-
-      mockSearch(
-        object,
-        (step) => {
-          if (controller.signal.aborted) return;
-          actions.setSearchState(objectId, { status: "running", step, lastRunAt: object.search.lastRunAt });
-        },
-        controller.signal,
-      )
-        .then((ids) => {
-          if (controller.signal.aborted) return;
-          actions.setCandidates(objectId, ids);
-        })
-        .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-          actions.setSearchState(objectId, { status: "idle", lastRunAt: object.search.lastRunAt });
-        })
-        .finally(() => {
-          if (controllers.current.get(objectId) === controller) {
-            controllers.current.delete(objectId);
-            bump();
-          }
-        });
-    },
-    [actions, bump],
-  );
-
-  const api = useMemo<ObjectSearchApi>(() => {
-    const cancel = (objectId: string) => {
-      const controller = controllers.current.get(objectId);
-      if (!controller) return;
-      controller.abort();
-      controllers.current.delete(objectId);
-      const obj = stateRef.current.objects.find((o) => o.id === objectId);
-      if (obj?.search.status === "running") {
-        actions.setSearchState(objectId, {
-          status: obj.candidateIds.length > 0 ? "done" : "idle",
-          lastRunAt: obj.search.lastRunAt,
-        });
-      }
-      bump();
-    };
-
-    // Queued rather than run immediately: stateRef only refreshes after the next commit,
-    // so a search fired alongside createObject/updateObject must wait for it.
-    const search = (objectId: string) => {
-      pending.current.add(objectId);
-      bump();
-    };
-
-    const searchAll = (objectIds: string[]) => {
-      const targets = objectIds.filter(
-        (id) => stateRef.current.objects.find((o) => o.id === id)?.source === "search",
-      );
-      targets.forEach((id, i) => {
-        const timer = setTimeout(() => {
-          staggerTimers.current.delete(timer);
-          search(id);
-        }, i * STAGGER_MS);
-        staggerTimers.current.add(timer);
+    /** Leaves search state as it was before the run: done when there are matches to show. */
+    const settleIdle = (objectId: string, lastRunAt?: string | null) => {
+      const obj = findObject(objectId);
+      if (!obj || obj.search.status !== "running") return;
+      actions.setSearchState(objectId, {
+        status: obj.candidateIds.length > 0 ? "done" : "idle",
+        lastRunAt: lastRunAt ?? obj.search.lastRunAt,
       });
     };
 
-    return {
-      search,
-      searchAll,
-      cancel,
-      isRunning: (objectId) => controllers.current.has(objectId),
+    const stop = (objectId: string) => {
+      const tracker = trackers.current.get(objectId);
+      if (!tracker) return;
+      tracker.stopped = true;
+      if (tracker.timer !== undefined) clearTimeout(tracker.timer);
+      trackers.current.delete(objectId);
+      bump();
     };
-  }, [actions, bump]);
 
-  useLayoutEffect(() => {
-    if (pending.current.size === 0) return;
-    const ids = [...pending.current];
-    pending.current.clear();
-    ids.forEach((id) => run(id));
-  });
+    const stopAll = () => [...trackers.current.keys()].forEach(stop);
 
+    const finish = (tracker: Tracker, run: ApiSearchRun) => {
+      const { objectId } = tracker;
+      stop(objectId);
+      const obj = findObject(objectId);
+      if (!obj) return;
+      switch (run.status) {
+        case "done":
+        case "empty":
+          // Empty merges nothing, which shows "No matches" and clears the pick, as before.
+          actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt);
+          break;
+        case "failed":
+          toast.error(`Search failed for ${obj.name}`, {
+            description: run.error ?? "The searcher stopped before finding matches.",
+          });
+          actions.setSearchState(objectId, { status: "idle", lastRunAt: run.finishedAt ?? obj.search.lastRunAt });
+          break;
+        case "canceled":
+          settleIdle(objectId, run.finishedAt);
+          break;
+      }
+    };
+
+    const schedule = (tracker: Tracker, delay: number) => {
+      if (tracker.stopped) return;
+      tracker.timer = setTimeout(() => void poll(tracker), delay);
+    };
+
+    const observe = (tracker: Tracker, run: ApiSearchRun) => {
+      if (tracker.stopped) return;
+      tracker.runId = run.id;
+      if (!ACTIVE_RUN_STATUSES.has(run.status)) {
+        finish(tracker, run);
+        return;
+      }
+      const obj = findObject(tracker.objectId);
+      if (!obj) {
+        stop(tracker.objectId);
+        return;
+      }
+      const step = run.step ?? "planning";
+      if (obj.search.status !== "running" || obj.search.step !== step) {
+        actions.setSearchState(tracker.objectId, { status: "running", step, lastRunAt: obj.search.lastRunAt });
+      }
+      // Queued runs wait for a free slot (two run at once), so check on them less often.
+      schedule(tracker, run.status === "queued" ? POLL_MS * 2 : POLL_MS);
+    };
+
+    const poll = async (tracker: Tracker) => {
+      if (tracker.stopped) return;
+      try {
+        const run = tracker.runId
+          ? await api.getSearch(tracker.runId)
+          : await api.getLatestSearch(tracker.objectId);
+        tracker.failures = 0;
+        observe(tracker, run);
+      } catch (error) {
+        if (tracker.stopped) return;
+        if (error instanceof ApiError && error.status === 404) {
+          // The run (or the whole object) is gone: deleted, or reset in another tab.
+          stop(tracker.objectId);
+          settleIdle(tracker.objectId);
+          return;
+        }
+        // A blip (backend restarting, network): keep the run's UI and try again.
+        tracker.failures += 1;
+        schedule(tracker, Math.min(POLL_MS * 2 ** tracker.failures, MAX_RETRY_MS));
+      }
+    };
+
+    const track = (objectId: string): Tracker => {
+      const tracker: Tracker = { objectId, stopped: false, cancelRequested: false, failures: 0 };
+      trackers.current.set(objectId, tracker);
+      bump();
+      return tracker;
+    };
+
+    const search = (objectId: string) => {
+      const obj = findObject(objectId);
+      // A second press while running is a no-op; the backend would hand back the same run anyway.
+      if (!obj || obj.source !== "search" || trackers.current.has(objectId)) return;
+      const tracker = track(objectId);
+      actions.setSearchState(objectId, { status: "running", step: "planning", lastRunAt: obj.search.lastRunAt });
+      // Queued behind pending writes, so a just-created object reaches the backend first.
+      enqueue(() => api.startSearch(objectId))
+        .then((run) => {
+          if (tracker.cancelRequested) {
+            if (ACTIVE_RUN_STATUSES.has(run.status)) void enqueue(() => api.cancelSearch(run.id)).catch(() => {});
+            return;
+          }
+          observe(tracker, run);
+        })
+        .catch((error: unknown) => {
+          if (tracker.stopped) return;
+          stop(objectId);
+          settleIdle(objectId);
+          toast.error(`Couldn't start the search for ${obj.name}`, { description: describeError(error) });
+        });
+    };
+
+    const resume = (objectId: string) => {
+      if (trackers.current.has(objectId)) return;
+      void poll(track(objectId));
+    };
+
+    const cancel = (objectId: string) => {
+      const tracker = trackers.current.get(objectId);
+      const obj = findObject(objectId);
+      if (tracker) {
+        tracker.cancelRequested = true;
+        const { runId } = tracker;
+        stop(objectId);
+        if (runId) {
+          enqueue(() => api.cancelSearch(runId)).catch((error: unknown) => {
+            toast.error("Couldn't cancel the search", { description: describeError(error) });
+          });
+        }
+      } else if (obj?.search.status === "running") {
+        // Shown as running but not followed yet (e.g. a refresh just arrived).
+        enqueue(async () => {
+          const run = await api.getLatestSearch(objectId);
+          if (ACTIVE_RUN_STATUSES.has(run.status)) await api.cancelSearch(run.id);
+        }).catch(() => {});
+      }
+      settleIdle(objectId);
+    };
+
+    return { search, resume, cancel, stop, stopAll };
+  }, [actions, enqueue, getState]);
+
+  // Follow runs that are going without us (after a reload, from another tab), and drop deleted objects.
   useEffect(() => {
-    const running = controllers.current;
-    const timers = staggerTimers.current;
-    const queued = pending.current;
-    return () => {
-      running.forEach((c) => c.abort());
-      running.clear();
-      timers.forEach((t) => clearTimeout(t));
-      timers.clear();
-      queued.clear();
-    };
-  }, []);
+    if (status.phase !== "ready") return;
+    for (const o of state.objects) {
+      if (o.source === "search" && o.search.status === "running") engine.resume(o.id);
+    }
+    const ids = new Set(state.objects.map((o) => o.id));
+    for (const id of [...trackers.current.keys()]) if (!ids.has(id)) engine.stop(id);
+  }, [state.objects, status.phase, engine]);
 
-  return <ObjectSearchContext.Provider value={api}>{children}</ObjectSearchContext.Provider>;
+  // Reset replaces every object (same ids, new records), so old runs no longer apply.
+  useEffect(() => onReset(engine.stopAll), [onReset, engine]);
+
+  useEffect(() => engine.stopAll, [engine]);
+
+  const searchApi = useMemo<ObjectSearchApi>(
+    () => ({
+      search: engine.search,
+      // The backend queues runs (two at a time), so they can all start at once.
+      searchAll: (objectIds) => objectIds.forEach(engine.search),
+      cancel: engine.cancel,
+      isRunning: (objectId) => trackers.current.has(objectId),
+    }),
+    // `version` makes isRunning consumers re-render when a run starts or ends.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [engine, version],
+  );
+
+  return <ObjectSearchContext.Provider value={searchApi}>{children}</ObjectSearchContext.Provider>;
 }
 
 export function useObjectSearch(): ObjectSearchApi {

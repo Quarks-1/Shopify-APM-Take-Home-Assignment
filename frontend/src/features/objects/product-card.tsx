@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import { RiCheckLine } from "@remixicon/react";
+import { RiCheckLine, RiExternalLinkLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
-import { getStoreById } from "@/mocks/catalog";
+import { IconLinkButton } from "@/components/base/buttons/icon-button";
 import type { Product } from "@/mocks/types";
 import { formatDims, formatPrice } from "@/lib/format";
+import { useAppState } from "@/state/app-store";
+import { getStore } from "@/state/selectors";
 import { cx } from "@/utils/cx";
 import { ProductTile } from "./product-tile";
 
@@ -21,12 +23,44 @@ export interface ProductCardProps {
 
 const SURFACE = "rounded-3xl border border-border-button-default bg-background-primary-default p-3";
 
+/** Catalog sizes can be partial or missing, and are not always confirmed to fit. */
+export function ProductSize({ product, className }: { product: Product; className?: string }) {
+  const text = formatDims(product.dims, "in");
+  const unverified = product.sizeStatus === "unverified";
+  if (!text) {
+    return <span className={cx("text-caption-1-medium text-text-placeholder", className)}>Size unverified</span>;
+  }
+  return (
+    <span
+      className={cx("text-caption-1-medium text-text-tertiary", className)}
+      title={unverified ? "The listing doesn't confirm this size fits" : undefined}
+    >
+      {text}
+      {unverified ? <span className="text-text-placeholder"> · unverified</span> : null}
+    </span>
+  );
+}
+
 function ProductDetails({ product, variant }: { product: Product; variant: ProductCardVariant }) {
-  const store = getStoreById(product.storeId);
+  const store = getStore(useAppState(), product.storeId);
+  // Candidate cards are buttons, so a link can't sit inside them; the selected card carries it.
+  const link = variant !== "candidate" && product.url ? product.url : undefined;
   return (
     <>
       <span className="relative block">
-        <ProductTile type={product.type} size="md" />
+        <ProductTile type={product.type} imageUrl={product.imageUrl} size="md" />
+        {link ? (
+          <IconLinkButton
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            icon={RiExternalLinkLine}
+            size="small"
+            aria-label={`View ${product.title}${store ? ` on ${store.name}` : ""} (opens in a new tab)`}
+            title="View product page"
+            className="absolute end-2 top-2"
+          />
+        ) : null}
         {variant === "candidate" ? (
           <span
             aria-hidden
@@ -50,7 +84,7 @@ function ProductDetails({ product, variant }: { product: Product; variant: Produ
         {store ? <span className="truncate text-body-2-regular text-text-secondary">{store.name}</span> : null}
         <span className="flex flex-wrap items-baseline justify-between gap-x-2">
           <bdi className="text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
-          <span className="text-caption-1-medium text-text-tertiary">{formatDims(product.dims, "in")}</span>
+          <ProductSize product={product} />
         </span>
       </span>
     </>

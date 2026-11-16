@@ -6,10 +6,16 @@ import { Carousel, CarouselItem } from "@/components/base/carousel/carousel";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { toast } from "@/components/base/toast/toast";
 import { formatDims, formatPrice, formatRelativeTime } from "@/lib/format";
-import { getProductById } from "@/mocks/catalog";
-import { OBJECT_TYPE_OPTIONS, type Product } from "@/mocks/types";
+import { OBJECT_TYPE_OPTIONS } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
-import { getCartLineForObject, getObject, getSpace } from "@/state/selectors";
+import {
+  getCandidateProducts,
+  getCartLineForObject,
+  getObject,
+  getProduct,
+  getSelectedProduct,
+  getSpace,
+} from "@/state/selectors";
 import { cx } from "@/utils/cx";
 import { ProductCard } from "./product-card";
 import { ProductTile } from "./product-tile";
@@ -52,13 +58,12 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const owned = object.source === "imported";
   const running = search.isRunning(objectId) || object.search.status === "running";
   const cartLine = getCartLineForObject(state, objectId);
-  const selectedProduct = object.selectedProductId ? getProductById(object.selectedProductId) : undefined;
-  const ownedProduct = object.owned ? getProductById(object.owned.productId) : undefined;
+  const selectedProduct = getSelectedProduct(state, object);
+  const ownedProduct = object.owned ? getProduct(state, object.owned.productId) : undefined;
 
-  const candidates = object.candidateIds
-    .map((id) => getProductById(id))
-    .filter((p): p is Product => p !== undefined)
-    .sort((a, b) => Number(b.id === object.selectedProductId) - Number(a.id === object.selectedProductId));
+  const candidates = getCandidateProducts(state, object).sort(
+    (a, b) => Number(b.id === object.selectedProductId) - Number(a.id === object.selectedProductId),
+  );
 
   const buy = () => {
     if (!selectedProduct) return;
@@ -77,7 +82,11 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
       onClick={() => onFocusRow?.(objectId)}
       role="presentation"
     >
-      <ProductTile type={selectedProduct?.type ?? object.type} size="sm" />
+      <ProductTile
+        type={selectedProduct?.type ?? ownedProduct?.type ?? object.type}
+        imageUrl={(selectedProduct ?? ownedProduct)?.imageUrl}
+        size="sm"
+      />
       <h3 className="min-w-0 truncate text-headline-medium text-text-primary">{object.name}</h3>
       <div className="flex flex-wrap items-center gap-1.5">
         <Chip color="soft" variant="caption">

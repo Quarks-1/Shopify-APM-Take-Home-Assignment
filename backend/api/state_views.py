@@ -1,15 +1,28 @@
 import json
 
+from collections import defaultdict
+
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import Exists, F, Max, OuterRef, Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Placement, RunStatus, Space, SpaceObject, default_search
+from .models import (
+    Candidate,
+    Placement,
+    RunStatus,
+    SearchRun,
+    Space,
+    SpaceObject,
+    Verdict,
+    default_search,
+)
 from .searcher.runner import cancel_run
 from .serializers import (
     ValidationFailed,
+    candidate_sort_key,
+    candidate_to_json,
     generate_id,
     now,
     object_to_json,
@@ -57,12 +70,48 @@ def _json_view(fn):
     return csrf_exempt(wrapper)
 
 
+def state_candidates(objects):
+    """Per object, in object order: the accepted candidates of its newest run
+    that has any (ordered like run JSON), then its selected candidate when that
+    came from another run. Two queries however many objects or runs exist."""
+    has_accepted = Candidate.objects.filter(run=OuterRef('pk'), verdict=Verdict.ACCEPTED)
+    newest = {}
+    for object_id, run_id in (
+        SearchRun.objects.filter(Exists(has_accepted))
+        .order_by('-created_at', '-pk')
+        .values_list('object_id', 'pk')
+    ):
+        newest.setdefault(object_id, run_id)
+    selected = {o.selected_candidate_id for o in objects if o.selected_candidate_id is not None}
+
+    by_object = defaultdict(list)
+    for c in Candidate.objects.filter(
+        Q(run_id__in=list(newest.values()), verdict=Verdict.ACCEPTED) | Q(pk__in=selected)
+    ).select_related('query').annotate(owner_id=F('run__object_id')):
+        by_object[c.owner_id].append(c)
+
+    out = []
+    for obj in objects:
+        mine = by_object.get(obj.pk, [])
+        run_id = newest.get(obj.pk)
+        accepted = sorted(
+            (c for c in mine if c.run_id == run_id and c.verdict == Verdict.ACCEPTED),
+            key=candidate_sort_key,
+        )
+        ids = {c.pk for c in accepted}
+        extra = [c for c in mine if c.pk == obj.selected_candidate_id and c.pk not in ids]
+        out.extend(candidate_to_json(c, obj.pk) for c in accepted + extra)
+    return out
+
+
 @require_http_methods(['GET'])
 def state_snapshot(_request):
+    objects = list(SpaceObject.objects.all())
     return JsonResponse(
         {
             'spaces': [space_to_json(s) for s in Space.objects.prefetch_related('placements')],
-            'objects': [object_to_json(o) for o in SpaceObject.objects.all()],
+            'objects': [object_to_json(o) for o in objects],
+            'candidates': state_candidates(objects),
         }
     )
 

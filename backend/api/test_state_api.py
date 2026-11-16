@@ -400,7 +400,11 @@ class QueryCountTests(Base):
                 s = self.make_space()
                 o = self.make_object()
                 self.call('put', f'/api/spaces/{s["id"]}/placements/{o["id"]}/', {'x': 1, 'y': 1})
-            with self.assertNumQueries(3):
-                self.assertEqual(self.client.get('/api/state/').status_code, 200)
+            # spaces, placements, objects, runs with accepted candidates
+            # (the candidate query is skipped when there are none)
+            with self.assertNumQueries(4):
+                r = self.client.get('/api/state/')
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(r.json()['candidates'], [])
             with self.assertNumQueries(2):
                 self.assertEqual(self.client.get('/api/spaces/').status_code, 200)

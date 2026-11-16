@@ -45,10 +45,11 @@ export function formatLength(inches: number, unit: LengthUnit): string {
   }
 }
 
-export function formatDims(dims: Dims | ObjectDims, unit: LengthUnit): string {
-  const parts = [dims.x];
-  if (dims.y !== undefined) parts.push(dims.y);
-  if (dims.z !== undefined) parts.push(dims.z);
+/** "x × y × z unit", skipping unknown sides; "" when no side is known (some catalog products). */
+export function formatDims(dims: Dims | ObjectDims | Partial<Dims> | undefined, unit: LengthUnit): string {
+  if (!dims) return "";
+  const parts = [dims.x, dims.y, dims.z].filter((p): p is number => p !== undefined);
+  if (parts.length === 0) return "";
   return `${parts.map((p) => toDisplayLength(p, unit)).join(" × ")} ${unit}`;
 }
 

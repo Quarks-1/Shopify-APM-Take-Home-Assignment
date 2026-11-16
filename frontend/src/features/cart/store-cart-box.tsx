@@ -21,7 +21,7 @@ export function StoreCartBox({ group }: { group: CartStoreGroup }) {
   const drawer = useObjectDrawer();
 
   const buyNow = () => {
-    window.open(`/checkout/mock/${store.id}`, "_blank", "noopener,noreferrer");
+    window.open(`/checkout/mock/${encodeURIComponent(store.id)}`, "_blank", "noopener,noreferrer");
     markCheckoutOpened(store.id);
     toast(`Checkout opened for ${store.name}`, { description: "Mock checkout opened in a new tab." });
   };

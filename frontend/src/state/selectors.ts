@@ -1,5 +1,32 @@
-import { getProductById, getStoreById } from "@/mocks/catalog";
+import { getMockStoreById, getOwnedProductById } from "@/mocks/catalog";
 import type { AppState, CartLine, Product, Space, SpaceObject, Store } from "@/mocks/types";
+
+/** A search candidate from the state, else a mock owned product. */
+export function getProduct(state: AppState, id: string): Product | undefined {
+  return state.products[id] ?? getOwnedProductById(id);
+}
+
+/** A candidate's store (id = seller domain), else a mock store of the owned products. */
+export function getStore(state: AppState, id: string): Store | undefined {
+  return state.stores[id] ?? getMockStoreById(id);
+}
+
+export function getSelectedProduct(state: AppState, object: SpaceObject): Product | undefined {
+  return object.selectedProductId ? getProduct(state, object.selectedProductId) : undefined;
+}
+
+/** The product that stands for an object: what it is (owned) or what was picked for it. */
+export function getObjectProduct(state: AppState, object: SpaceObject): Product | undefined {
+  return object.owned ? getProduct(state, object.owned.productId) : getSelectedProduct(state, object);
+}
+
+/** The object's candidate products in `candidateIds` order, skipping unknown ids. */
+export function getCandidateProducts(state: AppState, object: SpaceObject): Product[] {
+  return object.candidateIds.flatMap((id) => {
+    const product = getProduct(state, id);
+    return product ? [product] : [];
+  });
+}
 
 export function getSpace(state: AppState, id: string): Space | undefined {
   return state.spaces.find((s) => s.id === id);
@@ -101,20 +128,16 @@ export function getOverlappingObjectIds(state: AppState, spaceId: string): Set<s
   return result;
 }
 
-function selectedProduct(object: SpaceObject): Product | undefined {
-  return object.selectedProductId ? getProductById(object.selectedProductId) : undefined;
-}
-
 /** Total weight in lb; uses the selected product's weight when the object has none. */
 export function getSpaceWeight(state: AppState, spaceId: string): number {
   return getObjectsForSpace(state, spaceId).reduce(
-    (sum, o) => sum + (o.weight ?? selectedProduct(o)?.weight ?? 0),
+    (sum, o) => sum + (o.weight ?? getSelectedProduct(state, o)?.weight ?? 0),
     0,
   );
 }
 
 export function getSpaceEstimatedTotal(state: AppState, spaceId: string): number {
-  return getObjectsForSpace(state, spaceId).reduce((sum, o) => sum + (selectedProduct(o)?.price ?? 0), 0);
+  return getObjectsForSpace(state, spaceId).reduce((sum, o) => sum + (getSelectedProduct(state, o)?.price ?? 0), 0);
 }
 
 export type ObjectStatus =
@@ -142,12 +165,13 @@ export function getObjectStatus(state: AppState, objectId: string): ObjectStatus
   return "not-searched";
 }
 
+/** Lines whose product can't be resolved are skipped, here and in the totals and groups. */
 export function getCartCount(state: AppState): number {
-  return state.cart.reduce((sum, l) => sum + l.qty, 0);
+  return state.cart.reduce((sum, l) => sum + (getProduct(state, l.productId) ? l.qty : 0), 0);
 }
 
 export function getCartTotal(state: AppState): number {
-  return state.cart.reduce((sum, l) => sum + l.qty * (getProductById(l.productId)?.price ?? 0), 0);
+  return state.cart.reduce((sum, l) => sum + l.qty * (getProduct(state, l.productId)?.price ?? 0), 0);
 }
 
 export interface CartStoreGroup {
@@ -161,8 +185,8 @@ export interface CartStoreGroup {
 export function getCartByStore(state: AppState): CartStoreGroup[] {
   const groups = new Map<string, CartStoreGroup>();
   for (const line of state.cart) {
-    const product = getProductById(line.productId);
-    const store = product ? getStoreById(product.storeId) : undefined;
+    const product = getProduct(state, line.productId);
+    const store = product ? getStore(state, product.storeId) : undefined;
     if (!product || !store) continue;
     let group = groups.get(store.id);
     if (!group) {

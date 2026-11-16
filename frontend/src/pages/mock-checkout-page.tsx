@@ -9,9 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/base/table/table";
+import { AppErrorView, AppLoadingView } from "@/app/load-states";
 import { formatPrice } from "@/lib/format";
 import { useAppState } from "@/state/app-store";
 import { getCartByStore } from "@/state/selectors";
+import { useAppStatus } from "@/state/store-context";
 
 const FREE_SHIPPING_THRESHOLD = 500;
 const FLAT_SHIPPING = 25;
@@ -33,7 +35,18 @@ function TotalRow({ label, value, strong = false }: { label: string; value: stri
 export function MockCheckoutPage() {
   const { storeId } = useParams();
   const navigate = useNavigate();
+  const { status, retry } = useAppStatus();
   const group = getCartByStore(useAppState()).find((g) => g.store.id === storeId);
+
+  if (status.phase !== "ready") {
+    return (
+      <div className="min-h-screen bg-background-full">
+        <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-8">
+          {status.phase === "error" ? <AppErrorView error={status.error} onRetry={retry} /> : <AppLoadingView />}
+        </div>
+      </div>
+    );
+  }
 
   if (!group) {
     return (

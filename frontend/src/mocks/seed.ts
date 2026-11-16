@@ -1,5 +1,5 @@
-import { OWNED_PRODUCTS, searchCatalogSync } from "@/mocks/catalog";
-import type { AppState, CartLine, SpaceObject } from "@/mocks/types";
+import { OWNED_PRODUCTS } from "@/mocks/catalog";
+import type { Space, SpaceObject } from "@/mocks/types";
 
 function minutesAgo(now: number, minutes: number): string {
   return new Date(now - minutes * 60_000).toISOString();
@@ -8,8 +8,9 @@ function minutesAgo(now: number, minutes: number): string {
 type ObjectInit = Omit<SpaceObject, "similarItems" | "source" | "candidateIds" | "search" | "createdAt"> &
   Partial<Pick<SpaceObject, "similarItems">>;
 
-function makeObject(init: ObjectInit, createdAt: string, searched: boolean): SpaceObject {
-  const base: SpaceObject = {
+/** Demo objects start unsearched: real results come from the backend's searcher. */
+function makeObject(init: ObjectInit, createdAt: string): SpaceObject {
+  return {
     similarItems: [],
     source: "search",
     candidateIds: [],
@@ -17,20 +18,18 @@ function makeObject(init: ObjectInit, createdAt: string, searched: boolean): Spa
     createdAt,
     ...init,
   };
-  if (!searched) return base;
-  const candidateIds = searchCatalogSync(base);
-  return {
-    ...base,
-    candidateIds,
-    selectedProductId: candidateIds[0],
-    search: { status: candidateIds.length > 0 ? "done" : "empty", lastRunAt: createdAt },
-  };
 }
 
-export function createSeedState(): AppState {
+/** The demo layout, in the shape `POST /api/state/import/` takes. */
+export interface SeedState {
+  version: 1;
+  spaces: Space[];
+  objects: SpaceObject[];
+}
+
+export function createSeedState(): SeedState {
   const now = Date.now();
   const created = minutesAgo(now, 60 * 24);
-  const searchedAt = minutesAgo(now, 60 * 20);
 
   const sofa = makeObject(
     {
@@ -43,8 +42,7 @@ export function createSeedState(): AppState {
       priceLimit: 1500,
       similarItems: ["couch", "loveseat"],
     },
-    searchedAt,
-    true,
+    created,
   );
   const coffeeTable = makeObject(
     {
@@ -55,8 +53,7 @@ export function createSeedState(): AppState {
       material: "wood",
       similarItems: ["cocktail table"],
     },
-    searchedAt,
-    true,
+    created,
   );
   const floorLamp = makeObject(
     {
@@ -68,12 +65,10 @@ export function createSeedState(): AppState {
       similarItems: ["standing lamp"],
     },
     created,
-    false,
   );
   const rug = makeObject(
     { id: "obj_rug", name: "Area rug", dims: { x: 96, y: 120 }, type: "rug", material: "fabric" },
     created,
-    false,
   );
   const bookends = makeObject(
     {
@@ -84,7 +79,6 @@ export function createSeedState(): AppState {
       material: "metal",
     },
     created,
-    false,
   );
   const plantPot = makeObject(
     {
@@ -96,7 +90,6 @@ export function createSeedState(): AppState {
       similarItems: ["planter"],
     },
     created,
-    false,
   );
   const deskChair = makeObject(
     {
@@ -107,8 +100,7 @@ export function createSeedState(): AppState {
       priceLimit: 350,
       similarItems: ["office chair"],
     },
-    searchedAt,
-    true,
+    created,
   );
   const poster = makeObject(
     {
@@ -119,7 +111,6 @@ export function createSeedState(): AppState {
       similarItems: ["framed print"],
     },
     created,
-    false,
   );
   const tableLamp = makeObject(
     {
@@ -129,13 +120,6 @@ export function createSeedState(): AppState {
       type: "lighting",
     },
     created,
-    false,
-  );
-
-  const cart: CartLine[] = [sofa, coffeeTable].flatMap((o): CartLine[] =>
-    o.selectedProductId
-      ? [{ id: `line_${o.id}`, productId: o.selectedProductId, objectId: o.id, qty: 1 }]
-      : [],
   );
 
   return {
@@ -172,8 +156,6 @@ export function createSeedState(): AppState {
       },
     ],
     objects: [sofa, coffeeTable, floorLamp, rug, bookends, plantPot, deskChair, poster, tableLamp],
-    cart,
-    checkoutOpened: {},
   };
 }
 
