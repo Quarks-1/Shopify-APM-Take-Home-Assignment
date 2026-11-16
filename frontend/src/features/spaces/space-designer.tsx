@@ -3,12 +3,11 @@ import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerE
 import { RiAddLine, RiCursorLine, RiShape2Line } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Kbd } from "@/components/base/kbd/kbd";
-import { Meter } from "@/components/base/meter/meter";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
 import { toast } from "@/components/base/toast/toast";
 import { OBJECT_TYPE_SVG } from "@/features/objects/object-type-visuals";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
-import { formatDims, formatLength, formatPrice, toDisplayLength } from "@/lib/format";
+import { formatDims, formatLength, toDisplayLength } from "@/lib/format";
 import type { Dims, ObjectDims, Space } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import {
@@ -16,7 +15,6 @@ import {
   getObject,
   getOverlappingObjectIds,
   getSpace,
-  getSpaceEstimatedTotal,
   getSpaceWeight,
 } from "@/state/selectors";
 import { cx } from "@/utils/cx";
@@ -127,7 +125,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   });
 
   const weight = getSpaceWeight(state, spaceId);
-  const total = getSpaceEstimatedTotal(state, spaceId);
   const weightRatio = space.weightLimit ? weight / space.weightLimit : 0;
 
   /* ------------------------------------------------------------- creation */
@@ -328,9 +325,9 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
       ref={rootRef}
       tabIndex={-1}
       onKeyDown={onRootKeyDown}
-      className={cx("flex flex-col gap-3 outline-none", className)}
+      className={cx("flex h-full min-h-0 flex-col gap-2 outline-none", className)}
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <SegmentedControl
           aria-label="Designer tool"
           selectedKeys={[mode]}
@@ -362,7 +359,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
       <div
         dir="ltr"
-        className="relative overflow-hidden rounded-3xl border border-border-button-default bg-background-secondary-default p-3"
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border-button-default bg-background-secondary-default p-3"
       >
         <svg
           ref={svgRef}
@@ -374,7 +371,10 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={cancelDrag}
-          className={cx("block max-h-[70vh] w-full touch-none select-none", mode === "draw" ? "cursor-crosshair" : "cursor-default")}
+          className={cx(
+            "block h-full max-h-full w-full touch-none select-none",
+            mode === "draw" ? "cursor-crosshair" : "cursor-default",
+          )}
         >
           <defs>
             <pattern id={gridId} width={step} height={step} patternUnits="userSpaceOnUse">
@@ -564,36 +564,29 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-border-button-default bg-background-primary-default p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-body-regular text-text-secondary">
-          <span>
-            <span className="text-body-medium text-text-primary">{count}</span> {count === 1 ? "object" : "objects"}
-          </span>
-          <span className="tabular-nums">
-            Est. total <span className="text-body-medium text-text-primary">{formatPrice(total)}</span>
-          </span>
-        </div>
+      <p className="shrink-0 text-caption-1-medium text-text-tertiary">
+        <span className="text-text-secondary">
+          {count} {count === 1 ? "object" : "objects"}
+        </span>
         {space.weightLimit ? (
-          <Meter
-            label="Weight"
-            value={weight}
-            minValue={0}
-            maxValue={space.weightLimit}
-            valueLabel={`${Math.round(weight * 10) / 10} / ${space.weightLimit} lb`}
-            tone={weightRatio > 1 ? "error" : weightRatio > 0.8 ? "warning" : "accent"}
-          />
+          <>
+            {" "}
+            · Weight{" "}
+            <span className={weightRatio > 1 ? "text-text-error-primary" : weightRatio > 0.8 ? "text-text-primary" : ""}>
+              {Math.round(weight * 10) / 10} / {space.weightLimit} lb
+            </span>
+          </>
         ) : null}
-        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption-1-medium text-text-tertiary">
-          <span>Drag to move</span>·<span>corner to resize</span>·
-          <span className="inline-flex items-center gap-1">
-            <Kbd>R</Kbd> to draw
-          </span>
-          ·
-          <span className="inline-flex items-center gap-1">
-            <Kbd>Del</Kbd> to remove
-          </span>
-        </p>
-      </div>
+        {" "}
+        · Drag to move · corner to resize ·{" "}
+        <span className="inline-flex items-center gap-1">
+          <Kbd>R</Kbd> draw
+        </span>{" "}
+        ·{" "}
+        <span className="inline-flex items-center gap-1">
+          <Kbd>Del</Kbd> remove
+        </span>
+      </p>
     </div>
   );
 }

@@ -56,7 +56,7 @@ export function ObjectCarouselList({
       <div onScroll={fade.onScroll} className="h-full min-h-0 overflow-y-auto overscroll-contain p-1">
         {rows}
       </div>
-      <ScrollFade progress={fade.progress} surfaceClassName="from-background-full" />
+      <ScrollFade progress={fade.progress} surfaceClassName="from-background-primary-default" />
     </div>
   );
 }

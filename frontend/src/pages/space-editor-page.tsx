@@ -147,34 +147,36 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   };
 
   return (
-    <>
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Breadcrumb>
+  <>
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-3rem)] lg:overflow-hidden">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <Breadcrumb className="shrink-0">
             <BreadcrumbItem href="/">Home</BreadcrumbItem>
             <BreadcrumbItem current>{space.name}</BreadcrumbItem>
           </Breadcrumb>
-          <h1 className="truncate text-title-1-medium text-text-primary">{space.name}</h1>
-          <p className="text-body-regular text-text-secondary">
+          <h1 className="truncate text-title-3-medium text-text-primary">{space.name}</h1>
+          <p className="hidden text-body-regular text-text-secondary sm:inline">
             {typeLabel} · {formatDims(space.dims, space.unit)} · Est. {formatPrice(estimated)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" leadingIcon={RiSettings3Line} onClick={() => setSettingsOpen(true)}>
+          <Button variant="secondary" size="small" leadingIcon={RiSettings3Line} onClick={() => setSettingsOpen(true)}>
             Space settings
           </Button>
-          <Button variant="secondary" leadingIcon={RiDeleteBinLine} onClick={() => setDeleteOpen(true)}>
+          <Button variant="secondary" size="small" leadingIcon={RiDeleteBinLine} onClick={() => setDeleteOpen(true)}>
             Delete space
           </Button>
           <Button
             variant="secondary"
+            size="small"
             leadingIcon={RiSearchLine}
             disabled={objectIds.length === 0}
             onClick={() => searchAll(objectIds)}
           >
             Search all
           </Button>
-          <Button variant="primary" leadingIcon={RiShoppingCart2Line} onClick={buyAll}>
+          <Button variant="primary" size="small" leadingIcon={RiShoppingCart2Line} onClick={buyAll}>
             Buy all
           </Button>
         </div>
@@ -189,21 +191,26 @@ function EditSpace({ spaceId }: { spaceId: string }) {
           } as CSSProperties
         }
         className={cx(
-          "grid grid-cols-1 gap-6 lg:items-start lg:gap-x-0",
+          "grid min-h-0 flex-1 grid-cols-1 gap-6 lg:items-stretch lg:gap-x-0",
           "lg:grid-cols-[minmax(20rem,var(--split-start))_1.5rem_minmax(22rem,var(--split-end))]",
         )}
       >
-        <div id={DESIGNER_ID} className="min-w-0 lg:sticky lg:top-6">
+        <div id={DESIGNER_ID} className="flex min-h-0 min-w-0 flex-col">
           <SpaceDesigner spaceId={space.id} selectedObjectId={selectedId} onSelectObject={setSelectedId} />
         </div>
         <PanelResizer panelSplit={panelSplit} controlsId={DESIGNER_ID} />
         <section
           aria-label="Objects in this space"
-          className={`${CARD} flex min-w-0 flex-col gap-4 p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-48px)]`}
+          className={`${CARD} flex min-h-0 min-w-0 flex-col gap-3 p-4 lg:h-full`}
         >
-          <div className="flex items-center gap-2">
-            <h2 className="text-headline-medium text-text-primary">Objects in this space</h2>
-            <Counter>{objectIds.length}</Counter>
+          <div className="shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-headline-medium text-text-primary">Objects in this space</h2>
+              <Counter>{objectIds.length}</Counter>
+            </div>
+            <p className="text-caption-1-medium text-text-tertiary">
+              Selected product is highlighted green. Click another match to swap.
+            </p>
           </div>
           <ObjectCarouselList
             objectIds={objectIds}
@@ -219,16 +226,17 @@ function EditSpace({ spaceId }: { spaceId: string }) {
           />
         </section>
       </div>
+    </div>
 
-      <SpaceFormModal isOpen={settingsOpen} onOpenChange={setSettingsOpen} spaceId={space.id} />
-      <AlertDialog
-        isOpen={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="Delete this space?"
-        description="The space and its layout are removed. Its objects stay in your object list."
-        confirmLabel="Delete space"
-        onConfirm={confirmDelete}
-      />
-    </>
+    <SpaceFormModal isOpen={settingsOpen} onOpenChange={setSettingsOpen} spaceId={space.id} />
+    <AlertDialog
+      isOpen={deleteOpen}
+      onOpenChange={setDeleteOpen}
+      title="Delete this space?"
+      description="The space and its layout are removed. Its objects stay in your object list."
+      confirmLabel="Delete space"
+      onConfirm={confirmDelete}
+    />
+  </>
   );
 }

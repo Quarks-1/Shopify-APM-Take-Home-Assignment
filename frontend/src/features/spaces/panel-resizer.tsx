@@ -195,8 +195,8 @@ export function PanelResizer({ panelSplit, controlsId, className }: PanelResizer
       onKeyDown={onKeyDown}
       data-dragging={dragging || undefined}
       className={cx(
-        "group hidden cursor-col-resize touch-none items-center justify-center self-start outline-none",
-        "lg:sticky lg:top-6 lg:flex lg:h-[calc(100vh-48px)]",
+        "group hidden cursor-col-resize touch-none items-center justify-center self-stretch outline-none",
+        "lg:flex lg:h-auto",
         className,
       )}
     >
