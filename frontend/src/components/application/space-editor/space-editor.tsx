@@ -30,9 +30,9 @@ function percentAlong(value: string, span: string): number {
   return Math.min(100, Math.max(0, (position / size) * 100));
 }
 
-export function SpaceEditor() {
+export function SpaceEditor({ initialSpaceId = null }: { initialSpaceId?: number | null }) {
   const [spaces, setSpaces] = useState<SpaceSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(initialSpaceId);
   const [detail, setDetail] = useState<SpaceObjectsPayload | null>(null);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -47,7 +47,10 @@ export function SpaceEditor() {
       if (signal?.aborted) return;
       setSpaces(payload.spaces);
       setSelectedId((current) => {
-        if (current != null && payload.spaces.some((space) => space.id === current)) return current;
+        const preferred = current ?? initialSpaceId;
+        if (preferred != null && payload.spaces.some((space) => space.id === preferred)) {
+          return preferred;
+        }
         return payload.spaces[0]?.id ?? null;
       });
     } catch (err) {
@@ -56,13 +59,18 @@ export function SpaceEditor() {
     } finally {
       if (!signal?.aborted) setLoadingSpaces(false);
     }
-  }, []);
+  }, [initialSpaceId]);
 
   useEffect(() => {
     const controller = new AbortController();
     void loadSpaces(controller.signal);
     return () => controller.abort();
   }, [loadSpaces]);
+
+  useEffect(() => {
+    if (initialSpaceId == null) return;
+    setSelectedId((current) => (current === initialSpaceId ? current : initialSpaceId));
+  }, [initialSpaceId]);
 
   useEffect(() => {
     if (selectedId == null) {
@@ -151,7 +159,7 @@ export function SpaceEditor() {
           <div className="flex flex-col gap-1">
             <h2 className="text-title-3-semibold text-text-primary">No spaces yet</h2>
             <p className="text-body-regular text-text-secondary">
-              Add a space and an object in Django admin, then reload this editor.
+              Run <span className="font-mono">manage.py seed_demo_data</span> after migrate, or add data in Django admin.
             </p>
           </div>
           )

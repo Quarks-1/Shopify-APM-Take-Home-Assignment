@@ -19,8 +19,11 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cd backend
 ../.venv/bin/python manage.py migrate
+../.venv/bin/python manage.py seed_demo_data
 ../.venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
+
+`seed_demo_data` is safe to rerun. It only inserts demo spaces and objects when the database has no spaces yet.
 
 Run backend system checks and unit tests from `backend/`.
 
@@ -47,3 +50,11 @@ cd frontend
 npm run typecheck
 npm run build
 ```
+
+## Spaces workflow
+
+1. Open the Vite app at `http://127.0.0.1:5173/`. The default hash is `#overview`, which lists spaces from `GET /api/spaces/`.
+2. Choose **Open in editor** on a card, or use the sidebar **Space editor** link (`#space-editor`). Cards deep-link with `#space-editor/<space-id>`.
+3. Right-click an object on the floor plan to edit attributes end-to-end against the Django JSON API.
+
+If the overview is empty after migrate, run `../.venv/bin/python manage.py seed_demo_data` from `backend/`.
