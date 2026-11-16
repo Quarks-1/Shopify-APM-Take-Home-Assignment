@@ -44,13 +44,6 @@ def workspace_overview(_request):
                     'description': 'Starter workspace metadata and registered API routes',
                     'status': 'operational',
                 },
-                {
-                    'id': 'admin',
-                    'method': 'GET',
-                    'path': '/admin/',
-                    'description': 'Django administration interface',
-                    'status': 'operational',
-                },
             ],
         }
     )

@@ -16,24 +16,18 @@ import {
   RiCalendarLine,
   RiChatAiLine,
   RiCloseLine,
-  RiCustomerServiceLine,
   RiHomeLine,
   RiImageAiLine,
   RiKanbanView2,
   RiMegaphoneLine,
   RiSearchLine,
-  RiSettings4Line,
   RiSideBarFill,
-  RiUserSmileLine,
 } from "@remixicon/react";
-import { SettingsModal } from "@/components/application/settings/settings-modal";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Counter } from "@/components/base/badges/counter";
 import { CloseButton } from "@/components/base/buttons/close-button";
 import { Kbd } from "@/components/base/kbd/kbd";
 import { cx } from "@/utils/cx";
-import { DashboardTeamMenu } from "./dashboard-team-menu";
-import { DashboardUserMenu } from "./dashboard-user-menu";
 
 /**
  * Figma sources:
@@ -93,7 +87,7 @@ function NavItem({
   isSelected?: boolean;
   collapsed?: boolean;
   href?: string;
-  /** Action rows (e.g. Settings → modal) intercept the navigation. */
+  /** Action rows intercept the navigation. */
   onClick?: () => void;
 }) {
   const localize = useTemplateCopy();
@@ -163,7 +157,6 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { key: "medical", label: "Medical Report", icon: RiAsterisk, href: "/templates/medical-profile" },
   { key: "ai-chat", label: "AI Chat", icon: RiChatAiLine, href: "/templates/ai-chat" },
   { key: "ai-image", label: "AI Image Generation", icon: RiImageAiLine, href: "/templates/ai-image-generation" },
-  { key: "profile", label: "Profile", icon: RiUserSmileLine, href: "/templates/ai-profile" },
 ];
 
 /**
@@ -177,18 +170,15 @@ function NavRows({
   query,
   selected,
   collapsed,
-  secondaryMatch,
 }: {
   items: DashboardNavItem[];
   query: string;
   selected: string;
   collapsed: boolean;
-  /** Whether Support or Settings matches, so "No results" only shows when nothing does. */
-  secondaryMatch: boolean;
 }) {
   const localize = useTemplateCopy();
   const shown = items.filter((item) => item.label.toLocaleLowerCase().includes(query));
-  if (shown.length === 0 && !secondaryMatch && !collapsed) {
+  if (shown.length === 0 && !collapsed) {
     return localize(<p className="px-2 py-3 text-body-regular text-text-tertiary">No results</p>);
   }
   return shown.map((item) => {
@@ -242,8 +232,6 @@ export function DashboardSidebar({
 } = {}) {
   const localize = useTemplateCopy();
   const [collapsedState, setCollapsed] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [suppressUserHover, setSuppressUserHover] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [query, setQuery] = useState("");
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -251,9 +239,6 @@ export function DashboardSidebar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const collapsed = mobile ? false : collapsedState;
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const matches = (label: string) => label.toLocaleLowerCase().includes(normalizedQuery);
-  const secondaryLabels = ["Support", "Settings"];
-  const secondaryMatch = secondaryLabels.some(matches);
 
   const activateSearch = useCallback(() => {
     if (!mobile) setCollapsed(false);
@@ -326,39 +311,15 @@ export function DashboardSidebar({
       <div
         className="-m-2 flex min-h-0 w-[calc(100%+16px)] flex-col gap-3 overflow-y-auto p-2 [scrollbar-width:none]"
       >
-        {/* Workspace switcher / collapse control */}
+        {/* Collapse / close / search control */}
         <div
           className={cx(
             "flex w-full transition-[gap] duration-300 ease-in-out",
             collapsed
               ? "flex-col-reverse items-start justify-center gap-2.5"
-              : "flex-row items-center justify-between",
+              : "flex-row items-center justify-start",
           )}
         >
-          {/* The clip is here to hide the label as `max-width` animates shut,
-              but it also cropped the trigger's hover pill down to four corner
-              arcs. Same trick as the scroller: pad the clip box out by the
-              pill's 8px reach and pull it back with a negative margin, so the
-              widths below are 16px larger than the footprint they produce. */}
-          <div
-            className={cx(
-              "-m-2 min-w-0 overflow-hidden p-2 transition-[max-width,opacity,transform] duration-300 ease-in-out",
-              mobile && flat && searchActive
-                ? "max-w-0 scale-95 opacity-0"
-                : "max-w-[206px] scale-100 opacity-100",
-            )}
-          >
-            <DashboardUserMenu
-              collapsed={collapsed}
-              suppressHover={suppressUserHover}
-              onHoverSuppressionEnd={() => setSuppressUserHover(false)}
-              avatarClassName={
-                flat
-                  ? "bg-background-tertiary-default dark:bg-background-secondary-default"
-                  : undefined
-              }
-            />
-          </div>
           {mobile && flat ? (
             <div
               ref={searchFieldRef}
@@ -428,7 +389,6 @@ export function DashboardSidebar({
                 const isExpanding = collapsedState;
                 if (!isExpanding) deactivateSearch(false);
                 setCollapsed(!collapsedState);
-                setSuppressUserHover(isExpanding);
               }}
               className={cx(
                 "cursor-pointer text-foreground-icon-secondary transition-transform duration-300 ease-in-out",
@@ -512,7 +472,6 @@ export function DashboardSidebar({
               query={normalizedQuery}
               selected={selected}
               collapsed={collapsed}
-              secondaryMatch={secondaryMatch}
             />
           </nav>
         </div>
@@ -528,33 +487,7 @@ export function DashboardSidebar({
               className={flat ? "!bg-background-secondary-default" : undefined}
             />
           ))}
-        {/* Secondary nav */}
-        <nav className="flex w-full flex-col gap-1">
-          {matches("Support") && (
-            <NavItem icon={RiCustomerServiceLine} label="Support" collapsed={collapsed} />
-          )}
-          {matches("Settings") && (
-            <NavItem
-              icon={RiSettings4Line}
-              label="Settings"
-              collapsed={collapsed}
-              onClick={() => setSettingsOpen(true)}
-            />
-          )}
-        </nav>
-
-        {/* Team card → opens the profile menu next to the sidebar */}
-        <DashboardTeamMenu
-          collapsed={collapsed}
-          className={flat ? "!bg-background-secondary-default" : undefined}
-        />
       </div>
-
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        planArtSrc="/templates/settings-plan-art.png"
-      />
     </aside>
   ));
 }
