@@ -151,10 +151,6 @@ function EditSpace({ spaceId }: { spaceId: string }) {
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-3rem)] lg:overflow-hidden">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <Breadcrumb className="shrink-0">
-            <BreadcrumbItem href="/">Home</BreadcrumbItem>
-            <BreadcrumbItem current>{space.name}</BreadcrumbItem>
-          </Breadcrumb>
           <h1 className="truncate text-title-3-medium text-text-primary">{space.name}</h1>
           <p className="hidden text-body-regular text-text-secondary sm:inline">
             {typeLabel} · {formatDims(space.dims, space.unit)} · Est. {formatPrice(estimated)}
