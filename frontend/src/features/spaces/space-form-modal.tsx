@@ -51,6 +51,7 @@ export function SpaceFormModal(props: SpaceFormModalProps) {
   // The form remounts each time the dialog opens, so it starts from fresh values.
   return (
     <Modal
+      size="lg"
       isOpen={props.isOpen}
       onOpenChange={(open) => {
         if (open) savedRef.current = false;
@@ -79,7 +80,7 @@ function SpaceForm({
 
   const patch = (next: Partial<FormValues>) => setValues((v) => ({ ...v, ...next }));
   const isWall = values.type === "wall";
-  const unitSuffix = values.unit === "cm" ? "cm" : "in";
+  const unitSuffix = values.unit;
 
   const nameError = values.name.trim() === "" ? "Enter a name." : null;
   const xError = (finite(values.x) ?? 0) > 0 ? null : "Must be greater than 0.";
@@ -174,6 +175,7 @@ function SpaceForm({
               }}
             >
               <SegmentedControlItem id="in">in</SegmentedControlItem>
+              <SegmentedControlItem id="ft">ft</SegmentedControlItem>
               <SegmentedControlItem id="cm">cm</SegmentedControlItem>
             </SegmentedControl>
           </div>

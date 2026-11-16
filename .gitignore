@@ -28,3 +28,6 @@ pnpm-debug.log*
 *.swp
 *.swo
 .idea/
+
+# Claude desktop preview config, generated per checkout by scripts/dev-ports.mjs
+.claude/launch.json

@@ -56,7 +56,9 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const search = useObjectSearch();
 
   const initialSpaceIds = getParentSpaces(state, object.id).map((s) => s.id);
-  const unit: LengthUnit = getParentSpaces(state, object.id)[0]?.unit ?? "in";
+  const parentSpace = getParentSpaces(state, object.id)[0];
+  const unit: LengthUnit = parentSpace?.unit ?? "in";
+  const isWall = parentSpace?.type === "wall";
   const owned = object.source === "imported";
   const purchase = object.owned;
   const ownedProduct = purchase ? getProductById(purchase.productId) : undefined;
@@ -65,7 +67,7 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const [name, setName] = useState(object.name);
   const [type, setType] = useState<ObjectType>(object.type);
   const [x, setX] = useState(toDisplayLength(object.dims.x, unit));
-  const [y, setY] = useState(toDisplayLength(object.dims.y, unit));
+  const [y, setY] = useState(object.dims.y === undefined ? NaN : toDisplayLength(object.dims.y, unit));
   const [z, setZ] = useState(object.dims.z === undefined ? NaN : toDisplayLength(object.dims.z, unit));
   const [weight, setWeight] = useState(object.weight ?? NaN);
   const [material, setMaterial] = useState<string>(object.material ?? ANY);
@@ -80,9 +82,10 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const errors = {
     name: name.trim() ? undefined : "Name is required",
     x: x > 0 ? undefined : "Width must be greater than 0",
-    y: y > 0 ? undefined : "Depth must be greater than 0",
+    z: !isWall || z > 0 ? undefined : "Height must be greater than 0",
+    y: isWall || y > 0 ? undefined : "Depth must be greater than 0",
   };
-  const invalid = Boolean(errors.name || errors.x || errors.y);
+  const invalid = Boolean(errors.name || errors.x || errors.y || errors.z);
 
   const addSimilar = () => {
     const value = similarDraft.trim();
@@ -100,7 +103,7 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
       type,
       dims: {
         x: fromDisplayLength(x, unit),
-        y: fromDisplayLength(y, unit),
+        y: Number.isNaN(y) ? undefined : fromDisplayLength(y, unit),
         z: Number.isNaN(z) ? undefined : fromDisplayLength(z, unit),
       },
       weight: numberOrUndefined(weight),
@@ -160,15 +163,23 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
               hint={showError(errors.x)}
             />
             <NumberField
+              label={`Height (${unit})`}
+              value={z}
+              onChange={setZ}
+              minValue={0}
+              isRequired={isWall}
+              isInvalid={Boolean(showError(errors.z))}
+              hint={showError(errors.z) ?? (isWall ? undefined : "Optional")}
+            />
+            <NumberField
               label={`Depth (${unit})`}
               value={y}
               onChange={setY}
               minValue={0}
-              isRequired
+              isRequired={!isWall}
               isInvalid={Boolean(showError(errors.y))}
-              hint={showError(errors.y)}
+              hint={showError(errors.y) ?? (isWall ? "Optional" : undefined)}
             />
-            <NumberField label={`Height (${unit})`} value={z} onChange={setZ} minValue={0} hint="Optional" />
           </div>
           <NumberField label="Weight (lb)" value={weight} onChange={setWeight} minValue={0} hint="Optional" />
         </Section>

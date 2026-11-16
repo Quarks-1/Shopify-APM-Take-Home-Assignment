@@ -40,7 +40,7 @@ export function getUnassignedObjects(state: AppState): SpaceObject[] {
 /** Size of an object on the plane of a space, in inches (minimum 1). */
 export function footprint(object: SpaceObject, space: Pick<Space, "type">): { w: number; h: number } {
   const w = object.dims.x;
-  const h = space.type === "wall" ? (object.dims.z ?? object.dims.y) : object.dims.y;
+  const h = space.type === "wall" ? (object.dims.z ?? object.dims.y ?? object.dims.x) : (object.dims.y ?? object.dims.x);
   return { w: Math.max(1, w), h: Math.max(1, h) };
 }
 
