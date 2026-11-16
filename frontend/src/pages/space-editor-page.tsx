@@ -201,14 +201,9 @@ function EditSpace({ spaceId }: { spaceId: string }) {
           aria-label="Objects in this space"
           className={`${CARD} flex min-w-0 flex-col gap-4 p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-48px)]`}
         >
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <h2 className="text-headline-medium text-text-primary">Objects in this space</h2>
-              <Counter>{objectIds.length}</Counter>
-            </div>
-            <p className="text-body-regular text-text-secondary">
-              Selected product is highlighted green. Click another match to swap.
-            </p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-headline-medium text-text-primary">Objects in this space</h2>
+            <Counter>{objectIds.length}</Counter>
           </div>
           <ObjectCarouselList
             objectIds={objectIds}
