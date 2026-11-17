@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { RiAddLine, RiDownloadCloud2Line, RiRestartLine, RiSearchLine } from "@remixicon/react";
 import { useNavigate } from "react-router";
-import { Counter } from "@/components/base/badges/counter";
 import { Button } from "@/components/base/buttons/button";
 import { Carousel, CarouselItem } from "@/components/base/carousel/carousel";
 import { AlertDialog } from "@/components/base/modal/modal";
 import { toast } from "@/components/base/toast/toast";
+import { SectionTitle } from "@/features/home/section-title";
+import { VibesInspirationSection } from "@/features/home/vibes-inspiration";
 import { ObjectCard } from "@/features/objects/object-card";
 import { NewSpaceCard, SpaceCard } from "@/features/spaces/space-card";
 import { formatRelativeTime } from "@/lib/format";
@@ -13,30 +14,6 @@ import { useAppActions, useAppState } from "@/state/app-store";
 import { getImportedObjects, getSearchableObjects } from "@/state/selectors";
 
 const IMPORT_DELAY_MS = 1000;
-
-function SectionTitle({
-  id,
-  title,
-  count,
-  description,
-}: {
-  id: string;
-  title: string;
-  count: number;
-  description?: string;
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <h2 id={id} className="text-title-3-semibold text-text-primary">
-          {title}
-        </h2>
-        <Counter>{count}</Counter>
-      </div>
-      {description ? <p className="text-body-regular text-text-secondary">{description}</p> : null}
-    </div>
-  );
-}
 
 export function HomePage() {
   const state = useAppState();
@@ -169,6 +146,8 @@ export function HomePage() {
           </>
         )}
       </section>
+
+      <VibesInspirationSection />
 
       <section className="flex flex-col gap-4" aria-labelledby="home-imported">
         {imported.length > 0 ? (

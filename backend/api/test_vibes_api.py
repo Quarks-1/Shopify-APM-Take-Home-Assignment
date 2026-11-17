@@ -240,7 +240,7 @@ class SpaceDeleteAndListTests(VibeApiBase):
         self.assertEqual([r['pinId'] for r in rows], ['p0', 'p1'])
         self.assertEqual(set(rows[1]), {
             'id', 'pinId', 'pinUrl', 'imageUrl', 'categories', 'item', 'styles', 'colors', 'materials',
-            'description', 'vote', 'source', 'importId', 'categorized'})
+            'description', 'vote', 'source', 'importId', 'categorized', 'primaryType', 'spaceId'})
         self.assertEqual(rows[1]['categories'], ['furniture'])
         self.assertEqual((rows[1]['vote'], rows[1]['source']), ('up', 'pinterest'))
         self.assertEqual((rows[1]['importId'], rows[1]['categorized']), (str(imp.pk), True))
@@ -268,3 +268,27 @@ class SpaceDeleteAndListTests(VibeApiBase):
             res = self.client.delete('/api/spaces/space1/')
         self.assertEqual(res.status_code, 204)
         sig.assert_not_called()
+
+
+class GlobalInspirationsTests(VibeApiBase):
+    def pin(self, space, pin_id, rank, categorized=True, **kw):
+        return SpaceInspiration.objects.create(
+            space=space, pin_id=pin_id, pin_url='u', board_rank=rank,
+            categorized_at=timezone.now() if categorized else None, **kw)
+
+    def test_empty(self):
+        res = self.client.get('/api/inspirations/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {'inspirations': []})
+
+    def test_dedupes_filters_orders_and_types(self):
+        other = make_space('space2')
+        self.pin(self.space, 'b', 2, item='table lamp', categories=['furniture', 'lighting'])
+        self.pin(self.space, 'a', 1, item='sofa')
+        self.pin(other, 'b', 2, item='table lamp')
+        self.pin(other, 'c', 0, categorized=False)
+        rows = self.client.get('/api/inspirations/').json()['inspirations']
+        self.assertEqual([r['pinId'] for r in rows], ['a', 'b'])
+        self.assertEqual([r['primaryType'] for r in rows], ['furniture', 'lighting'])
+        self.assertEqual([r['spaceId'] for r in rows], ['space1', 'space1'])
+        self.assertEqual(self.client.post('/api/inspirations/').status_code, 405)

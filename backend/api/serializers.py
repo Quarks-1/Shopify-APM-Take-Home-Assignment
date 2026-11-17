@@ -846,6 +846,8 @@ def vibe_import_to_json(imp):
 
 
 def inspiration_to_json(row):
+    from .vibes.primary_type import primary_type
+
     return {
         'id': row.pk,
         'pinId': row.pin_id,
@@ -861,6 +863,8 @@ def inspiration_to_json(row):
         'source': row.source,
         'importId': str(row.vibe_import_id) if row.vibe_import_id else None,
         'categorized': row.categorized_at is not None,
+        'primaryType': primary_type(row.item, row.categories or []),
+        'spaceId': row.space_id,
     }
 
 

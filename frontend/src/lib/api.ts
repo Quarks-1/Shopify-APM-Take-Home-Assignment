@@ -617,3 +617,27 @@ export const fetchRender = (id: string, signal?: AbortSignal) =>
 
 export const fetchLatestRender = (spaceId: string, signal?: AbortSignal) =>
   request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal });
+
+export interface ApiInspiration {
+  id: number;
+  pinId: string;
+  pinUrl: string;
+  /** Untrusted; normally https://i.pinimg.com/... */
+  imageUrl: string;
+  categories: ObjectType[];
+  item: string;
+  styles: string[];
+  colors: string[];
+  materials: string[];
+  description: string;
+  vote: string;
+  source: string;
+  importId: string | null;
+  categorized: boolean;
+  spaceId: string;
+  primaryType: ObjectType | "other";
+}
+
+/** Every imported, sorted pin across spaces (de-duplicated), in board order. */
+export const listInspirations = (signal?: AbortSignal) =>
+  request<{ inspirations: ApiInspiration[] }>("GET", "/api/inspirations/", { signal }).then((r) => r.inspirations);

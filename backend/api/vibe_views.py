@@ -88,3 +88,18 @@ def space_inspirations(request, space_id):
         return _not_found()
     rows = SpaceInspiration.objects.filter(space_id=space_id).order_by('board_rank', 'pk')
     return JsonResponse({'inspirations': [inspiration_to_json(r) for r in rows]})
+
+
+@_json_view
+@require_http_methods(['GET'])
+def inspirations(request):
+    """Every sorted pin across spaces, each pin_id once, in board order."""
+    rows = SpaceInspiration.objects.filter(categorized_at__isnull=False).order_by('board_rank', 'pk')
+    seen = set()
+    out = []
+    for row in rows:
+        if row.pin_id in seen:
+            continue
+        seen.add(row.pin_id)
+        out.append(inspiration_to_json(row))
+    return JsonResponse({'inspirations': out})
