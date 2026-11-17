@@ -77,7 +77,6 @@ function SkeletonCard() {
   );
 }
 
-const DESCRIPTION = "Pins from your Pinterest boards, sorted by type.";
 
 export function VibesInspirationSection() {
   const { status, inspirations, retry } = useInspirations();
@@ -89,7 +88,7 @@ export function VibesInspirationSection() {
   const filter: Filter = selected !== "all" && !counts.has(selected) ? "all" : selected;
 
   const title = (
-    <SectionTitle id="home-vibes" title="Vibes Inspiration" count={inspirations.length} description={DESCRIPTION} />
+    <SectionTitle id="home-vibes" title="Vibes Inspiration" count={inspirations.length} />
   );
 
   if (status === "loading") {
