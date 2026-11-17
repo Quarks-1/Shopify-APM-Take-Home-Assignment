@@ -101,7 +101,7 @@ function ProductDetails({
           </Chip>
         ) : null}
       </span>
-      <span className="flex min-w-0 flex-col gap-1 text-start">
+      <span className="mt-auto flex min-w-0 flex-col gap-1 text-start">
         <span className="truncate text-body-medium text-text-primary">{product.title}</span>
         <span className="flex min-h-5 items-center justify-between gap-2">
           <span className="min-w-0 flex-1 truncate text-body-2-regular text-text-secondary">{store?.name}</span>
@@ -131,7 +131,7 @@ export function ProductCard({ product, variant, onSelect, footer, priceNote, cla
         onClick={onSelect}
         aria-label={`Select ${product.title}`}
         className={cx(
-          "group/product flex w-full cursor-pointer flex-col gap-3 text-start outline-none",
+          "group/product flex h-full w-full cursor-pointer flex-col gap-3 text-start outline-none",
           SURFACE,
           "transition-colors duration-150 hover:border-border-button-hover hover:bg-background-secondary-hover",
           "focus-visible:ring-2 focus-visible:ring-border-focus-ring",
@@ -146,7 +146,7 @@ export function ProductCard({ product, variant, onSelect, footer, priceNote, cla
   return (
     <div
       className={cx(
-        "flex w-full flex-col gap-3",
+        "flex h-full w-full flex-col gap-3",
         SURFACE,
         variant === "selected" && "bg-notification-success-background ring-2 ring-notification-success-foreground",
         className,
