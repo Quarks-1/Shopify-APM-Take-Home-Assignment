@@ -24,6 +24,7 @@ import type {
   SearchState,
   Space,
   SpaceObject,
+  ProductVote,
 } from "@/mocks/types";
 import { CartSyncScheduler } from "@/state/cart-sync";
 import {
@@ -97,6 +98,7 @@ type Action =
   | { type: "search/set-state"; id: string; search: SearchState }
   | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string; keepSelection?: boolean }
   | { type: "product/select"; objectId: string; productId: string }
+  | { type: "votes/set"; objectId: string; votes: Record<string, ProductVote> }
   | { type: "cart/add"; objectIds: string[]; ids: string[] }
   | { type: "cart/set-qty"; lineId: string; qty: number }
   | { type: "cart/remove"; lineId: string }
@@ -255,6 +257,9 @@ function reducer(state: AppState, action: Action): AppState {
       return obj.selectedProductId ? { ...next, cart: next.cart.filter((l) => l.objectId !== action.id) } : next;
     }
 
+    case "votes/set":
+      return mapObject(state, action.objectId, (o) => ({ ...o, votes: action.votes }));
+
     case "product/select": {
       const next = mapObject(state, action.objectId, (o) => ({
         ...o,
@@ -345,6 +350,8 @@ export interface AppActions {
     opts?: { keepSelection?: boolean },
   ): void;
   selectProduct(objectId: string, productId: string): void;
+  /** Thumbs up/down on a candidate (`null` clears the vote). */
+  voteProduct(objectId: string, productId: string, vote: ProductVote | null): void;
 
   addToCart(objectId: string): boolean;
   addAllToCart(objectIds: string[]): number;
@@ -747,6 +754,7 @@ export function createAppStore(): AppStore {
         candidateIds: [],
         selectedProductId: undefined,
         search: { status: "idle" },
+        votes: {},
       };
       dispatch({ type: "object/create", object });
       write(() => api.createObject(objectCreateBody(object)));
@@ -829,6 +837,35 @@ export function createAppStore(): AppStore {
       } else {
         write(() => api.selectCandidate(objectId, candidateId));
       }
+    },
+
+    voteProduct(objectId, productId, vote) {
+      const obj = getObject(state, objectId);
+      const gid = getProduct(state, productId)?.productGid;
+      const candidateId = candidateIdOf(productId);
+      if (!obj || !gid || candidateId === undefined) return;
+      const before = obj.votes ?? {};
+      if ((before[gid] ?? null) === vote) return;
+      const optimistic = { ...before };
+      if (vote === null) delete optimistic[gid];
+      else optimistic[gid] = vote;
+      dispatch({ type: "votes/set", objectId, votes: optimistic });
+      write(async () => {
+        try {
+          const result = await api.voteCandidate(objectId, candidateId, vote);
+          // Adopt the backend's map unless a newer vote is still waiting to be sent.
+          if (!queue.hasOthersPending()) dispatch({ type: "votes/set", objectId, votes: result.votes });
+        } catch (error) {
+          const current = getObject(state, objectId);
+          if (current) {
+            const rolled = { ...(current.votes ?? {}) };
+            if (before[gid]) rolled[gid] = before[gid];
+            else delete rolled[gid];
+            dispatch({ type: "votes/set", objectId, votes: rolled });
+          }
+          throw error;
+        }
+      });
     },
 
     addToCart(objectId) {

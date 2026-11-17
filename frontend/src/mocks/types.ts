@@ -45,6 +45,8 @@ export interface OwnedInfo {
   purchasedAt: string;
 }
 
+export type ProductVote = "up" | "down";
+
 export interface SpaceObject {
   id: string;
   name: string;
@@ -71,6 +73,8 @@ export interface SpaceObject {
   /** Product id of the selected candidate (`cand_<id>`). Derived from the backend's selectedCandidateId. */
   selectedProductId?: string;
   search: SearchState;
+  /** Thumbs votes on candidates, keyed by product gid (`Product.productGid`). Backend-owned. */
+  votes: Record<string, ProductVote>;
   createdAt: string;
 }
 
@@ -116,6 +120,8 @@ export interface Product {
   /** Shopify variant gid (candidates only), used to match merchant cart messages to the line. */
   variantId?: string;
   rating?: ProductRating;
+  /** Shopify product gid (candidates only); the key of `SpaceObject.votes`. */
+  productGid?: string;
 }
 
 /** A cart line; the backend owns the cart. `storeId` and `variantId` are unknown until the backend answers. */

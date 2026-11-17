@@ -29,6 +29,7 @@ from .serializers import (
     generate_id,
     now,
     object_to_json,
+    votes_by_object,
     space_to_json,
     validate_import,
     validate_object,
@@ -106,13 +107,18 @@ def state_candidates(objects):
     return out
 
 
+def _objects_json(objects):
+    votes = votes_by_object(o.pk for o in objects)
+    return [object_to_json(o, votes.get(o.pk, {})) for o in objects]
+
+
 @require_http_methods(['GET'])
 def state_snapshot(_request):
     objects = list(SpaceObject.objects.all())
     return JsonResponse(
         {
             'spaces': [space_to_json(s) for s in Space.objects.prefetch_related('placements')],
-            'objects': [object_to_json(o) for o in objects],
+            'objects': _objects_json(objects),
             'candidates': state_candidates(objects),
             'cart': cart_payload(),
         }
@@ -198,7 +204,7 @@ def placement_detail(request, space_id, object_id):
 @require_http_methods(['GET', 'POST'])
 def objects_collection(request):
     if request.method == 'GET':
-        return JsonResponse([object_to_json(o) for o in SpaceObject.objects.all()], safe=False)
+        return JsonResponse(_objects_json(list(SpaceObject.objects.all())), safe=False)
     data, err = _body(request)
     if err:
         return err

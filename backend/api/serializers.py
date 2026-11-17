@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from .models import (
+    PINNED_STRATEGY,
     LengthUnit,
     Material,
     ObjectSource,
@@ -34,8 +35,9 @@ OBJECT_KEYS = {
     'priceMinFuzzy', 'priceLimitFuzzy', 'minRating',
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
-    # ignored. Selection changes only via POST /api/objects/<id>/select/.
-    'selectedCandidateId',
+    # ignored. Selection changes only via POST /api/objects/<id>/select/;
+    # votes only via PUT /api/objects/<id>/votes/.
+    'selectedCandidateId', 'votes',
 }
 
 
@@ -79,7 +81,40 @@ def space_to_json(space):
     return out
 
 
-def object_to_json(obj):
+def votes_by_object(object_ids):
+    """{object_id: {productGid: vote}} for the given objects, in one query."""
+    from .models import ProductVote
+
+    out = {}
+    for oid, gid, vote in ProductVote.objects.filter(object_id__in=list(object_ids)).values_list(
+        'object_id', 'product_gid', 'vote'
+    ):
+        out.setdefault(oid, {})[gid] = vote
+    return out
+
+
+def vote_product_snapshot(c):
+    """The denormalized candidate snapshot stored on a ProductVote."""
+    return {
+        'title': c.title,
+        'seller': {'name': c.seller_name or None, 'domain': c.seller_domain or None},
+        'price': c.price_cents / 100,
+        'currency': c.currency,
+        'imageUrl': c.image_url or None,
+        'url': c.pdp_url or None,
+        'dims': c.dims or None,
+        'materials': list(c.materials or []),
+        'description': c.description or None,
+        'productGid': c.product_gid,
+        'variantGid': c.variant_gid or None,
+    }
+
+
+def object_to_json(obj, votes=None):
+    """`votes` is the object's {productGid: vote} when the caller batched it
+    (see votes_by_object); otherwise it is queried here."""
+    if votes is None:
+        votes = votes_by_object([obj.pk]).get(obj.pk, {})
     out = {'id': obj.id, 'name': obj.name, 'dims': dims_to_json(obj.dims)}
     if obj.weight is not None:
         out['weight'] = obj.weight
@@ -108,6 +143,7 @@ def object_to_json(obj):
     out['search'] = obj.search
     if obj.selected_candidate_id is not None:
         out['selectedCandidateId'] = obj.selected_candidate_id
+    out['votes'] = votes
     out['createdAt'] = iso(obj.created_at)
     return out
 
@@ -133,17 +169,25 @@ def candidate_sort_key(c):
     return (SIZE_ORDER.get(c.size_status, 3), c.price_cents, c.pk)
 
 
+def _pinned(c):
+    """A refine run's carried-over liked product (reads c.query: select_related it)."""
+    return getattr(getattr(c, 'query', None), 'strategy', None) == PINNED_STRATEGY
+
+
 def sort_accepted_brand_diverse(candidates):
-    """Round-robin accepted candidates across sellers for display."""
+    """Round-robin accepted candidates across sellers for display. Pinned
+    candidates (a refine run's liked carry-overs) come first, in pin order."""
     from collections import defaultdict
 
+    pins = sorted((c for c in candidates if _pinned(c)), key=lambda c: c.pk)
     groups = defaultdict(list)
     for c in candidates:
-        groups[seller_group_key(c)].append(c)
+        if not _pinned(c):
+            groups[seller_group_key(c)].append(c)
     for group in groups.values():
         group.sort(key=candidate_sort_key)
     order = sorted(groups, key=lambda k: candidate_sort_key(groups[k][0]))
-    out = []
+    out = pins
     while any(groups[k] for k in order):
         for k in order:
             if groups[k]:
@@ -225,6 +269,8 @@ def run_to_json(run, include_all=False):
     if run.mode == 'like':
         source = run.like_source or {}
         like = {'likeCandidateId': source.get('candidateId'), 'likeTitle': source.get('title')}
+    elif run.mode == 'refine' and run.preferences:
+        like = {'preferences': run.preferences}
     return {
         'id': str(run.id),
         'objectId': run.object_id,
@@ -261,7 +307,7 @@ def run_to_json(run, include_all=False):
                 'passing': q.passing_count,
                 'error': q.error or None,
             }
-            for q in run.queries.all()
+            for q in run.queries.exclude(strategy=PINNED_STRATEGY)
         ],
         'candidates': [candidate_to_json(c) for c in accepted + rest],
     }

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import cart_views, render_views, search_views, state_views, views
+from . import cart_views, render_views, search_views, state_views, views, vote_views
 
 app_name = 'api'
 
@@ -25,6 +25,7 @@ urlpatterns = [
         name='object-search-latest',
     ),
     path('objects/<str:object_id>/select/', search_views.object_select, name='object-select'),
+    path('objects/<str:object_id>/votes/', vote_views.object_votes, name='object-votes'),
     path('searches/<uuid:run_id>/', search_views.search_detail, name='search-detail'),
     path('searches/<uuid:run_id>/cancel/', search_views.search_cancel, name='search-cancel'),
     path('spaces/<str:space_id>/renders/', render_views.space_renders, name='space-renders'),

@@ -5,7 +5,9 @@ strategy and no caller can drop them.
 """
 import base64
 import copy
+import math
 import re
+from collections import Counter
 from pathlib import Path
 
 from django.conf import settings
@@ -102,11 +104,14 @@ def pick_more_source(previous_queries):
     return best
 
 
-def strategies(snapshot, used_queries, previous_queries=(), like=None):
+def strategies(snapshot, used_queries, previous_queries=(), like=None, refine=None):
     """Available strategies in ladder order. `like` is a like run's
-    like_source: it switches to the photo ladder."""
+    like_source: it switches to the photo ladder; `refine` (a refine run's
+    feedback) puts the vote-driven rounds first."""
     if like is not None:
         return like_strategies(like, previous_queries)
+    if refine is not None:
+        return refine_strategies(snapshot, refine, previous_queries)
     used = {normalize_query(q) for q in used_queries or []}
     ladder = ['exact', 'relax-style', 'name']
     ladder += [f'similar:{i}' for i in range(len(snapshot.get('similarItems') or []))]
@@ -258,6 +263,126 @@ def build_intent(snapshot):
     return ', '.join(parts) + '.'
 
 
+# ------------------------------------------------------------ refine mode
+#
+# A refine run ("Refresh") is shaped by the row's thumbs votes. Ladder:
+# pref (a vote-derived query, or one the agent wrote, with the preferences in
+# the intent), liked:N (catalog `like` seeded by liked product N), then the
+# normal text ladder with the preference sentence appended to the intent.
+# pref and liked:N rounds narrow the price filter to the liked items' range.
+
+REFINE_LIKED_ROUNDS = 3
+PREF_QUERY_LEN = 120
+PREF_INTENT_LEN = 400
+PREF_ITEMS = 3
+PREF_TITLE_LEN = 60
+PRICE_WINDOW = (0.85, 1.15)
+STOPWORDS = {
+    'and', 'the', 'with', 'for', 'from', 'set', 'piece', 'pcs', 'inch', 'inches', 'cm',
+    'new', 'sale', 'free', 'shipping', 'your', 'our',
+}
+
+
+def _is_refine_round(strategy):
+    return strategy == 'pref' or strategy.startswith('liked:')
+
+
+def liked_gids(feedback):
+    """Products the liked:N rounds seed with, in order."""
+    gids = [i.get('productGid') for i in (feedback or {}).get('liked') or []]
+    return [g for g in gids if g][:REFINE_LIKED_ROUNDS]
+
+
+def refine_strategies(snapshot, feedback, previous_queries=()):
+    """pref, liked:N (each once), then the normal ladder. The normal rungs are
+    de-duplicated against earlier text rounds only, not pref/liked ones."""
+    prev = [_pq(q) for q in previous_queries or []]
+    used = {q['strategy'] for q in prev}
+    ladder = ['pref'] + [f'liked:{i}' for i in range(len(liked_gids(feedback)))]
+    out = [s for s in ladder if s not in used]
+    text = [q['query'] for q in prev if not _is_refine_round(q['strategy'])]
+    return out + strategies(snapshot, text, prev)
+
+
+def _clean_title(value):
+    return re.sub(r'\s+', ' ', str(value or '')).strip()[:PREF_TITLE_LEN]
+
+
+def _common(lists, threshold, limit):
+    """Words present in at least `threshold` of the lists, most common first."""
+    counts = Counter(w for words in lists for w in dict.fromkeys(words))
+    return [w for w, n in counts.most_common() if n >= threshold][:limit]
+
+
+def pref_query(snapshot, feedback):
+    """Object name plus the materials and title words the liked items share."""
+    liked = (feedback or {}).get('liked') or []
+    name = _name(snapshot) or _type_noun(snapshot)
+    if not liked:
+        return strategy_query(snapshot, 'exact') or name
+    threshold = 1 if len(liked) == 1 else max(2, math.ceil(len(liked) / 2))
+    materials = _common(
+        [[m.lower() for m in i.get('materials') or [] if isinstance(m, str)] for i in liked],
+        threshold, 2)
+    words = []
+    if len(liked) > 1:
+        skip = set(normalize_query(name).split()) | set(' '.join(materials).split())
+        titles = [
+            [w for w in re.findall(r'[a-z][a-z-]{2,}', str(i.get('title') or '').lower())
+             if w not in STOPWORDS and w not in skip]
+            for i in liked
+        ]
+        words = _common(titles, threshold, 2)
+    return _join(*words, *materials, name)[:PREF_QUERY_LEN]
+
+
+def preference_sentence(feedback):
+    """' Prefers items like: ... Avoid: ...' from the row's votes, or ''."""
+    feedback = feedback or {}
+    likes = []
+    for item in (feedback.get('liked') or [])[:PREF_ITEMS]:
+        title = _clean_title(item.get('title'))
+        mats = ', '.join((item.get('materials') or [])[:2])
+        if title:
+            likes.append(f'{title} ({mats})' if mats else title)
+    avoids = [_clean_title(i.get('title')) for i in (feedback.get('disliked') or [])[:PREF_ITEMS]]
+    parts = []
+    if likes:
+        parts.append('Prefers items like: ' + '; '.join(likes) + '.')
+    avoids = [a for a in avoids if a]
+    if avoids:
+        parts.append('Avoid: ' + '; '.join(avoids) + '.')
+    return (' ' + ' '.join(parts))[:PREF_INTENT_LEN] if parts else ''
+
+
+def liked_price_window(snapshot, feedback):
+    """{min, max} cents around the liked prices (with two or more priced liked
+    items), clipped to the object's own bounds; None otherwise."""
+    prices = [i['price'] for i in (feedback or {}).get('liked') or []
+              if isinstance(i.get('price'), (int, float)) and i['price'] > 0]
+    if len(prices) < 2:
+        return None
+    lo = round(min(prices) * PRICE_WINDOW[0] * 100)
+    hi = round(max(prices) * PRICE_WINDOW[1] * 100)
+    obj_lo, obj_hi = price_bounds(snapshot, settings.SEARCHER_PRICE_FUZZ)
+    if obj_lo is not None:
+        lo = max(lo, obj_lo)
+    if obj_hi is not None:
+        hi = min(hi, obj_hi)
+    return {'min': lo, 'max': hi} if lo <= hi else None
+
+
+def _refine_more(previous_queries):
+    """The next page of a refine run's earlier round: its exact payload
+    (query, like item, price window, intent) with the cursor."""
+    src = pick_more_source(previous_queries)
+    if src is None:
+        raise ValueError('no earlier query has another page')
+    payload = copy.deepcopy(src.get('payload') or {})
+    payload.setdefault('pagination', {})['cursor'] = (src.get('response_meta') or {}).get('cursor')
+    return payload
+
+
 def _like_parts(snapshot, strategy, previous_queries, like, redact):
     """(query or None, like item, cursor) of a like-mode round."""
     if strategy == 'more':
@@ -276,19 +401,32 @@ def _like_parts(snapshot, strategy, previous_queries, like, redact):
     raise ValueError(f'unknown strategy: {strategy}')
 
 
-def build_stored_payload(snapshot, strategy, previous_queries=(), like=None):
+def build_stored_payload(snapshot, strategy, previous_queries=(), like=None, refine=None):
     """The payload to save on CatalogQuery: `build_payload` with image data
     replaced by a placeholder."""
-    return build_payload(snapshot, strategy, previous_queries, like, redact=True)
+    return build_payload(snapshot, strategy, previous_queries, like, redact=True, refine=refine)
 
 
-def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=False):
+def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=False, refine=None):
     """The ucp catalog search payload. With `like` (a like run's like_source)
-    it holds real base64 image data: never store it, use build_stored_payload."""
+    it holds real base64 image data: never store it, use build_stored_payload.
+    `refine` is {feedback, query?, intent?} of a refine run (query and intent
+    are the agent's own, for the pref round only)."""
     cursor = None
     like_item = None
+    feedback = (refine or {}).get('feedback') or {}
+    if refine is not None and strategy == 'more':
+        return _refine_more(previous_queries)
     if like is not None:
         query, like_item, cursor = _like_parts(snapshot, strategy, previous_queries, like, redact)
+    elif refine is not None and strategy == 'pref':
+        query = refine.get('query') or pref_query(snapshot, feedback)
+    elif refine is not None and strategy.startswith('liked:'):
+        gids = liked_gids(feedback)
+        arg = strategy.partition(':')[2]
+        if not arg.isdigit() or int(arg) >= len(gids):
+            raise ValueError(f'unknown strategy: {strategy}')
+        query, like_item = _like_query(snapshot) or None, {'id': gids[int(arg)]}
     elif strategy == 'more':
         src = pick_more_source(previous_queries)
         if src is None:
@@ -313,6 +451,14 @@ def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=Fal
     if like is not None and like.get('title'):
         title = re.sub(r'\s+', ' ', str(like['title'])).strip()[:LIKE_TITLE_LEN]
         intent += f' Visually similar to: {title}.'
+    if refine is not None:
+        if strategy == 'pref' and refine.get('intent'):
+            intent += ' ' + refine['intent']
+        else:
+            intent += preference_sentence(feedback)
+        window = liked_price_window(snapshot, feedback) if _is_refine_round(strategy) else None
+        if window:
+            filters['price'] = window
     payload = {
         'query': query,
         'context': {

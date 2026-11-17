@@ -350,14 +350,14 @@ class SearchApiTests(TestCase):
         Placement.objects.create(space=space, object=self.obj, x=0, y=0)
         _, ids = self.judged_run()
         accepted = len(ids)  # every verified fit in the fixture (1)
-        with self.assertNumQueries(7):  # + cart lines and merchant carts
+        with self.assertNumQueries(8):  # + votes, cart lines and merchant carts
             self.client.get('/api/state/')
         for i in range(3):
             obj = make_object(f'more{i}')
             run, ids = self.judged_run(obj)
             self.post(f'/api/objects/{obj.pk}/select/', {'candidateId': ids[0]})
             self.judged_run(obj)  # the selection is now from an older run
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(8):
             # obj1's accepted + per extra object: its accepted plus the older selection
             self.assertEqual(len(self.client.get('/api/state/').json()['candidates']),
                              accepted + 3 * (accepted + 1))

@@ -55,6 +55,9 @@ class Command(BaseCommand):
         p.add_argument('--object', required=True, dest='object_id')
         p = sub.add_parser('next')
         p.add_argument('--strategy')
+        # Refine runs, with --strategy pref only: the agent's catalog query and intent.
+        p.add_argument('--query')
+        p.add_argument('--intent')
         p = sub.add_parser('judge')
         p.add_argument('--accept', nargs='*', type=int, default=[])
         p.add_argument('--reject', nargs='*', default=[], metavar='ID=REASON')
@@ -77,7 +80,8 @@ class Command(BaseCommand):
             else:
                 run = _run_from_env()
                 if action == 'next':
-                    doc = engine.next_round(run, options.get('strategy'))
+                    doc = engine.next_round(run, options.get('strategy'),
+                                            options.get('query'), options.get('intent'))
                 elif action == 'judge':
                     doc = engine.judge(
                         run, options['accept'], _parse_rejects(options['reject'])

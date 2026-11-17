@@ -35,7 +35,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from ..models import AgentMode, ObjectSource, RunStatus, RunStep, SearchMode, SearchRun, Verdict
-from . import engine, like_images, prompts, ucp_client
+from . import engine, feedback, like_images, prompts, query_builder, ucp_client
 from .object_state import sync_object_search
 
 BACKEND_DIR = Path(settings.BASE_DIR)
@@ -73,6 +73,10 @@ _children = []
 
 class SearchRefused(Exception):
     pass
+
+
+class NoFinishedSearch(SearchRefused):
+    """A refine run needs an earlier finished search of the object."""
 
 
 # ------------------------------------------------------------------ paths
@@ -266,7 +270,26 @@ def start_like_search(space_object, candidate):
     return start_search(space_object, like_candidate=candidate)
 
 
-def start_search(space_object, like_candidate=None):
+def start_refine_search(space_object):
+    """Start a "Refresh" run shaped by the object's thumbs votes. Returns
+    (run, created) like `start_search`; refused before any finished search."""
+    return start_search(space_object, refine=True)
+
+
+def _create_refine_run(space_object):
+    """A queued refine run: feedback snapshot, round budget, liked pins."""
+    if not feedback.has_finished_run(space_object):
+        raise NoFinishedSearch('search this object before refining it')
+    fb = feedback.build_feedback(space_object)
+    extra = 1 + len(query_builder.liked_gids(fb))  # pref + liked:N rounds
+    max_rounds = min(LIKE_MAX_ROUNDS_CAP, settings.SEARCHER_MAX_ROUNDS + extra)
+    run = engine.create_run(space_object, status=RunStatus.QUEUED, mode=SearchMode.REFINE,
+                            feedback=fb, max_rounds=max_rounds)
+    feedback.pin_liked(run, space_object)
+    return run
+
+
+def start_search(space_object, like_candidate=None, refine=False):
     """Returns (run, created). Reuses the object's queued/running run if any."""
     if space_object.source == ObjectSource.IMPORTED:
         raise SearchRefused('imported objects are already owned')
@@ -277,7 +300,9 @@ def start_search(space_object, like_candidate=None):
         )
         if active is not None:
             return active, False
-        if like_candidate is None:
+        if refine:
+            run = _create_refine_run(space_object)
+        elif like_candidate is None:
             run = engine.create_run(space_object, status=RunStatus.QUEUED)
         else:
             run = engine.create_run(
@@ -419,6 +444,24 @@ def prepare_like_run(run):
     run.refresh_from_db()
     _log(run_id, f'like: {len(images)} photo(s) cached, {max_rounds} rounds allowed')
 
+
+REFINE_MAX_PHOTOS = 3
+
+
+def prepare_refine_run(run):
+    """Refine runs, in the worker: cache the main photo of the first liked
+    products for the agent. Failures just skip a photo."""
+    run_id = run.pk
+    fb = dict(run.feedback or {})
+    urls = [i.get('imageUrl') for i in fb.get('liked') or [] if isinstance(i.get('imageUrl'), str)]
+    log = lambda message: _log(run_id, message)  # noqa: E731
+    images = like_images.cache_images(urls[:REFINE_MAX_PHOTOS], like_dir(run_id), log) if urls else []
+    fb['images'] = images
+    SearchRun.objects.filter(pk=run_id).update(feedback=fb)
+    run.refresh_from_db()
+    _log(run_id, f'refine: {len(images)} liked photo(s) cached, '
+                 f'{len(fb.get("pinned") or [])} pinned')
+
 def execute(run):
     """Worker body: run the agent (or the deterministic loop), then finalize.
     Never leaves the run running, and always dispatches queued runs after."""
@@ -444,6 +487,12 @@ def execute(run):
             except Exception:  # photos are a bonus; the product-id round still works
                 _log(run_id, 'like: preparing photos failed:\n' + traceback.format_exc())
                 run.refresh_from_db()
+        elif run.mode == SearchMode.REFINE:
+            try:
+                prepare_refine_run(run)
+            except Exception:  # photos are optional
+                _log(run_id, 'refine: preparing photos failed:\n' + traceback.format_exc())
+                run.refresh_from_db()
         mode = settings.SEARCHER_AGENT
         _log(run_id, f'worker {os.getpid()} started (agent={mode}, db={db_path()})')
         if mode == AgentMode.DETERMINISTIC:
@@ -453,7 +502,7 @@ def execute(run):
         else:
             _run_agent(run)
         run = finalize(run)
-        _log(run_id, f'finished: {run.status}, {run.candidates.filter(verdict=Verdict.ACCEPTED).count()}'
+        _log(run_id, f'finished: {run.status}, {engine.accepted_count(run)}'
                      f'/{run.target} accepted in {run.round_count} rounds')
     except BaseException as exc:
         _log(run_id, 'worker error:\n' + traceback.format_exc())
@@ -477,13 +526,14 @@ def _run_agent(run):
     failure, result = _invoke_claude(run)
     if result is not None:
         SearchRun.objects.filter(pk=run_id).update(agent_result=result)
+        save_preferences(run, result)
     run.refresh_from_db()
     if not failure:
         return
     _log(run_id, f'agent failed: {failure}')
     if run.status != RunStatus.RUNNING:  # canceled (or reaped) meanwhile
         return
-    accepted = run.candidates.filter(verdict=Verdict.ACCEPTED).count()
+    accepted = engine.accepted_count(run)
     if accepted >= run.target:
         return
     if settings.SEARCHER_FALLBACK == 'deterministic':
@@ -495,18 +545,40 @@ def _run_agent(run):
         SearchRun.objects.filter(pk=run_id).update(error=failure)
 
 
+def save_preferences(run, result):
+    """Refine runs: keep what the agent says it learned from the votes."""
+    if run.mode != SearchMode.REFINE:
+        return None
+    prefs = prompts.parse_preferences((result or {}).get('structured_output'))
+    SearchRun.objects.filter(pk=run.pk).update(preferences=prefs)
+    run.preferences = prefs
+    return prefs
+
+
 IMAGE_MEDIA_TYPES = ('image/jpeg', 'image/png', 'image/gif', 'image/webp')
 
 
+def _photo_items(run):
+    """(cached photo records, cap) of a like run's reference or a refine run's
+    liked products; nothing for other runs."""
+    mode = getattr(run, 'mode', None)
+    if mode == SearchMode.LIKE:
+        return (run.like_source or {}).get('images') or [], settings.SEARCHER_LIKE_MAX_IMAGES
+    if mode == SearchMode.REFINE:
+        return (run.feedback or {}).get('images') or [], REFINE_MAX_PHOTOS
+    return [], 0
+
+
 def like_photo_entries(run):
-    """The cached reference photos that can go to the agent: like runs only, in
+    """The cached photos that can go to the agent (like and refine runs), in
     index order, each file must still exist inside the run's like dir, be a
     supported image type and at most like_images.MAX_BYTES. Others are skipped."""
-    if getattr(run, 'mode', None) != SearchMode.LIKE:
+    raw, cap = _photo_items(run)
+    if not raw:
         return []
     folder = like_dir(run.pk).resolve()
     out = []
-    items = [i for i in (run.like_source or {}).get('images') or [] if isinstance(i, dict)]
+    items = [i for i in raw if isinstance(i, dict)]
     for item in sorted(items, key=lambda i: i.get('index') if isinstance(i.get('index'), int) else 0):
         media_type = item.get('contentType')
         try:
@@ -517,7 +589,7 @@ def like_photo_entries(run):
         except (OSError, ValueError):
             continue
         out.append({'index': item.get('index'), 'path': path, 'contentType': media_type})
-    return out[:settings.SEARCHER_LIKE_MAX_IMAGES]
+    return out[:cap]
 
 
 def build_stdin_message(run, photos):

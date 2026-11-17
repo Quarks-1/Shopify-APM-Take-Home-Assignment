@@ -4,6 +4,7 @@
 records accept/reject verdicts; `run_deterministic` is the no-LLM fallback.
 The accepted count is always computed from Candidate rows.
 """
+import re
 import time
 from collections import defaultdict
 
@@ -12,6 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import (
+    PINNED_STRATEGY,
     Candidate,
     CatalogQuery,
     RunStatus,
@@ -21,6 +23,7 @@ from ..models import (
     Verdict,
 )
 from ..serializers import object_to_json, seller_group_key
+from . import feedback as votes
 from . import filters, query_builder, ucp_client
 from .normalize import normalize_product
 from .object_state import sync_object_search
@@ -28,6 +31,8 @@ from .object_state import sync_object_search
 REASON_LEN = 200
 MAX_COMPACT_SPECS = 6
 SUMMARY_LEN = 200
+AGENT_QUERY_LEN = 120
+AGENT_INTENT_LEN = 400
 
 
 class SearcherError(Exception):
@@ -40,7 +45,12 @@ class SearcherError(Exception):
 # ------------------------------------------------------------------ helpers
 
 def _accepted(run):
-    return run.candidates.filter(verdict=Verdict.ACCEPTED).count()
+    """Accepted toward the target: pinned carry-overs do not count."""
+    return (run.candidates.filter(verdict=Verdict.ACCEPTED)
+            .exclude(query__strategy=PINNED_STRATEGY).count())
+
+
+accepted_count = _accepted
 
 
 def _pending(run):
@@ -55,19 +65,31 @@ def _previous_queries(run):
             'payload': q.payload, 'response_meta': q.response_meta,
             'passing_count': q.passing_count,
         }
-        for q in run.queries.all()
+        for q in run.queries.exclude(strategy=PINNED_STRATEGY)
     ]
 
 
 def available_strategies(run):
     prev = _previous_queries(run)
     used = [q['query'] for q in prev]
-    return query_builder.strategies(run.object_snapshot, used, prev, like=_like(run))
+    return query_builder.strategies(run.object_snapshot, used, prev, like=_like(run),
+                                    refine=_feedback(run))
 
 
 def _like(run):
     """The run's reference product and photos, or None for a text search."""
     return (run.like_source or {}) if run.mode == SearchMode.LIKE else None
+
+
+def _feedback(run):
+    """A refine run's votes snapshot, or None for other runs."""
+    return (run.feedback or {}) if run.mode == SearchMode.REFINE else None
+
+
+def _clean_arg(value, limit):
+    """Agent-written text for the catalog: printable, one line, capped."""
+    text = ''.join(ch if ch.isprintable() else ' ' for ch in str(value or ''))
+    return re.sub(r'\s+', ' ', text).strip()[:limit]
 
 
 def _default_strategy(run, available):
@@ -161,7 +183,7 @@ def _stop(reason, run):
 # ------------------------------------------------------------------- runs
 
 def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
-               mode=SearchMode.SEARCH, like_source=None):
+               mode=SearchMode.SEARCH, like_source=None, feedback=None, max_rounds=None):
     """A running run (CLI `start`, tests) or a queued one for the runner."""
     snapshot = object_to_json(space_object)
     placement = space_object.placements.select_related('space').order_by('pk').first()
@@ -174,18 +196,25 @@ def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
         status=status,
         step=RunStep.PLANNING if running else None,
         target=settings.SEARCHER_TARGET,
-        max_rounds=settings.SEARCHER_MAX_ROUNDS,
+        max_rounds=max_rounds or settings.SEARCHER_MAX_ROUNDS,
         started_at=timezone.now() if running else None,
         agent_mode=agent_mode,
         mode=mode,
         like_source=like_source,
+        feedback=feedback,
     )
     sync_object_search(space_object.pk)
     return run
 
 
-def next_round(run, strategy=None):
+def next_round(run, strategy=None, query=None, intent=None):
+    """One catalog round. `query`/`intent` are the agent's own words, only
+    for the pref round of a refine run."""
     run.refresh_from_db()
+    if (query is not None or intent is not None) and (
+            run.mode != SearchMode.REFINE or strategy != 'pref'):
+        raise SearcherError('--query and --intent are only allowed with --strategy pref '
+                            'on a refine run')
     if run.status != RunStatus.RUNNING:
         return _stop(f'run is not running (status: {run.status})', run)
     accepted = _accepted(run)
@@ -209,12 +238,18 @@ def next_round(run, strategy=None):
     snapshot = run.object_snapshot
     _set_step(run, RunStep.BUILDING_QUERY)
     like = _like(run)
+    feedback = _feedback(run)
+    refine = None
+    if feedback is not None:
+        refine = {'feedback': feedback,
+                  'query': _clean_arg(query, AGENT_QUERY_LEN) or None,
+                  'intent': _clean_arg(intent, AGENT_INTENT_LEN) or None}
     previous = _previous_queries(run)
     payload = stored = None
     error = ''
     try:
-        stored = query_builder.build_stored_payload(snapshot, strategy, previous, like)
-        payload = query_builder.build_payload(snapshot, strategy, previous, like)
+        stored = query_builder.build_stored_payload(snapshot, strategy, previous, like, refine)
+        payload = query_builder.build_payload(snapshot, strategy, previous, like, refine=refine)
     except (ValueError, OSError) as exc:
         if like is None:
             raise
@@ -259,8 +294,11 @@ def next_round(run, strategy=None):
     }
 
     known = set(run.candidates.values_list('product_gid', flat=True))
+    known |= votes.disliked_gids()  # a disliked product never comes back, in any row
     if like and like.get('productGid'):
         known.add(like['productGid'])  # the reference product is never its own match
+    if feedback is not None:
+        known |= votes.excluded_gids(run)  # never show the row the same product twice
     rows = []
     with transaction.atomic():
         cq = CatalogQuery.objects.create(
@@ -316,10 +354,14 @@ def judge(run, accept_ids=(), rejects=None):
         raise SearcherError(f'ids both accepted and rejected: {sorted(both)}')
     wanted = set(accept_ids) | set(rejects)
     with transaction.atomic():
-        found = {c.pk: c for c in Candidate.objects.filter(run=run, pk__in=wanted)}
+        found = {c.pk: c for c in Candidate.objects.filter(run=run, pk__in=wanted)
+                 .select_related('query')}
         missing = sorted(wanted - set(found))
         if missing:
             raise SearcherError(f'candidate ids not in this run: {missing}')
+        pinned = sorted(i for i, c in found.items() if c.query.strategy == PINNED_STRATEGY)
+        if pinned:
+            raise SearcherError(f'pinned candidates are already in the result: {pinned}')
         failing = sorted(i for i in accept_ids if not found[i].passes_filters)
         if failing:
             raise SearcherError(
@@ -384,8 +426,32 @@ def _accepted_seller_keys(run):
     }
 
 
+PRICE_TIERS = 3
+
+
+def _spread(cands, tier):
+    """Round-robin over price tiers, each tier in `cands` order."""
+    by_tier = defaultdict(list)
+    for c in cands:
+        by_tier[tier[c.pk]].append(c)
+    out = []
+    while any(by_tier.values()):
+        for t in sorted(by_tier):
+            if by_tier[t]:
+                out.append(by_tier[t].pop(0))
+    return out
+
+
+def _price_tiers(cands):
+    """{pk: 0..2}: cheap, mid and dear thirds of these candidates by price."""
+    ordered = sorted(cands, key=lambda c: (c.price_cents, c.pk))
+    return {c.pk: i * PRICE_TIERS // len(ordered) for i, c in enumerate(ordered)}
+
+
 def _pick_deterministic_accepts(run, candidate_ids, need):
-    """Prefer one new seller per round, then fill by price among verified fits."""
+    """Prefer one new seller per round, then fill by price among verified fits.
+    Explore (plain search) runs also spread picks across price tiers, so the
+    user's votes have a varied set to react to."""
     if need <= 0 or not candidate_ids:
         return []
     pending = list(
@@ -393,6 +459,9 @@ def _pick_deterministic_accepts(run, candidate_ids, need):
     )
     if not pending:
         return []
+    explore = run.mode == SearchMode.SEARCH
+    tier = _price_tiers(pending) if explore else None
+    spread = (lambda cs: _spread(cs, tier)) if explore else (lambda cs: cs)  # noqa: E731
     accepted_sellers = _accepted_seller_keys(run)
     by_seller = defaultdict(list)
     for c in pending:
@@ -401,17 +470,17 @@ def _pick_deterministic_accepts(run, candidate_ids, need):
         group.sort(key=_rank_key)
 
     picked, picked_ids = [], set()
-    newcomers = sorted(
-        ((sk, group[0]) for sk, group in by_seller.items() if sk not in accepted_sellers),
-        key=lambda t: _rank_key(t[1]),
-    )
-    for _sk, cand in newcomers:
+    newcomers = spread(sorted(
+        (group[0] for sk, group in by_seller.items() if sk not in accepted_sellers),
+        key=_rank_key,
+    ))
+    for cand in newcomers:
         if len(picked) >= need:
             break
         picked.append(cand)
         picked_ids.add(cand.pk)
 
-    rest = sorted((c for c in pending if c.pk not in picked_ids), key=_rank_key)
+    rest = spread(sorted((c for c in pending if c.pk not in picked_ids), key=_rank_key))
     for cand in rest:
         if len(picked) >= need:
             break

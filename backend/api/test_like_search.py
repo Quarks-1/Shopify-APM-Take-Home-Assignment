@@ -492,7 +492,8 @@ class LikeRunTests(LikeBase):
         self.assertIn('"name": "Coffee table"', text)
         self.assertIn('MORE LIKE THIS', prompts.system_prompt(run))
         search = engine.create_run(self.obj)
-        self.assertEqual(prompts.system_prompt(search), prompts.SYSTEM_PROMPT)
+        self.assertEqual(prompts.system_prompt(search),
+                         prompts.SYSTEM_PROMPT + prompts.EXPLORE_SYSTEM_SECTION)
         self.assertNotIn('reference', prompts.build_user_prompt(search))
 
     def test_agent_gets_no_read_tool(self):

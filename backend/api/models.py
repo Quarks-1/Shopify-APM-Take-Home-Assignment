@@ -170,6 +170,7 @@ class AgentMode(models.TextChoices):
 class SearchMode(models.TextChoices):
     SEARCH = 'search'  # text queries built from the object
     LIKE = 'like'  # "more like this": catalog `like` seeded by a chosen product
+    REFINE = 'refine'  # "Refresh": re-search shaped by the row's thumbs votes
 
 
 class SearchRun(models.Model):
@@ -208,12 +209,22 @@ class SearchRun(models.Model):
     # imageUrls, images: [{index, path, contentType, bytes}]}).
     mode = models.CharField(max_length=8, choices=SearchMode.choices, default=SearchMode.SEARCH)
     like_source = models.JSONField(null=True, blank=True)
+    # Refine runs: the votes and history snapshotted at creation
+    # ({liked, disliked, taste, seen, pinned, images}), and what the agent
+    # learned from them ({likes: [...], avoids: [...]}).
+    feedback = models.JSONField(null=True, blank=True)
+    preferences = models.JSONField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f'run {self.id} ({self.status})'
+
+
+# CatalogQuery.strategy of the round-0 query that holds a refine run's pinned
+# candidates (liked items carried over). Pins never count toward the target.
+PINNED_STRATEGY = 'pinned'
 
 
 class CatalogQuery(models.Model):
@@ -280,6 +291,32 @@ class Candidate(models.Model):
             models.UniqueConstraint(
                 fields=['run', 'product_gid'], name='unique_run_product'
             )
+        ]
+
+
+class VoteChoice(models.TextChoices):
+    UP = 'up', 'Up'
+    DOWN = 'down', 'Down'
+
+
+class ProductVote(models.Model):
+    """A thumbs up/down on a product for an object. Survives the object (and
+    the candidate) being deleted; `product` is a snapshot of the candidate."""
+    object = models.ForeignKey(
+        SpaceObject, null=True, blank=True, on_delete=models.SET_NULL, related_name='votes'
+    )
+    product_gid = models.CharField(max_length=255)
+    vote = models.CharField(max_length=8, choices=VoteChoice.choices)
+    candidate = models.ForeignKey(
+        Candidate, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+    )
+    product = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['object', 'product_gid'], name='unique_object_product_vote')
         ]
 
 

@@ -18,6 +18,7 @@ prompt). Markers avoid the fake ucp's keywords (crash, garbage, empty...):
   fake=exit1        prints nothing useful and exits 1
   fake=error_json   prints a result with is_error: true (exit 0)
   fake=notjson      prints text that is not JSON (exit 0)
+  fake=prefs        like the agent, plus `preferences` in the structured output
 
 Two invocation styles, like the real CLI:
   text      `-p <prompt> --output-format json`: prints the result object only
@@ -210,7 +211,11 @@ def main(argv):
             outcome = 'target_reached'
             break
     dump(info)
-    emit(result_doc(turns + 1, accepted, outcome), stream)
+    doc = result_doc(turns + 1, accepted, outcome)
+    if 'fake=prefs' in prompt:
+        doc['structured_output']['preferences'] = {
+            'likes': ['warm walnut wood', 'tapered\nlegs'], 'avoids': ['glossy white']}
+    emit(doc, stream)
     return 0
 
 

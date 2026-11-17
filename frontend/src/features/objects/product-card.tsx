@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
-import { RiCheckLine, RiExternalLinkLine, RiStarFill } from "@remixicon/react";
+import {
+  RiCheckLine,
+  RiExternalLinkLine,
+  RiStarFill,
+  RiThumbDownFill,
+  RiThumbDownLine,
+  RiThumbUpFill,
+  RiThumbUpLine,
+} from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { IconLinkButton } from "@/components/base/buttons/icon-button";
-import type { Product, ProductRating } from "@/mocks/types";
+import type { Product, ProductRating, ProductVote } from "@/mocks/types";
 import { formatDims, formatPrice } from "@/lib/format";
 import { useAppState } from "@/state/app-store";
 import { getStore } from "@/state/selectors";
@@ -20,6 +28,10 @@ export interface ProductCardProps {
   footer?: ReactNode;
   /** The price is within the fuzzy margin past an approximate budget end. */
   priceNote?: "over" | "under";
+  /** The user's thumbs vote on this product. */
+  vote?: ProductVote;
+  /** Shows the thumbs up/down buttons on `candidate` and `selected` cards; `null` clears the vote. */
+  onVote?: (vote: ProductVote | null) => void;
   className?: string;
 }
 
@@ -55,21 +67,66 @@ export function ProductRatingText({ rating, className }: { rating: ProductRating
   );
 }
 
+function VoteButtons({
+  title,
+  vote,
+  onVote,
+}: {
+  title: string;
+  vote?: ProductVote;
+  onVote: (vote: ProductVote | null) => void;
+}) {
+  const base = cx(
+    "inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg",
+    "transition-colors duration-150 hover:bg-background-secondary-hover",
+    "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+  );
+  const UpIcon = vote === "up" ? RiThumbUpFill : RiThumbUpLine;
+  const DownIcon = vote === "down" ? RiThumbDownFill : RiThumbDownLine;
+  return (
+    <span className="relative z-10 flex shrink-0 items-center">
+      <button
+        type="button"
+        aria-pressed={vote === "up"}
+        aria-label={`Like ${title}`}
+        onClick={() => onVote(vote === "up" ? null : "up")}
+        className={cx(base, vote === "up" ? "text-notification-success-foreground" : "text-foreground-icon-tertiary hover:text-notification-success-foreground")}
+      >
+        <UpIcon aria-hidden className="size-4" />
+      </button>
+      <button
+        type="button"
+        aria-pressed={vote === "down"}
+        aria-label={`Dislike ${title}`}
+        onClick={() => onVote(vote === "down" ? null : "down")}
+        className={cx(base, vote === "down" ? "text-text-error-primary" : "text-foreground-icon-tertiary hover:text-text-error-primary")}
+      >
+        <DownIcon aria-hidden className="size-4" />
+      </button>
+    </span>
+  );
+}
+
 function ProductDetails({
   product,
   variant,
   priceNote,
+  vote,
+  onVote,
 }: {
   product: Product;
   variant: ProductCardVariant;
   priceNote?: "over" | "under";
+  vote?: ProductVote;
+  onVote?: (vote: ProductVote | null) => void;
 }) {
+  const dim = vote === "down" ? "opacity-50" : undefined;
   const store = getStore(useAppState(), product.storeId);
-  // Candidate cards are buttons, so a link can't sit inside them; the selected card carries it.
+  // Candidate cards are covered by a select button, so the link lives on the selected card.
   const link = variant !== "candidate" && product.url ? product.url : undefined;
   return (
     <>
-      <span className="relative block">
+      <span className={cx("relative block", dim)}>
         <ProductTile type={product.type} imageUrl={product.imageUrl} size="md" />
         {link ? (
           <IconLinkButton
@@ -88,7 +145,7 @@ function ProductDetails({
             aria-hidden
             className={cx(
               "absolute end-2 top-2 rounded-full bg-background-primary-default px-2 py-0.5 text-caption-1-semibold text-text-primary shadow-xs",
-              "opacity-0 transition-opacity duration-150 group-hover/product:opacity-100 group-focus-visible/product:opacity-100",
+              "opacity-0 transition-opacity duration-150 group-hover/product:opacity-100 group-has-[:focus-visible]/product:opacity-100",
             )}
           >
             Select
@@ -102,19 +159,23 @@ function ProductDetails({
         ) : null}
       </span>
       <span className="flex min-w-0 flex-col gap-1 text-start">
-        <span className="truncate text-body-medium text-text-primary">{product.title}</span>
+        <span className={cx("truncate text-body-medium text-text-primary", dim)}>{product.title}</span>
         <span className="flex min-h-5 items-center justify-between gap-2">
-          <span className="min-w-0 flex-1 truncate text-body-2-regular text-text-secondary">{store?.name}</span>
+          <span className={cx("min-w-0 flex-1 truncate text-body-2-regular text-text-secondary", dim)}>{store?.name}</span>
           {product.rating ? (
-            <ProductRatingText rating={product.rating} className="shrink-0 text-caption-1-medium text-text-secondary" />
+            <ProductRatingText
+              rating={product.rating}
+              className={cx("shrink-0 text-caption-1-medium text-text-secondary", dim)}
+            />
           ) : null}
+          {onVote && variant !== "cart" ? <VoteButtons title={product.title} vote={vote} onVote={onVote} /> : null}
         </span>
         {priceNote ? (
-          <Chip color="yellow" variant="caption" className="self-start">
+          <Chip color="yellow" variant="caption" className={cx("self-start", dim)}>
             {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
           </Chip>
         ) : null}
-        <span className="flex items-center justify-between gap-2">
+        <span className={cx("flex items-center justify-between gap-2", dim)}>
           <bdi className="shrink-0 text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
           <ProductSize product={product} className="min-w-0 text-end" />
         </span>
@@ -123,23 +184,34 @@ function ProductDetails({
   );
 }
 
-export function ProductCard({ product, variant, onSelect, footer, priceNote, className }: ProductCardProps) {
+export function ProductCard({
+  product,
+  variant,
+  onSelect,
+  footer,
+  priceNote,
+  vote,
+  onVote,
+  className,
+}: ProductCardProps) {
   if (variant === "candidate") {
     return (
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-label={`Select ${product.title}`}
+      <div
         className={cx(
-          "group/product flex w-full cursor-pointer flex-col gap-3 text-start outline-none",
+          "group/product relative flex w-full flex-col gap-3",
           SURFACE,
           "transition-colors duration-150 hover:border-border-button-hover hover:bg-background-secondary-hover",
-          "focus-visible:ring-2 focus-visible:ring-border-focus-ring",
           className,
         )}
       >
-        <ProductDetails product={product} variant={variant} priceNote={priceNote} />
-      </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={`Select ${product.title}`}
+          className="absolute inset-0 z-10 cursor-pointer rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+        />
+        <ProductDetails product={product} variant={variant} priceNote={priceNote} vote={vote} onVote={onVote} />
+      </div>
     );
   }
 
@@ -152,7 +224,7 @@ export function ProductCard({ product, variant, onSelect, footer, priceNote, cla
         className,
       )}
     >
-      <ProductDetails product={product} variant={variant} priceNote={priceNote} />
+      <ProductDetails product={product} variant={variant} priceNote={priceNote} vote={vote} onVote={onVote} />
       {variant === "cart" && footer ? <div>{footer}</div> : null}
     </div>
   );

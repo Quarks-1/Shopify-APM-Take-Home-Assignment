@@ -1,4 +1,4 @@
-import { RiCheckLine, RiSearchLine, RiSparkling2Line, RiShoppingCart2Line } from "@remixicon/react";
+import { RiCheckLine, RiRefreshLine, RiSearchLine, RiSparkling2Line, RiShoppingCart2Line } from "@remixicon/react";
 import { useNavigate } from "react-router";
 import { priceBand } from "@/lib/price-scale";
 import { Chip } from "@/components/base/badges/chip";
@@ -94,6 +94,23 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
     (a, b) => Number(b.id === object.selectedProductId) - Number(a.id === object.selectedProductId),
   );
 
+  const hasSearched = object.search.status === "done" || object.search.status === "empty" || candidates.length > 0;
+  const voteValues = Object.values(object.votes ?? {});
+  const likedCount = voteValues.filter((v) => v === "up").length;
+  const dislikedCount = voteValues.length - likedCount;
+  const refineHint = voteValues.length > 0 ? `Using ${likedCount} liked, ${dislikedCount} disliked` : "Re-run using your thumbs votes";
+  const learned = search.preferences(objectId);
+  const learnedText = learned
+    ? [
+        learned.likes.length > 0 ? `likes ${learned.likes.join(", ")}` : null,
+        learned.avoids.length > 0 ? `avoids ${learned.avoids.join(", ")}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  const voteOf = (product: { productGid?: string }) => (product.productGid ? object.votes?.[product.productGid] : undefined);
+
   const likeCandidateId = candidateIdOf(object.selectedProductId);
 
   const buy = () => {
@@ -137,6 +154,11 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
           </Chip>
         ) : null}
       </div>
+      {learnedText && !running ? (
+        <p className="min-w-0 max-w-full basis-full truncate text-caption-1-medium text-text-tertiary" title={learnedText}>
+          Learned: {learnedText}
+        </p>
+      ) : null}
     </div>
   );
 
@@ -167,6 +189,16 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
           {running ? (
             <Button variant="secondary" size="small" onClick={() => search.cancel(objectId)}>
               Cancel
+            </Button>
+          ) : hasSearched ? (
+            <Button
+              variant="primary"
+              size="small"
+              leadingIcon={RiRefreshLine}
+              title={refineHint}
+              onClick={() => search.refine(objectId)}
+            >
+              Refresh
             </Button>
           ) : (
             <Button variant="secondary" size="small" leadingIcon={RiSearchLine} onClick={() => search.search(objectId)}>
@@ -265,12 +297,20 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
         {candidates.map((product) => (
           <CarouselItem key={product.id} className={CARD_WIDTH}>
             {product.id === object.selectedProductId ? (
-              <ProductCard product={product} variant="selected" priceNote={priceNoteFor(product.price)} />
+              <ProductCard
+                product={product}
+                variant="selected"
+                priceNote={priceNoteFor(product.price)}
+                vote={voteOf(product)}
+                onVote={(v) => actions.voteProduct(objectId, product.id, v)}
+              />
             ) : (
               <ProductCard
                 product={product}
                 variant="candidate"
                 priceNote={priceNoteFor(product.price)}
+                vote={voteOf(product)}
+                onVote={(v) => actions.voteProduct(objectId, product.id, v)}
                 onSelect={() => actions.selectProduct(objectId, product.id)}
               />
             )}

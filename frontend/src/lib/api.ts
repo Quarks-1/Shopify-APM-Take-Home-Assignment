@@ -5,6 +5,7 @@ import type {
   ObjectDims,
   ObjectType,
   OwnedInfo,
+  ProductVote,
   SearchStep,
   Space,
   SpaceObject,
@@ -218,9 +219,11 @@ export interface ApiSearchRun {
   objectId: string;
   status: ApiRunStatus;
   /** Absent on responses from before like runs existed. */
-  mode?: "search" | "like";
+  mode?: "search" | "like" | "refine";
   likeCandidateId?: number;
   likeTitle?: string;
+  /** On finished refine runs: what the agent learned from the votes. */
+  preferences?: { likes: string[]; avoids: string[] };
   step: SearchStep | null;
   round: number;
   maxRounds: number;
@@ -469,7 +472,10 @@ interface RunReadOptions {
 const includeQuery = (includeAll?: boolean) => (includeAll ? "?include=all" : "");
 
 /** Starts a run (HTTP 202), or returns the object's active one (200). Imported objects are refused (400). */
-export const startSearch = (objectId: string, opts?: { mode: "like"; candidateId: number }) =>
+export const startSearch = (
+  objectId: string,
+  opts?: { mode: "like"; candidateId: number } | { mode: "refine" },
+) =>
   request<ApiSearchRun>("POST", `/api/objects/${seg(objectId)}/searches/`, opts ? { body: opts } : undefined);
 
 export const getSearch = (runId: string, { includeAll, signal }: RunReadOptions = {}) =>
@@ -484,6 +490,12 @@ export const cancelSearch = (runId: string) => request<ApiSearchRun>("POST", `/a
 /** Selects an accepted candidate of the object; `null` clears the selection. */
 export const selectCandidate = (objectId: string, candidateId: number | null) =>
   request<ApiObject>("POST", `/api/objects/${seg(objectId)}/select/`, { body: { candidateId } });
+
+/** Sets (or with `null` clears) the thumbs vote on a candidate; returns the object's whole vote map. */
+export const voteCandidate = (objectId: string, candidateId: number, vote: ProductVote | null) =>
+  request<{ objectId: string; votes: Record<string, ProductVote> }>("PUT", `/api/objects/${seg(objectId)}/votes/`, {
+    body: { candidateId, vote },
+  });
 
 // ---------------------------------------------------------------------------
 // Cart

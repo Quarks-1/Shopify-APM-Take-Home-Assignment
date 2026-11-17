@@ -5,7 +5,7 @@ function minutesAgo(now: number, minutes: number): string {
   return new Date(now - minutes * 60_000).toISOString();
 }
 
-type ObjectInit = Omit<SpaceObject, "similarItems" | "source" | "candidateIds" | "search" | "createdAt"> &
+type ObjectInit = Omit<SpaceObject, "similarItems" | "source" | "candidateIds" | "search" | "createdAt" | "votes"> &
   Partial<Pick<SpaceObject, "similarItems">>;
 
 /** Demo objects start unsearched: real results come from the backend's searcher. */
@@ -15,6 +15,7 @@ function makeObject(init: ObjectInit, createdAt: string): SpaceObject {
     source: "search",
     candidateIds: [],
     search: { status: "idle" },
+    votes: {},
     createdAt,
     ...init,
   };
@@ -178,6 +179,7 @@ export function createImportedObjects(now: string): SpaceObject[] {
     },
     candidateIds: [],
     search: { status: "idle" as const },
+    votes: {},
     createdAt: now,
   }));
 }

@@ -34,28 +34,30 @@ def _fresh(run):
     return run
 
 
-def _like_candidate(request, obj):
-    """The accepted candidate a `{"mode": "like", "candidateId": n}` body names,
-    or None for a plain search (no body, `{}` or `{"mode": "search"}`)."""
+def _search_request(request, obj):
+    """(mode, like candidate) of a start request: ('like', candidate) for
+    `{"mode": "like", "candidateId": n}`, ('refine', None) for exactly
+    `{"mode": "refine"}`, else ('search', None) for a plain search (no body,
+    `{}` or `{"mode": "search"}`)."""
     if not request.body.strip() or 'json' not in (request.content_type or ''):
-        return None  # the plain "search" call has no (JSON) body
+        return 'search', None  # the plain "search" call has no (JSON) body
     data, err = _body(request)
     if err:
         raise ValidationFailed({'$': 'invalid JSON'})
     if data is None:
-        return None
+        return 'search', None
     if not isinstance(data, dict):
         raise ValidationFailed({'$': 'must be an object'})
     errors = {k: 'unknown key' for k in data if k not in ('mode', 'candidateId')}
     mode = data.get('mode', 'search')
-    if mode not in ('search', 'like'):
-        errors['mode'] = 'must be "search" or "like"'
+    if mode not in ('search', 'like', 'refine'):
+        errors['mode'] = 'must be "search", "like" or "refine"'
     if errors:
         raise ValidationFailed(errors)
-    if mode == 'search':
+    if mode in ('search', 'refine'):
         if 'candidateId' in data:
             raise ValidationFailed({'candidateId': 'only allowed with mode "like"'})
-        return None
+        return mode, None
     cid = data.get('candidateId')
     if not _is_number(cid) or int(cid) != cid:
         raise ValidationFailed({'candidateId': 'is required and must be an integer'})
@@ -64,7 +66,7 @@ def _like_candidate(request, obj):
         raise ValidationFailed({'candidateId': 'not a candidate of this object'})
     if cand.verdict != Verdict.ACCEPTED:
         raise ValidationFailed({'candidateId': 'candidate was not accepted'})
-    return cand
+    return 'like', cand
 
 
 @_json_view
@@ -73,12 +75,16 @@ def object_searches(request, object_id):
     obj = _get_object(object_id)
     if obj is None:
         return _not_found()
-    like_candidate = _like_candidate(request, obj)
+    mode, like_candidate = _search_request(request, obj)
     try:
-        if like_candidate is None:
-            run, created = runner.start_search(obj)
-        else:
+        if mode == 'like':
             run, created = runner.start_like_search(obj, like_candidate)
+        elif mode == 'refine':
+            run, created = runner.start_refine_search(obj)
+        else:
+            run, created = runner.start_search(obj)
+    except runner.NoFinishedSearch as exc:
+        return _error(400, 'no_finished_search', {'mode': str(exc)})
     except runner.SearchRefused as exc:
         return _error(400, 'imported_object', {'source': str(exc)})
     return JsonResponse(run_to_json(run), status=202 if created else 200)

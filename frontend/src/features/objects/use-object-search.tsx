@@ -10,11 +10,15 @@ export interface ObjectSearchApi {
   search(objectId: string): void;
   /** Finds products visually similar to the candidate (a "like" run); keeps the user's selection. */
   searchLike(objectId: string, candidateId: number): void;
+  /** Re-runs the search using the thumbs votes; keeps the user's selection. */
+  refine(objectId: string): void;
   searchAll(objectIds: string[]): void;
   cancel(objectId: string): void;
   isRunning(objectId: string): boolean;
   /** Title of the product a running "like" search is matching, once the backend has reported it. */
   likeTitle(objectId: string): string | undefined;
+  /** What the agent learned from the votes in the last finished refine run (this session only). */
+  preferences(objectId: string): { likes: string[]; avoids: string[] } | undefined;
 }
 
 const ObjectSearchContext = createContext<ObjectSearchApi | null>(null);
@@ -57,6 +61,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
   const { getState, enqueue, onReset } = useStoreInternals();
 
   const trackers = useRef(new Map<string, Tracker>());
+  const learned = useRef(new Map<string, { likes: string[]; avoids: string[] }>());
   // Bumped whenever a run starts or ends so isRunning consumers re-render.
   const [version, setVersion] = useState(0);
 
@@ -87,6 +92,11 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
 
     const finish = (tracker: Tracker, run: ApiSearchRun) => {
       const { objectId } = tracker;
+      if (run.status === "done" || run.status === "empty") {
+        const prefs = run.mode === "refine" ? run.preferences : undefined;
+        if (prefs && (prefs.likes.length > 0 || prefs.avoids.length > 0)) learned.current.set(objectId, prefs);
+        else learned.current.delete(objectId);
+      }
       stop(objectId);
       const obj = findObject(objectId);
       if (!obj) return;
@@ -95,7 +105,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
         case "empty":
           // Results of a normal search clear the pick (the user chooses a card); a "like" run keeps it.
           actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt, {
-            keepSelection: run.mode === "like",
+            keepSelection: run.mode === "like" || run.mode === "refine",
           });
           if (run.mode === "like" && run.status === "empty") {
             toast("No similar items found", { description: "Your current matches are unchanged." });
@@ -196,7 +206,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       return tracker;
     };
 
-    const startRun = (objectId: string, opts?: { mode: "like"; candidateId: number }) => {
+    const startRun = (objectId: string, opts?: { mode: "like"; candidateId: number } | { mode: "refine" }) => {
       const obj = findObject(objectId);
       // A second press while running is a no-op; the backend would hand back the same run anyway.
       if (!obj || obj.source !== "search" || trackers.current.has(objectId)) return;
@@ -222,6 +232,8 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
 
     const search = (objectId: string) => startRun(objectId);
     const searchLike = (objectId: string, candidateId: number) => startRun(objectId, { mode: "like", candidateId });
+
+    const refine = (objectId: string) => startRun(objectId, { mode: "refine" });
 
     const resume = (objectId: string) => {
       if (trackers.current.has(objectId)) return;
@@ -250,7 +262,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       settleIdle(objectId);
     };
 
-    return { search, searchLike, resume, cancel, stop, stopAll };
+    return { search, searchLike, refine, resume, cancel, stop, stopAll };
   }, [actions, enqueue, getState]);
 
   // Follow runs that are going without us (after a reload, from another tab), and drop deleted objects.
@@ -272,10 +284,12 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
     () => ({
       search: engine.search,
       searchLike: engine.searchLike,
+      refine: engine.refine,
       // The backend queues runs (two at a time), so they can all start at once.
       searchAll: (objectIds) => objectIds.forEach(engine.search),
       cancel: engine.cancel,
       isRunning: (objectId) => trackers.current.has(objectId),
+      preferences: (objectId) => learned.current.get(objectId),
       likeTitle: (objectId) => trackers.current.get(objectId)?.likeTitle,
     }),
     // `version` makes isRunning consumers re-render when a run starts or ends.

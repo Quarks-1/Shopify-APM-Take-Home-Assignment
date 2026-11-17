@@ -157,6 +157,13 @@ def workspace_overview(_request):
                     'status': 'operational',
                 },
                 {
+                    'id': 'object-votes',
+                    'method': 'GET, PUT',
+                    'path': '/api/objects/<id>/votes/',
+                    'description': 'Read, set or clear (vote null) thumbs up/down on a candidate product',
+                    'status': 'operational',
+                },
+                {
                     'id': 'object-select',
                     'method': 'POST',
                     'path': '/api/objects/<id>/select/',
