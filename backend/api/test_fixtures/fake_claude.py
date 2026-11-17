@@ -20,6 +20,16 @@ prompt). Markers avoid the fake ucp's keywords (crash, garbage, empty...):
   fake=notjson      prints text that is not JSON (exit 0)
   fake=prefs        like the agent, plus `preferences` in the structured output
 
+Categorize mode (the Pinterest vibes sorter) is picked by `--tools ''` (all
+tools disabled): it needs stream-json in and out and no --allowedTools. It
+reads the pins list in the first text block of the stdin message and answers
+with `structured_output.pins`, one entry per pin, taken from markers in the
+pin's title: `cat=furniture,lighting item=sofa` (default: decor / vase). The
+`fake=` markers above (slow, exit1, error_json, notjson) work when they appear
+anywhere in the message; `fake=flaky` fails the first attempt of each batch
+(marker file `flaky-<VIBES_BATCH_ID>` in the cwd) and then behaves.
+The dump file is named after VIBES_BATCH_ID when SEARCH_RUN_ID is absent.
+
 Two invocation styles, like the real CLI:
   text      `-p <prompt> --output-format json`: prints the result object only
   stream    `-p --input-format stream-json --output-format stream-json --verbose`:
@@ -29,6 +39,7 @@ Two invocation styles, like the real CLI:
 """
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -58,9 +69,14 @@ def variadic(argv, flag):
     return out
 
 
+def is_categorize(argv):
+    return variadic(argv, '--tools') == ['']
+
+
 def check_flags(argv):
     problems = []
     stream = '--input-format' in argv
+    categorize = is_categorize(argv)
     if not argv or argv[0] != '-p':
         problems.append('-p must come first')
     elif stream:
@@ -72,10 +88,16 @@ def check_flags(argv):
             problems.append('no positional prompt in stream-json input mode')
     elif len(argv) < 2 or argv[1].startswith('-'):
         problems.append('-p must be followed by the prompt')
-    if variadic(argv, '--allowedTools') != ALLOWED:
-        problems.append(f'--allowedTools must be exactly {ALLOWED}')
-    if variadic(argv, '--tools') != ['Bash']:
-        problems.append('--tools must be exactly Bash')
+    if categorize:
+        if not stream:
+            problems.append('categorize mode needs stream-json input')
+        if '--allowedTools' in argv:
+            problems.append('categorize mode must not pass --allowedTools')
+    else:
+        if variadic(argv, '--allowedTools') != ALLOWED:
+            problems.append(f'--allowedTools must be exactly {ALLOWED}')
+        if variadic(argv, '--tools') != ['Bash']:
+            problems.append('--tools must be exactly Bash')
     expect = {
         '--setting-sources': 'project,local', '--permission-mode': 'dontAsk',
         '--output-format': 'stream-json' if stream else 'json',
@@ -98,7 +120,8 @@ def check_flags(argv):
 
 
 def dump(info):
-    path = os.path.join(os.getcwd(), f'fake-claude-{os.environ.get("SEARCH_RUN_ID", "none")}.json')
+    ident = os.environ.get('SEARCH_RUN_ID') or os.environ.get('VIBES_BATCH_ID') or 'none'
+    path = os.path.join(os.getcwd(), f'fake-claude-{ident}.json')
     with open(path, 'w', encoding='utf-8') as fh:
         json.dump(info, fh, indent=1)
 
@@ -114,6 +137,61 @@ def mode_of(prompt):
         if f'fake={mode}' in prompt:
             return mode
     return 'agent'
+
+
+def categorize_labels(text):
+    """One structured pin entry per pin in the message's untrusted JSON list."""
+    start = text.index('[')
+    pins, _end = json.JSONDecoder().raw_decode(text[start:])
+    out = []
+    for pin in pins:
+        title = pin.get('title') or ''
+        cats, item = ['decor'], 'vase'
+        m = re.search(r'cat=([a-z,-]*)', title)
+        if m:
+            cats = [c for c in m.group(1).split(',') if c]
+        m = re.search(r'item=([a-z -]*?)(?:$| cat=| fake=)', title)
+        if m:
+            item = m.group(1).strip()
+        out.append({'index': pin['index'], 'categories': cats, 'item': item,
+                    'style': ['modern'], 'colors': ['white'], 'materials': ['wood'],
+                    'description': f'a {item}' if cats else ''})
+    return out
+
+
+def run_categorize(argv, info, text, stream):
+    mode = 'categorize'
+    for m in ('slow', 'exit1', 'error_json', 'notjson', 'flaky'):
+        if f'fake={m}' in text:
+            mode = m
+            break
+    info['mode'] = mode
+    dump(info)
+    if mode == 'slow':
+        child = subprocess.Popen(['sleep', '120'])
+        info['children'].append(child.pid)
+        dump(info)
+        time.sleep(120)
+        return 0
+    if mode == 'exit1':
+        print('fake claude crashed', file=sys.stderr)
+        return 1
+    if mode == 'notjson':
+        print('this is not json')
+        return 0
+    if mode == 'error_json':
+        emit(result_doc(2, 0, 'gave_up', is_error=True, subtype='error_during_execution'), stream)
+        return 0
+    if mode == 'flaky':
+        marker = os.path.join(os.getcwd(), f'flaky-{os.environ.get("VIBES_BATCH_ID", "none")}')
+        if not os.path.exists(marker):
+            open(marker, 'w').close()
+            print('fake claude flaked', file=sys.stderr)
+            return 1
+    doc = result_doc(1, 0, 'done')
+    doc['structured_output'] = {'pins': categorize_labels(text)}
+    emit(doc, stream)
+    return 0
 
 
 def result_doc(turns, accepted, outcome, is_error=False, subtype='success'):
@@ -167,6 +245,13 @@ def main(argv):
             info['stdin_text'] = prompt
         except (ValueError, KeyError, TypeError) as exc:
             problems.append(f'stdin is not a stream-json user message: {exc}')
+    if is_categorize(argv):
+        info['mode'] = 'categorize'
+        dump(info)
+        if problems:
+            print('fake claude: bad flags: ' + '; '.join(problems), file=sys.stderr)
+            return 3
+        return run_categorize(argv, info, prompt, stream)
     mode = mode_of(prompt)
     info['mode'] = mode
     dump(info)

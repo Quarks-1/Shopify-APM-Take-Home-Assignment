@@ -213,3 +213,32 @@ export const SEARCH_STEP_LABELS: Record<SearchStep, string> = {
   "querying-catalog": "Querying Shopify Global Catalog",
   ranking: "Ranking matches",
 };
+
+/** Steps of a "vibes" (Pinterest board) import, in order. */
+export type VibeImportStep = "reading-board" | "downloading" | "sorting" | "saving";
+
+export const VIBE_IMPORT_STEPS: readonly VibeImportStep[] = ["reading-board", "downloading", "sorting", "saving"];
+
+/** The slice of an import that its label depends on (structurally satisfied by ApiVibeImport). */
+export interface VibeImportLabelInput {
+  status: "queued" | "running" | "done" | "failed";
+  step: VibeImportStep | null;
+  pins: { new: number };
+  batches: { total: number; done: number };
+}
+
+/** Headline for a running import; `undefined` means the client-side "starting" state. */
+export function vibeImportLabel(imp: VibeImportLabelInput | undefined, step?: VibeImportStep): string {
+  if (!imp) return "Starting your import";
+  if (imp.status === "queued") return "Waiting for another import to finish";
+  switch (step ?? imp.step ?? "reading-board") {
+    case "reading-board":
+      return "Reading your board";
+    case "downloading":
+      return `Downloading ${imp.pins.new} pins`;
+    case "sorting":
+      return `Sorting your vibes (batch ${Math.min(imp.batches.done + 1, imp.batches.total)} of ${imp.batches.total})`;
+    case "saving":
+      return "Saving to your space";
+  }
+}

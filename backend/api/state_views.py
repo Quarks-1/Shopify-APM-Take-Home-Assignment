@@ -1,4 +1,5 @@
 import json
+import shutil
 
 from collections import defaultdict
 
@@ -22,6 +23,8 @@ from .models import (
     default_search,
 )
 from .searcher.runner import cancel_run
+from .vibes import importer
+from .vibes import paths as vibe_paths
 from .serializers import (
     ValidationFailed,
     sort_accepted_brand_diverse,
@@ -164,7 +167,10 @@ def space_detail(request, space_id):
     if request.method == 'GET':
         return JsonResponse(space_to_json(space))
     if request.method == 'DELETE':
+        importer.cancel_for_space(space_id)
         space.delete()
+        transaction.on_commit(
+            lambda: shutil.rmtree(vibe_paths.space_dir(space_id), ignore_errors=True))
         return HttpResponse(status=204)
     data, err = _body(request)
     if err:

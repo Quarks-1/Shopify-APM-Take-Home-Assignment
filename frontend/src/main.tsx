@@ -9,6 +9,7 @@ import { RouterProvider } from "react-router";
 import { router } from "@/app/router";
 import { DirectionProvider } from "@/components/foundations/direction/direction";
 import { ObjectSearchProvider } from "@/features/objects/use-object-search";
+import { VibeImportProvider } from "@/features/spaces/use-vibe-import";
 import { AppStoreProvider } from "@/state/app-store";
 
 createRoot(document.getElementById("root")!).render(
@@ -16,7 +17,9 @@ createRoot(document.getElementById("root")!).render(
     <DirectionProvider locale="en-US">
       <AppStoreProvider>
         <ObjectSearchProvider>
-          <RouterProvider router={router} />
+          <VibeImportProvider>
+            <RouterProvider router={router} />
+          </VibeImportProvider>
         </ObjectSearchProvider>
       </AppStoreProvider>
     </DirectionProvider>

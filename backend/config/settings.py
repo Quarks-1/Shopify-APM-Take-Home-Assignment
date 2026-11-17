@@ -104,7 +104,7 @@ DATABASES = {
             'transaction_mode': 'IMMEDIATE',
         },
         # A file (not in-memory) so subprocesses spawned by tests can open it.
-        'TEST': {'NAME': BASE_DIR / 'test_db.sqlite3'},
+        'TEST': {'NAME': os.environ.get('DJANGO_TEST_DB_PATH') or BASE_DIR / 'test_db.sqlite3'},
     }
 }
 
@@ -182,6 +182,24 @@ SEARCHER_AGENT_CWD = Path(
     os.environ.get('SEARCHER_AGENT_CWD')
     or Path(tempfile.gettempdir()) / 'shopify-searcher' / 'agent-cwd'
 )
+
+# Vibe imports (api.vibes): a public Pinterest board becomes a space's inspiration.
+VIBES_DIR = os.environ.get('VIBES_DIR') or None  # None -> SEARCHER_VAR_DIR/'vibes'
+VIBES_MAX_PINS = int(os.environ.get('VIBES_MAX_PINS', '150'))
+VIBES_BATCH_SIZE = int(os.environ.get('VIBES_BATCH_SIZE', '15'))
+VIBES_BATCH_CONCURRENCY = int(os.environ.get('VIBES_BATCH_CONCURRENCY', '3'))
+VIBES_MAX_CONCURRENT = int(os.environ.get('VIBES_MAX_CONCURRENT', '1'))
+VIBES_MODEL = os.environ.get('VIBES_MODEL') or SEARCHER_MODEL
+VIBES_MAX_TURNS = int(os.environ.get('VIBES_MAX_TURNS', '2'))
+VIBES_BATCH_TIMEOUT = float(os.environ.get('VIBES_BATCH_TIMEOUT', '180'))  # s per batch
+VIBES_IMAGE_HOSTS = [
+    h.strip().lower()
+    for h in os.environ.get('VIBES_IMAGE_HOSTS', 'i.pinimg.com').split(',')
+    if h.strip()
+]
+VIBES_IMAGE_MAX_BYTES = int(os.environ.get('VIBES_IMAGE_MAX_BYTES', str(8 * 1024 * 1024)))
+VIBES_MAX_PHOTOS = int(os.environ.get('VIBES_MAX_PHOTOS', '3'))
+VIBES_SNAPSHOT_PINS = int(os.environ.get('VIBES_SNAPSHOT_PINS', '12'))
 
 # Merchant carts (api.cart): one UCP cart per store, checkout on the
 # merchant's own page. An empty UCP_PROFILE uses the managed profile.

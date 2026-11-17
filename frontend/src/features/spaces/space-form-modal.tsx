@@ -1,10 +1,13 @@
 import { useRef, useState } from "react";
+import { RiPinterestLine } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/base/modal/modal";
 import { NumberField } from "@/components/base/number-field/number-field";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
 import { fromDisplayLength, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
+import { parseBoardUrl } from "@/features/spaces/board-url";
+import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import type { LengthUnit, Space, SpaceType } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
@@ -27,10 +30,12 @@ interface FormValues {
   y?: number;
   z?: number;
   weightLimit?: number;
+  /** Pinterest board link to import as the space's vibes; empty for none. */
+  boardUrl: string;
 }
 
 function initialValues(space: Space | undefined): FormValues {
-  if (!space) return { name: "Untitled space", type: "floor", unit: "in", x: 120, y: 96 };
+  if (!space) return { name: "Untitled space", type: "floor", unit: "in", x: 120, y: 96, boardUrl: "" };
   return {
     name: space.name,
     type: space.type,
@@ -39,6 +44,7 @@ function initialValues(space: Space | undefined): FormValues {
     y: toDisplayLength(space.dims.y, space.unit),
     z: space.dims.z === undefined ? undefined : toDisplayLength(space.dims.z, space.unit),
     weightLimit: space.weightLimit,
+    boardUrl: "",
   };
 }
 
@@ -72,6 +78,7 @@ function SpaceForm({
 }: SpaceFormModalProps & { close: () => void; savedRef: { current: boolean } }) {
   const state = useAppState();
   const actions = useAppActions();
+  const vibes = useVibeImport();
   const existing = spaceId ? getSpace(state, spaceId) : undefined;
   const isEdit = existing !== undefined;
 
@@ -85,7 +92,10 @@ function SpaceForm({
   const nameError = values.name.trim() === "" ? "Enter a name." : null;
   const xError = (finite(values.x) ?? 0) > 0 ? null : "Must be greater than 0.";
   const yError = (finite(values.y) ?? 0) > 0 ? null : "Must be greater than 0.";
-  const valid = !nameError && !xError && !yError;
+  const boardResult = parseBoardUrl(values.boardUrl);
+  const boardUrlError = "error" in boardResult ? boardResult.error : null;
+  const activeImport = existing !== undefined && vibes.isActive(existing.id);
+  const valid = !nameError && !xError && !yError && !boardUrlError;
 
   const changeUnit = (unit: LengthUnit) => {
     if (unit === values.unit) return;
@@ -118,6 +128,7 @@ function SpaceForm({
     } else {
       id = actions.createSpace(base);
     }
+    if (!activeImport && "url" in boardResult && boardResult.url !== "") vibes.start(id, boardResult.url);
     savedRef.current = true;
     close();
     onSaved?.(id);
@@ -214,6 +225,24 @@ function SpaceForm({
             hint="lb"
           />
         </div>
+        <Input
+          label="Import my vibes ✨"
+          type="url"
+          leadingIcon={RiPinterestLine}
+          placeholder="pin.it/… or pinterest.com/you/board"
+          value={values.boardUrl}
+          onChange={(boardUrl) => patch({ boardUrl })}
+          isInvalid={boardUrlError !== null}
+          errorMessage={boardUrlError ?? undefined}
+          isDisabled={activeImport}
+          hint={
+            activeImport
+              ? "A board is still importing…"
+              : isEdit
+                ? "Adds this board's pins to your space's vibes."
+                : "Paste a public Pinterest board link."
+          }
+        />
       </ModalBody>
       <ModalFooter>
         <Button type="button" variant="secondary" onClick={close}>

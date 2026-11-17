@@ -11,6 +11,7 @@ import type {
   SpaceObject,
   SpaceType,
   Style,
+  VibeImportStep,
 } from "@/mocks/types";
 
 // ---------------------------------------------------------------------------
@@ -486,6 +487,52 @@ export const getLatestSearch = (objectId: string, { includeAll, signal }: RunRea
   request<ApiSearchRun>("GET", `/api/objects/${seg(objectId)}/searches/latest/${includeQuery(includeAll)}`, { signal });
 
 export const cancelSearch = (runId: string) => request<ApiSearchRun>("POST", `/api/searches/${seg(runId)}/cancel/`);
+
+// ---------------------------------------------------------------------------
+// Vibe imports (Pinterest board → space inspiration)
+// ---------------------------------------------------------------------------
+
+export type ApiVibeImportStatus = "queued" | "running" | "done" | "failed";
+
+export interface ApiVibeImport {
+  id: string;
+  spaceId: string;
+  boardUrl: string;
+  boardTitle: string;
+  status: ApiVibeImportStatus;
+  step: VibeImportStep | null;
+  pins: {
+    onBoard: number | null;
+    found: number;
+    new: number;
+    skipped: number;
+    downloaded: number;
+    failed: number;
+    categorized: number;
+    usable: number;
+  };
+  batches: { total: number; done: number; failed: number };
+  error: string | null;
+  errorCode: string | null;
+  dismissed: boolean;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+/** Starts (or re-joins, when the same board is already importing) an import. 409 `import_in_progress` carries `payload.import`. */
+export const startVibeImport = (spaceId: string, boardUrl: string) =>
+  request<{ import: ApiVibeImport }>("POST", `/api/spaces/${seg(spaceId)}/vibe-imports/`, { body: { boardUrl } }).then((r) => r.import);
+
+export const getVibeImport = (id: string) =>
+  request<{ import: ApiVibeImport }>("GET", `/api/vibe-imports/${seg(id)}/`).then((r) => r.import);
+
+/** The newest non-dismissed import per space. */
+export const listPendingVibeImports = () =>
+  request<{ imports: ApiVibeImport[] }>("GET", "/api/vibe-imports/?pending=1").then((r) => r.imports);
+
+export const dismissVibeImport = (id: string) =>
+  request<{ import: ApiVibeImport }>("POST", `/api/vibe-imports/${seg(id)}/dismiss/`).then((r) => r.import);
 
 /** Selects an accepted candidate of the object; `null` clears the selection. */
 export const selectCandidate = (objectId: string, candidateId: number | null) =>

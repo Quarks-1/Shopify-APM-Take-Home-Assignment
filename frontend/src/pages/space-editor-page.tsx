@@ -19,6 +19,8 @@ import { useObjectSearch } from "@/features/objects/use-object-search";
 import { PanelResizer, usePanelSplit } from "@/features/spaces/panel-resizer";
 import { SpaceDesigner } from "@/features/spaces/space-designer";
 import { SpaceFormModal } from "@/features/spaces/space-form-modal";
+import { useVibeImport } from "@/features/spaces/use-vibe-import";
+import { VibeImportStatus } from "@/features/spaces/vibe-import-status";
 import { formatDims, formatPrice } from "@/lib/format";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
@@ -85,6 +87,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   const state = useAppState();
   const { deleteSpace, addAllToCart } = useAppActions();
   const { searchAll } = useObjectSearch();
+  const vibes = useVibeImport();
   const drawer = useObjectDrawer();
   const navigate = useNavigate();
 
@@ -96,6 +99,10 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const panelSplit = usePanelSplit();
+
+  // Pick up an import that is running or just finished (e.g. started in another tab).
+  const { refresh: refreshVibes } = vibes;
+  useEffect(() => refreshVibes(), [refreshVibes]);
 
   useDocumentTitle(space ? `${space.name} · Spaces` : "Space not found · Spaces");
 
@@ -215,6 +222,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
       </div>
     </div>
 
+    <VibeImportStatus spaceId={space.id} />
     <SpaceFormModal isOpen={settingsOpen} onOpenChange={setSettingsOpen} spaceId={space.id} />
     <AlertDialog
       isOpen={deleteOpen}

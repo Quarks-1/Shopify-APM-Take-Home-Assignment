@@ -302,11 +302,17 @@ def run_to_json(run, include_all=False):
         like = {'likeCandidateId': source.get('candidateId'), 'likeTitle': source.get('title')}
     elif run.mode == 'refine' and run.preferences:
         like = {'preferences': run.preferences}
+    vibes = getattr(run, 'vibes', None)
+    vibes = vibes if isinstance(vibes, dict) else None
+    # Only present when the run used space vibes (older clients see the same shape).
+    vibes_json = ({'vibes': {'matched': vibes.get('matched', 0),
+                             'photos': len(vibes.get('photos') or [])}} if vibes else {})
     return {
         'id': str(run.id),
         'objectId': run.object_id,
         'mode': run.mode,
         **like,
+        **vibes_json,
         'status': run.status,
         'step': run.step,
         'round': run.round_count,
@@ -803,3 +809,76 @@ def validate_import(data):
 
 def now():
     return timezone.now()
+
+
+# ---------------------------------------------------------------- vibe imports
+
+def vibe_import_to_json(imp):
+    return {
+        'id': str(imp.id),
+        'spaceId': imp.space_id,
+        'boardUrl': imp.board_url,
+        'boardTitle': imp.board_title,
+        'status': imp.status,
+        'step': imp.step,
+        'pins': {
+            'onBoard': imp.pins_on_board,
+            'found': imp.pins_found,
+            'new': max(0, imp.pins_found - imp.pins_skipped),
+            'skipped': imp.pins_skipped,
+            'downloaded': imp.pins_downloaded,
+            'failed': imp.pins_failed,
+            'categorized': imp.pins_categorized,
+            'usable': imp.pins_usable,
+        },
+        'batches': {
+            'total': imp.batches_total,
+            'done': imp.batches_done,
+            'failed': imp.batches_failed,
+        },
+        'error': imp.error or None,
+        'errorCode': imp.error_code or None,
+        'dismissed': imp.dismissed,
+        'createdAt': iso(imp.created_at),
+        'startedAt': _iso_or_none(imp.started_at),
+        'finishedAt': _iso_or_none(imp.finished_at),
+    }
+
+
+def inspiration_to_json(row):
+    return {
+        'id': row.pk,
+        'pinId': row.pin_id,
+        'pinUrl': row.pin_url,
+        'imageUrl': row.image_url,
+        'categories': list(row.categories or []),
+        'item': row.item,
+        'styles': list(row.styles or []),
+        'colors': list(row.colors or []),
+        'materials': list(row.materials or []),
+        'description': row.description,
+        'vote': row.vote,
+        'source': row.source,
+        'importId': str(row.vibe_import_id) if row.vibe_import_id else None,
+        'categorized': row.categorized_at is not None,
+    }
+
+
+def validate_vibe_import(data):
+    """`{"boardUrl": "<pinterest board link>"}` -> the normalized board URL."""
+    from .vibes import pinterest
+
+    if not isinstance(data, dict):
+        raise ValidationFailed({'$': 'must be an object'})
+    errors = {}
+    _check_unknown(data, {'boardUrl'}, '', errors)
+    if 'boardUrl' not in data:
+        errors['boardUrl'] = 'is required'
+    elif not isinstance(data['boardUrl'], str):
+        errors['boardUrl'] = 'must be a string'
+    if errors:
+        raise ValidationFailed(errors)
+    try:
+        return pinterest.normalize_input_url(data['boardUrl'])
+    except pinterest.PinterestError as err:
+        raise ValidationFailed({'boardUrl': err.message}) from None

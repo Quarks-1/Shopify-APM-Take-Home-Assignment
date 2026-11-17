@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import cart_views, render_views, search_views, state_views, views, vote_views
+from . import cart_views, render_views, search_views, state_views, vibe_views, views, vote_views
 
 app_name = 'api'
 
@@ -36,6 +36,23 @@ urlpatterns = [
     ),
     path('renders/<uuid:render_id>/', render_views.render_detail, name='render-detail'),
     path('renders/<uuid:render_id>/image/', render_views.render_image, name='render-image'),
+    path(
+        'spaces/<str:space_id>/vibe-imports/',
+        vibe_views.space_vibe_imports,
+        name='space-vibe-imports',
+    ),
+    path(
+        'spaces/<str:space_id>/inspirations/',
+        vibe_views.space_inspirations,
+        name='space-inspirations',
+    ),
+    path('vibe-imports/', vibe_views.vibe_imports, name='vibe-imports'),
+    path('vibe-imports/<uuid:import_id>/', vibe_views.vibe_import_detail, name='vibe-import-detail'),
+    path(
+        'vibe-imports/<uuid:import_id>/dismiss/',
+        vibe_views.vibe_import_dismiss,
+        name='vibe-import-dismiss',
+    ),
     path('cart/', cart_views.cart_root, name='cart'),
     path('cart/lines/', cart_views.cart_lines, name='cart-lines'),
     path('cart/lines/<str:line_id>/', cart_views.cart_line_detail, name='cart-line-detail'),

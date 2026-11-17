@@ -213,6 +213,8 @@ class SearchRun(models.Model):
     # ({liked, disliked, taste, seen, pinned, images}), and what the agent
     # learned from them ({likes: [...], avoids: [...]}).
     feedback = models.JSONField(null=True, blank=True)
+    # Category-matched Pinterest vibes snapshot ({spaceIds, matched, pins, summary, photos}).
+    vibes = models.JSONField(null=True, blank=True)
     preferences = models.JSONField(null=True, blank=True)
 
     class Meta:
@@ -318,6 +320,98 @@ class ProductVote(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['object', 'product_gid'], name='unique_object_product_vote')
         ]
+
+
+class VibeImportStatus(models.TextChoices):
+    QUEUED = 'queued', 'Queued'
+    RUNNING = 'running', 'Running'
+    DONE = 'done', 'Done'
+    FAILED = 'failed', 'Failed'
+
+
+class VibeImportStep(models.TextChoices):
+    READING_BOARD = 'reading-board', 'Reading board'
+    DOWNLOADING = 'downloading', 'Downloading'
+    SORTING = 'sorting', 'Sorting'
+    SAVING = 'saving', 'Saving'
+
+
+class InspirationSource(models.TextChoices):
+    PINTEREST = 'pinterest', 'Pinterest'
+
+
+class VibeImport(models.Model):
+    """One Pinterest board import for a space ("import my vibes")."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='vibe_imports')
+    board_url = models.TextField()
+    resolved_url = models.TextField(blank=True, default='')
+    board_title = models.CharField(max_length=200, blank=True, default='')
+    status = models.CharField(
+        max_length=16, choices=VibeImportStatus.choices, default=VibeImportStatus.QUEUED
+    )
+    step = models.CharField(max_length=16, choices=VibeImportStep.choices, null=True, blank=True)
+    pins_on_board = models.IntegerField(null=True, blank=True)
+    pins_found = models.IntegerField(default=0)
+    pins_skipped = models.IntegerField(default=0)
+    pins_downloaded = models.IntegerField(default=0)
+    pins_failed = models.IntegerField(default=0)
+    pins_categorized = models.IntegerField(default=0)
+    pins_usable = models.IntegerField(default=0)
+    batches_total = models.IntegerField(default=0)
+    batches_done = models.IntegerField(default=0)
+    batches_failed = models.IntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+    error_code = models.CharField(max_length=32, blank=True, default='')
+    worker_pid = models.IntegerField(null=True, blank=True)
+    dismissed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'vibe import {self.id} ({self.status})'
+
+
+class SpaceInspiration(models.Model):
+    """A pin from a board that steers searches for its space (thumbs up)."""
+    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='inspirations')
+    vibe_import = models.ForeignKey(
+        VibeImport, null=True, blank=True, on_delete=models.SET_NULL, related_name='inspirations'
+    )
+    source = models.CharField(
+        max_length=16, choices=InspirationSource.choices, default=InspirationSource.PINTEREST
+    )
+    vote = models.CharField(max_length=8, choices=VoteChoice.choices, default=VoteChoice.UP)
+    pin_id = models.CharField(max_length=64)
+    pin_url = models.TextField()
+    image_url = models.TextField(blank=True, default='')
+    # Relative to the vibes dir, e.g. "<space_id>/<pin_id>.jpg".
+    image_path = models.CharField(max_length=200, blank=True, default='')
+    # Untrusted Pinterest text ({title, description, altText}).
+    pin_text = models.JSONField(default=dict)
+    board_rank = models.IntegerField(default=0)
+    categories = models.JSONField(default=list)
+    item = models.CharField(max_length=40, blank=True, default='')
+    styles = models.JSONField(default=list)
+    colors = models.JSONField(default=list)
+    materials = models.JSONField(default=list)
+    description = models.CharField(max_length=200, blank=True, default='')
+    # Null until Haiku has sorted the pin.
+    categorized_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['board_rank', 'pk']
+        constraints = [
+            models.UniqueConstraint(fields=['space', 'pin_id'], name='unique_space_pin')
+        ]
+
+    def __str__(self):
+        return f'inspiration {self.pin_id} ({self.space_id})'
 
 
 class CartLine(models.Model):

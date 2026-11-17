@@ -12,6 +12,22 @@ TIMEOUT_S = 15
 USER_AGENT = 'Mozilla/5.0 (compatible; layout-imagine/1.0)'
 
 
+def reencode_jpeg(image, quality=88, max_side=1024):
+    """A loaded PIL image as JPEG bytes: transparency flattened onto white,
+    RGB, shrunk to fit max_side x max_side."""
+    if image.mode in ('RGBA', 'LA') or 'transparency' in image.info:
+        rgba = image.convert('RGBA')
+        background = Image.new('RGB', rgba.size, 'white')
+        background.paste(rgba, mask=rgba.getchannel('A'))
+        image = background
+    else:
+        image = image.convert('RGB')
+    image.thumbnail((max_side, max_side))
+    buf = io.BytesIO()
+    image.save(buf, format='JPEG', quality=quality)
+    return buf.getvalue()
+
+
 def fetch_photo(url):
     """Download a product photo and re-encode it as a small JPEG.
 
@@ -27,17 +43,7 @@ def fetch_photo(url):
             return None
         image = Image.open(io.BytesIO(data))
         image.load()
-        if image.mode in ('RGBA', 'LA') or 'transparency' in image.info:
-            rgba = image.convert('RGBA')
-            background = Image.new('RGB', rgba.size, 'white')
-            background.paste(rgba, mask=rgba.getchannel('A'))
-            image = background
-        else:
-            image = image.convert('RGB')
-        image.thumbnail((1024, 1024))
-        buf = io.BytesIO()
-        image.save(buf, format='JPEG', quality=88)
-        return buf.getvalue(), 'image/jpeg'
+        return reencode_jpeg(image, quality=88), 'image/jpeg'
     except Exception as exc:  # noqa: BLE001 - any failure just means no photo
         logger.warning('Could not fetch photo %s: %s', url, exc)
         return None

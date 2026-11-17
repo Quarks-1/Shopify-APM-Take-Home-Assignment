@@ -104,14 +104,18 @@ def pick_more_source(previous_queries):
     return best
 
 
-def strategies(snapshot, used_queries, previous_queries=(), like=None, refine=None):
+def strategies(snapshot, used_queries, previous_queries=(), like=None, refine=None, vibes=None):
     """Available strategies in ladder order. `like` is a like run's
     like_source: it switches to the photo ladder; `refine` (a refine run's
-    feedback) puts the vote-driven rounds first."""
+    feedback) puts the vote-driven rounds first; `vibes` (a run's space
+    inspiration) puts the vibe rounds before the text ladder."""
     if like is not None:
         return like_strategies(like, previous_queries)
     if refine is not None:
-        return refine_strategies(snapshot, refine, previous_queries)
+        return refine_strategies(snapshot, refine, previous_queries, vibes)
+    if vibes is not None:
+        return (vibe_strategies(vibes, previous_queries)
+                + strategies(snapshot, used_queries, previous_queries))
     used = {normalize_query(q) for q in used_queries or []}
     ladder = ['exact', 'relax-style', 'name']
     ladder += [f'similar:{i}' for i in range(len(snapshot.get('similarItems') or []))]
@@ -263,6 +267,75 @@ def build_intent(snapshot):
     return ', '.join(parts) + '.'
 
 
+# ------------------------------------------------------------ vibe rounds
+#
+# A run whose object matched the space's Pinterest vibes gets extra rounds:
+# `vibe` (a text query shaped by the pins' top style and material) and
+# vibe-photo:N (catalog `like` seeded with the Nth matching pin photo plus the
+# object's name). The vibe sentence goes into the intent of every round.
+
+VIBE_QUERY_LEN = 120
+VIBE_INTENT_LEN = 300
+VIBE_SENTENCE_LABELS = 3
+
+
+def _is_vibe_round(strategy):
+    return strategy == 'vibe' or strategy.startswith('vibe-photo:')
+
+
+def _vibe_image_item(vibes, payload, redact):
+    """The real (or redacted) image item for a payload whose `like` item is a
+    vibe photo placeholder, or None when it holds no such placeholder."""
+    items = (payload or {}).get('like') or []
+    item = items[0] if items and isinstance(items[0], dict) else {}
+    match = LIKE_IMAGE_RE.match(str((item.get('image') or {}).get('data') or ''))
+    if not match:
+        return None
+    return _image_item({'images': (vibes or {}).get('photos') or []}, int(match.group(1)), redact)
+
+
+def is_vibe_query(q):
+    """True for a vibe round, or a `more` page of a photo round (its query is
+    the object name, which the plain `name` rung must not be skipped for)."""
+    q = _pq(q)
+    if _is_vibe_round(q['strategy']):
+        return True
+    if q['strategy'] != 'more':
+        return False
+    items = (q.get('payload') or {}).get('like') or []
+    return bool(items and isinstance(items[0], dict)
+                and LIKE_IMAGE_RE.match(str((items[0].get('image') or {}).get('data') or '')))
+
+
+def vibe_strategies(vibes, previous_queries=()):
+    """vibe, vibe-photo:N (each once, minus those already run)."""
+    used = {_pq(q)['strategy'] for q in previous_queries or []}
+    ladder = ['vibe'] + [f'vibe-photo:{p.get("index")}' for p in (vibes or {}).get('photos') or []]
+    return [s for s in ladder if s not in used]
+
+
+def _summary(vibes, key):
+    return [str(v) for v in (((vibes or {}).get('summary') or {}).get(key) or []) if v]
+
+
+def vibe_query(snapshot, vibes):
+    """Top style + top material of the matching pins, then the object's name."""
+    styles, materials = _summary(vibes, 'styles'), _summary(vibes, 'materials')
+    name = _name(snapshot) or _type_noun(snapshot)
+    return _join(styles[0] if styles else '', materials[0] if materials else '', name
+                 )[:VIBE_QUERY_LEN]
+
+
+def vibe_sentence(vibes):
+    """' Their space inspiration favors <styles>, <colors>, <materials>.', or ''."""
+    labels = []
+    for key in ('styles', 'colors', 'materials'):
+        labels += _summary(vibes, key)[:VIBE_SENTENCE_LABELS]
+    if not labels:
+        return ''
+    return (' Their space inspiration favors ' + ', '.join(labels) + '.')[:VIBE_INTENT_LEN]
+
+
 # ------------------------------------------------------------ refine mode
 #
 # A refine run ("Refresh") is shaped by the row's thumbs votes. Ladder:
@@ -293,14 +366,18 @@ def liked_gids(feedback):
     return [g for g in gids if g][:REFINE_LIKED_ROUNDS]
 
 
-def refine_strategies(snapshot, feedback, previous_queries=()):
-    """pref, liked:N (each once), then the normal ladder. The normal rungs are
-    de-duplicated against earlier text rounds only, not pref/liked ones."""
+def refine_strategies(snapshot, feedback, previous_queries=(), vibes=None):
+    """pref, liked:N (each once), the vibe rounds when the run has vibes, then
+    the normal ladder. The normal rungs are de-duplicated against earlier text
+    rounds only, not pref/liked/vibe ones."""
     prev = [_pq(q) for q in previous_queries or []]
     used = {q['strategy'] for q in prev}
     ladder = ['pref'] + [f'liked:{i}' for i in range(len(liked_gids(feedback)))]
     out = [s for s in ladder if s not in used]
-    text = [q['query'] for q in prev if not _is_refine_round(q['strategy'])]
+    if vibes is not None:
+        out += vibe_strategies(vibes, prev)
+    text = [q['query'] for q in prev
+            if not _is_refine_round(q['strategy']) and not is_vibe_query(q)]
     return out + strategies(snapshot, text, prev)
 
 
@@ -372,14 +449,19 @@ def liked_price_window(snapshot, feedback):
     return {'min': lo, 'max': hi} if lo <= hi else None
 
 
-def _refine_more(previous_queries):
+def _refine_more(previous_queries, vibes=None, redact=False):
     """The next page of a refine run's earlier round: its exact payload
-    (query, like item, price window, intent) with the cursor."""
+    (query, like item, price window, intent) with the cursor. A vibe photo
+    round's stored placeholder becomes the real image again."""
     src = pick_more_source(previous_queries)
     if src is None:
         raise ValueError('no earlier query has another page')
     payload = copy.deepcopy(src.get('payload') or {})
     payload.setdefault('pagination', {})['cursor'] = (src.get('response_meta') or {}).get('cursor')
+    if vibes is not None:
+        item = _vibe_image_item(vibes, payload, redact)
+        if item is not None:
+            payload['like'] = [item]
     return payload
 
 
@@ -401,22 +483,26 @@ def _like_parts(snapshot, strategy, previous_queries, like, redact):
     raise ValueError(f'unknown strategy: {strategy}')
 
 
-def build_stored_payload(snapshot, strategy, previous_queries=(), like=None, refine=None):
+def build_stored_payload(snapshot, strategy, previous_queries=(), like=None, refine=None,
+                         vibes=None):
     """The payload to save on CatalogQuery: `build_payload` with image data
     replaced by a placeholder."""
-    return build_payload(snapshot, strategy, previous_queries, like, redact=True, refine=refine)
+    return build_payload(snapshot, strategy, previous_queries, like, redact=True, refine=refine,
+                         vibes=vibes)
 
 
-def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=False, refine=None):
+def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=False, refine=None,
+                  vibes=None):
     """The ucp catalog search payload. With `like` (a like run's like_source)
     it holds real base64 image data: never store it, use build_stored_payload.
     `refine` is {feedback, query?, intent?} of a refine run (query and intent
-    are the agent's own, for the pref round only)."""
+    are the agent's own, for the pref round only). `vibes` is the run's space
+    inspiration snapshot: vibe-photo rounds then hold real base64 as well."""
     cursor = None
     like_item = None
     feedback = (refine or {}).get('feedback') or {}
     if refine is not None and strategy == 'more':
-        return _refine_more(previous_queries)
+        return _refine_more(previous_queries, vibes, redact)
     if like is not None:
         query, like_item, cursor = _like_parts(snapshot, strategy, previous_queries, like, redact)
     elif refine is not None and strategy == 'pref':
@@ -427,12 +513,22 @@ def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=Fal
         if not arg.isdigit() or int(arg) >= len(gids):
             raise ValueError(f'unknown strategy: {strategy}')
         query, like_item = _like_query(snapshot) or None, {'id': gids[int(arg)]}
+    elif vibes is not None and strategy == 'vibe':
+        query = vibe_query(snapshot, vibes)
+    elif vibes is not None and strategy.startswith('vibe-photo:'):
+        arg = strategy.partition(':')[2]
+        if not arg.isdigit():
+            raise ValueError(f'unknown strategy: {strategy}')
+        like_item = _image_item({'images': vibes.get('photos') or []}, int(arg), redact)
+        query = _like_query(snapshot) or None
     elif strategy == 'more':
         src = pick_more_source(previous_queries)
         if src is None:
             raise ValueError('no earlier query has another page')
         query = (src.get('payload') or {}).get('query') or src.get('query')
         cursor = (src.get('response_meta') or {}).get('cursor')
+        if vibes is not None:
+            like_item = _vibe_image_item(vibes, src.get('payload'), redact)
     else:
         query = strategy_query(snapshot, strategy)
     filters = {'available': True, 'ships_to': {'country': 'US'}}
@@ -459,6 +555,8 @@ def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=Fal
         window = liked_price_window(snapshot, feedback) if _is_refine_round(strategy) else None
         if window:
             filters['price'] = window
+    if vibes is not None:
+        intent += vibe_sentence(vibes)
     payload = {
         'query': query,
         'context': {

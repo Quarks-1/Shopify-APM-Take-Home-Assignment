@@ -25,7 +25,6 @@ import signal
 import subprocess
 import sys
 import tempfile
-import time
 import traceback
 from datetime import timedelta
 from pathlib import Path
@@ -34,7 +33,9 @@ from django.conf import settings
 from django.db import connection, transaction
 from django.utils import timezone
 
+from .. import claude_cli
 from ..models import AgentMode, ObjectSource, RunStatus, RunStep, SearchMode, SearchRun, Verdict
+from ..vibes import paths as vibe_paths
 from . import engine, feedback, like_images, prompts, query_builder, ucp_client
 from .object_state import sync_object_search
 
@@ -43,20 +44,17 @@ MANAGE_PY = BACKEND_DIR / 'manage.py'
 
 ACTIVE = (RunStatus.QUEUED, RunStatus.RUNNING)
 ALLOWED_TOOLS = ('Bash(searcher next:*)', 'Bash(searcher judge:*)', 'Bash(searcher status:*)')
-SYSTEM_PATH = '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin'
+SYSTEM_PATH = claude_cli.SYSTEM_PATH
 # Searcher settings the agent's `searcher` subcommands must share with this
 # process (their own settings come from the minimal env, not ours).
 FORWARDED_SETTINGS = (
     'SEARCHER_UCP_BIN', 'SEARCHER_PAGE_LIMIT', 'SEARCHER_SIZE_TOLERANCE', 'SEARCHER_UCP_TIMEOUT',
 )
-AGENT_RESULT_KEYS = (
-    'type', 'subtype', 'is_error', 'session_id', 'num_turns', 'total_cost_usd', 'duration_ms',
-    'permission_denials', 'structured_output',
-)
+AGENT_RESULT_KEYS = claude_cli.AGENT_RESULT_KEYS
 RESULT_TEXT_LEN = 1000
 STALE_NO_PID_SECONDS = 60
-KILL_GRACE_SECONDS = 5
-POLL_SECONDS = 1.0
+KILL_GRACE_SECONDS = claude_cli.KILL_GRACE_SECONDS
+POLL_SECONDS = claude_cli.POLL_SECONDS
 WORKER_DIED = 'worker exited unexpectedly'
 
 WRAPPER_SCRIPT = (
@@ -186,15 +184,7 @@ def _pid_alive(pid):
     return True
 
 
-def _signal_group(pid, sig):
-    """Signal a process group we started. Never our own group."""
-    if not pid or pid in (os.getpid(), os.getpgrp()):
-        return False
-    try:
-        os.killpg(pid, sig)
-        return True
-    except (ProcessLookupError, PermissionError):
-        return False
+_signal_group = claude_cli.signal_group
 
 
 def _reap_children():
@@ -592,15 +582,67 @@ def like_photo_entries(run):
     return out[:cap]
 
 
+def vibe_photo_entries(run):
+    """The space-inspiration pin photos that can go to the agent (search and
+    refine runs): each file must lie inside the vibes dir, be a supported image
+    type and at most like_images.MAX_BYTES. Others are skipped."""
+    if getattr(run, 'mode', None) == SearchMode.LIKE:
+        return []
+    vibes = getattr(run, 'vibes', None)
+    raw = (vibes.get('photos') if isinstance(vibes, dict) else None) or []
+    if not isinstance(raw, list):
+        return []
+    try:
+        root = vibe_paths.vibes_dir()
+    except (OSError, ValueError):
+        return []
+    items = [i for i in raw if isinstance(i, dict)]
+    out = []
+    for item in sorted(items, key=lambda i: i.get('index') if isinstance(i.get('index'), int) else 0):
+        media_type = item.get('contentType')
+        try:
+            path = Path(item.get('path') or '').resolve()
+            if (media_type not in IMAGE_MEDIA_TYPES or root not in path.parents
+                    or not path.is_file() or path.stat().st_size > like_images.MAX_BYTES):
+                continue
+        except (OSError, ValueError):
+            continue
+        out.append({'index': item.get('index'), 'path': path, 'contentType': media_type,
+                    'kind': 'vibe'})
+    return out[:settings.VIBES_MAX_PHOTOS]
+
+
+def agent_photos(run):
+    """Every photo for the agent's first message: the like/refine photos
+    (kind 'primary') first, then the space-inspiration pins (kind 'vibe')."""
+    primary = [dict(p, kind='primary') for p in like_photo_entries(run)]
+    return primary + vibe_photo_entries(run)
+
+
+def _split_photos(photos):
+    """(primary, vibe) photos; an entry without `kind` is primary."""
+    vibe = [p for p in photos if p.get('kind') == 'vibe']
+    return [p for p in photos if p.get('kind') != 'vibe'], vibe
+
+
+def _image_block(photo):
+    data = Path(photo['path']).read_bytes()
+    return {'type': 'image', 'source': {
+        'type': 'base64', 'media_type': photo['contentType'],
+        'data': base64.b64encode(data).decode('ascii')}}
+
+
 def build_stdin_message(run, photos):
-    """One stream-json user message (a single JSON line, bytes): the like user
-    prompt as a text block, then one base64 image block per photo."""
-    content = [{'type': 'text', 'text': prompts.build_user_prompt(run, photos_attached=len(photos))}]
-    for photo in photos:
-        data = Path(photo['path']).read_bytes()
-        content.append({'type': 'image', 'source': {
-            'type': 'base64', 'media_type': photo['contentType'],
-            'data': base64.b64encode(data).decode('ascii')}})
+    """One stream-json user message (a single JSON line, bytes): the user
+    prompt as a text block, then one base64 image block per primary photo, and
+    after a "Space inspiration photos:" text block the inspiration pin photos."""
+    primary, vibe = _split_photos(photos)
+    content = [{'type': 'text', 'text': prompts.build_user_prompt(
+        run, photos_attached=len(primary), vibe_photos=len(vibe))}]
+    content += [_image_block(photo) for photo in primary]
+    if vibe:
+        content.append({'type': 'text', 'text': 'Space inspiration photos:'})
+        content += [_image_block(photo) for photo in vibe]
     line = json.dumps({'type': 'user', 'message': {'role': 'user', 'content': content}})
     return (line + '\n').encode('utf-8')
 
@@ -618,7 +660,8 @@ def build_argv(run, photos=None):
     photos arrive as one stream-json user message on stdin, so no positional
     prompt; stream-json output needs --verbose. Same tools either way."""
     if photos is None:
-        photos = like_photo_entries(run)
+        photos = agent_photos(run)
+    primary, vibe = _split_photos(photos)
     photo_mode = bool(photos)
     head = [settings.SEARCHER_CLAUDE_BIN, '-p']
     if photo_mode:
@@ -628,7 +671,8 @@ def build_argv(run, photos=None):
     return head + [
         '--model', settings.SEARCHER_MODEL,
         '--json-schema', prompts.output_schema_json(),
-        '--system-prompt', prompts.system_prompt(run, photos_attached=len(photos)),
+        '--system-prompt', prompts.system_prompt(
+            run, photos_attached=len(primary), vibe_photos=len(vibe)),
         '--tools', 'Bash',
         '--allowedTools', *ALLOWED_TOOLS,
         '--permission-mode', 'dontAsk',
@@ -651,71 +695,21 @@ def _forwarded_value(name):
 
 def agent_env(run, wrapper_dir):
     """Built from scratch (explicit allowlist): nothing CLAUDE*/ANTHROPIC* leaks in."""
-    src = os.environ
-    env = {
-        'HOME': src.get('HOME') or os.path.expanduser('~'),
-        'USER': src.get('USER') or src.get('LOGNAME') or '',
-        'LOGNAME': src.get('LOGNAME') or src.get('USER') or '',
-        'TMPDIR': src.get('TMPDIR') or tempfile.gettempdir(),
-        'SHELL': '/bin/bash',
-        'LANG': 'en_US.UTF-8',
+    extra = {
         'PATH': f'{wrapper_dir}:{SYSTEM_PATH}',
         'SEARCH_RUN_ID': str(run.pk),
         'SEARCHER_PYTHON': sys.executable,
         'SEARCHER_MANAGE': str(MANAGE_PY),
+        'DJANGO_DB_PATH': db_path(),
     }
-    env.update({k: v for k, v in src.items() if k.startswith('DJANGO_')})
-    env['DJANGO_DB_PATH'] = db_path()
     for name in FORWARDED_SETTINGS:
-        env[name] = _forwarded_value(name)
-    return {k: v for k, v in env.items() if v != ''}
+        extra[name] = _forwarded_value(name)
+    return claude_cli.base_env(extra)
 
 
-def trim_agent_result(data):
-    out = {k: data[k] for k in AGENT_RESULT_KEYS if k in data}
-    if isinstance(data.get('result'), str):
-        out['result'] = data['result'][:RESULT_TEXT_LEN]
-    return out
-
-
-def _parse_output(raw):
-    """The agent's result object. `--output-format json` prints one object;
-    stream-json prints one event per line with the result object last. Take
-    the last line that is a {"type": "result"} dict, else the whole output or
-    its last line as JSON."""
-    raw = (raw or '').strip()
-    if not raw:
-        return None
-    lines = raw.splitlines()
-    if len(lines) > 1:
-        for line in reversed(lines):
-            if '"result"' not in line:
-                continue
-            try:
-                data = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(data, dict) and data.get('type') == 'result':
-                return data
-    for text in (raw, lines[-1]):
-        try:
-            data = json.loads(text)
-        except ValueError:
-            continue
-        if isinstance(data, dict):
-            return data
-    return None
-
-
-def _terminate(proc):
-    """SIGTERM the agent's group, SIGKILL after a grace period."""
-    _signal_group(proc.pid, signal.SIGTERM)
-    try:
-        proc.wait(timeout=KILL_GRACE_SECONDS)
-    except subprocess.TimeoutExpired:
-        pass
-    _signal_group(proc.pid, signal.SIGKILL)  # also any stragglers left in the group
-    proc.wait()
+trim_agent_result = claude_cli.trim_result
+_parse_output = claude_cli.parse_output
+_terminate = claude_cli.terminate
 
 
 def _invoke_claude(run):
@@ -733,7 +727,7 @@ def _invoke_claude(run):
 def _invoke_claude_with(run, run_id):
     argv = build_argv(run)
     stream = '--input-format' in argv
-    photos = like_photo_entries(run) if stream else []
+    photos = agent_photos(run) if stream else []
     env = agent_env(run, ensure_wrapper())
     out_path = agent_output_path(run_id)
     if stream:
@@ -747,42 +741,16 @@ def _invoke_claude_with(run, run_id):
     how = f'stream-json stdin with {len(photos)} photo(s) attached' if stream else '-p <prompt>'
     _log(run_id, f'agent: {argv[0]} {how} --model {settings.SEARCHER_MODEL} '
                  f'--max-turns {settings.SEARCHER_MAX_TURNS} (timeout {settings.SEARCHER_RUN_TIMEOUT:g}s)')
-    try:
-        with open(out_path, 'wb') as out, open(log_path(run_id), 'ab') as err, \
-                (open(stdin_path(run_id), 'rb') if stream else open(os.devnull, 'rb')) as inp:
-            proc = subprocess.Popen(
-                argv, cwd=str(agent_cwd(run_id)), env=env, shell=False, start_new_session=True,
-                stdin=inp, stdout=out, stderr=err,
-            )
-    except OSError as exc:
-        return f'claude could not start: {exc}', None
-    SearchRun.objects.filter(pk=run_id).update(agent_pid=proc.pid)
-
-    timed_out = canceled = False
-    deadline = time.monotonic() + settings.SEARCHER_RUN_TIMEOUT
-    while True:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            timed_out = True
-            break
-        try:
-            proc.wait(timeout=min(remaining, POLL_SECONDS))
-            break
-        except subprocess.TimeoutExpired:
-            if not SearchRun.objects.filter(pk=run_id, status=RunStatus.RUNNING).exists():
-                canceled = True
-                break
-    if timed_out or canceled:
-        _terminate(proc)
-    else:
-        _signal_group(proc.pid, signal.SIGTERM)  # stragglers, if any; usually a no-op
+    res = claude_cli.run(
+        argv, cwd=agent_cwd(run_id), env=env, out_path=out_path, err_path=log_path(run_id),
+        timeout=settings.SEARCHER_RUN_TIMEOUT, stdin_path=stdin_path(run_id) if stream else None,
+        is_canceled=lambda: not SearchRun.objects.filter(pk=run_id, status=RunStatus.RUNNING).exists(),
+        on_spawn=lambda pid: SearchRun.objects.filter(pk=run_id).update(agent_pid=pid),
+    )
+    if res.spawn_error is not None:
+        return f'claude could not start: {res.spawn_error}', None
     SearchRun.objects.filter(pk=run_id).update(agent_pid=None)
-    rc = proc.returncode
-
-    try:
-        data = _parse_output(out_path.read_text(encoding='utf-8', errors='replace'))
-    except OSError:
-        data = None
+    rc, data, timed_out, canceled = res.rc, res.data, res.timed_out, res.canceled
     result = trim_agent_result(data) if data is not None else None
     subtype = (data or {}).get('subtype')
     _log(run_id, f'agent exited rc={rc} subtype={subtype} turns={(data or {}).get("num_turns")}')

@@ -4,6 +4,7 @@
 records accept/reject verdicts; `run_deterministic` is the no-LLM fallback.
 The accepted count is always computed from Candidate rows.
 """
+import logging
 import re
 import time
 from collections import defaultdict
@@ -24,9 +25,14 @@ from ..models import (
 )
 from ..serializers import object_to_json, seller_group_key
 from . import feedback as votes
+from ..vibes import matching
 from . import filters, query_builder, ucp_client
 from .normalize import normalize_product
 from .object_state import sync_object_search
+
+logger = logging.getLogger(__name__)
+
+VIBES_MAX_ROUNDS_CAP = 20  # same ceiling as the like/refine round budgets
 
 REASON_LEN = 200
 MAX_COMPACT_SPECS = 6
@@ -71,9 +77,9 @@ def _previous_queries(run):
 
 def available_strategies(run):
     prev = _previous_queries(run)
-    used = [q['query'] for q in prev]
+    used = [q['query'] for q in prev if not query_builder.is_vibe_query(q)]
     return query_builder.strategies(run.object_snapshot, used, prev, like=_like(run),
-                                    refine=_feedback(run))
+                                    refine=_feedback(run), vibes=_vibes(run))
 
 
 def _like(run):
@@ -84,6 +90,11 @@ def _like(run):
 def _feedback(run):
     """A refine run's votes snapshot, or None for other runs."""
     return (run.feedback or {}) if run.mode == SearchMode.REFINE else None
+
+
+def _vibes(run):
+    """The run's category-matched vibes snapshot, or None."""
+    return run.vibes or None
 
 
 def _clean_arg(value, limit):
@@ -190,6 +201,15 @@ def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
     placement = space_object.placements.select_related('space').order_by('pk').first()
     if placement is not None:
         snapshot['space'] = {'type': placement.space.type, 'dims': placement.space.dims}
+    vibes = None
+    try:  # vibes must never block a search
+        vibes = matching.run_vibes(space_object, snapshot, mode)
+    except Exception:
+        logger.exception('vibes: matching failed for object %s', space_object.pk)
+    max_rounds = max_rounds or settings.SEARCHER_MAX_ROUNDS
+    if vibes and mode in (SearchMode.SEARCH, SearchMode.REFINE):
+        extra = 1 + len(vibes.get('photos') or [])
+        max_rounds = max(max_rounds, min(VIBES_MAX_ROUNDS_CAP, max_rounds + extra))
     running = status == RunStatus.RUNNING
     run = SearchRun.objects.create(
         object=space_object,
@@ -197,12 +217,13 @@ def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
         status=status,
         step=RunStep.PLANNING if running else None,
         target=settings.SEARCHER_TARGET,
-        max_rounds=max_rounds or settings.SEARCHER_MAX_ROUNDS,
+        max_rounds=max_rounds,
         started_at=timezone.now() if running else None,
         agent_mode=agent_mode,
         mode=mode,
         like_source=like_source,
         feedback=feedback,
+        vibes=vibes,
     )
     sync_object_search(space_object.pk)
     return run
@@ -240,6 +261,7 @@ def next_round(run, strategy=None, query=None, intent=None):
     _set_step(run, RunStep.BUILDING_QUERY)
     like = _like(run)
     feedback = _feedback(run)
+    vibes = _vibes(run)
     refine = None
     if feedback is not None:
         refine = {'feedback': feedback,
@@ -249,13 +271,21 @@ def next_round(run, strategy=None, query=None, intent=None):
     payload = stored = None
     error = ''
     try:
-        stored = query_builder.build_stored_payload(snapshot, strategy, previous, like, refine)
-        payload = query_builder.build_payload(snapshot, strategy, previous, like, refine=refine)
+        stored = query_builder.build_stored_payload(snapshot, strategy, previous, like, refine,
+                                                    vibes=vibes)
+        payload = query_builder.build_payload(snapshot, strategy, previous, like, refine=refine,
+                                              vibes=vibes)
     except (ValueError, OSError) as exc:
-        if like is None:
+        vibe_round = vibes is not None and (
+            query_builder._is_vibe_round(strategy) or strategy == 'more')
+        if like is None and not vibe_round:
             raise
-        error = f'could not build like query: {exc}'  # e.g. a cached photo vanished
-        stored = {'like_error': True}
+        if like is not None:
+            error = f'could not build like query: {exc}'  # e.g. a cached photo vanished
+            stored = {'like_error': True}
+        else:
+            error = f'could not build vibe query: {exc}'  # e.g. an inspiration photo vanished
+            stored = {'vibe_error': True}
     _set_step(run, RunStep.QUERYING_CATALOG)
 
     run.round_count += 1
