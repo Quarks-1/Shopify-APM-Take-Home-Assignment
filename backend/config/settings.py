@@ -139,7 +139,7 @@ SEARCHER_CLAUDE_BIN = os.path.abspath(
     or shutil.which('claude')
     or '/opt/homebrew/bin/claude'
 )
-SEARCHER_MODEL = os.environ.get('SEARCHER_MODEL', 'sonnet')
+SEARCHER_MODEL = os.environ.get('SEARCHER_MODEL', 'haiku')
 SEARCHER_MAX_TURNS = int(os.environ.get('SEARCHER_MAX_TURNS', '40'))
 SEARCHER_RUN_TIMEOUT = float(os.environ.get('SEARCHER_RUN_TIMEOUT', '420'))  # agent wall clock, s
 SEARCHER_MAX_CONCURRENT = int(os.environ.get('SEARCHER_MAX_CONCURRENT', '2'))
