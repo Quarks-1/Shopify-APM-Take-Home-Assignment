@@ -68,13 +68,17 @@ def evaluate(fields, snapshot, tolerance):
     violations = []
 
     if wall and ox is not None:
-        face = sorted(v for v in (px, py, pz) if v is not None)[-2:]
+        # Orientation matters: a rotated product does not qualify. The face is
+        # width x height in axis order; with three values the thinnest is depth.
+        vals = [v for v in (px, py, pz) if v is not None]
+        if len(vals) == 3:
+            vals.remove(min(vals))
+        face = vals
         if len(face) == 2:
-            of = sorted([ox, oh])
-            if any(p > o for p, o in zip(face, of)):
+            if face[0] > ox or face[1] > oh:
                 violations.append(
                     f'too large: {_n(face[0])} x {_n(face[1])} in face exceeds '
-                    f'{_n(of[0])} x {_n(of[1])} in'
+                    f'{_n(ox)} x {_n(oh)} in (rotated sizes do not count)'
                 )
         elif len(face) == 1 and face[0] > max(ox, oh):
             violations.append(

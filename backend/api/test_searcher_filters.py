@@ -149,7 +149,10 @@ class WallModeTests(SimpleTestCase):
     def test_small_poster_and_labeled_wh(self):
         self.assertEqual(self.ev({'x': 11, 'y': 17})[2], 'fits')
         self.assertEqual(self.ev({'x': 24, 'z': 36})[2], 'fits')
-        self.assertEqual(self.ev({'x': 36, 'y': 24})[2], 'fits')  # rotated
+        # rotated orientation does not count
+        self.assertEqual(self.ev({'x': 36, 'y': 24})[2], 'too_big')
+        self.assertEqual(self.ev({'x': 36, 'y': 1, 'z': 24})[2], 'too_big')
+        self.assertEqual(self.ev({'x': 24, 'y': 1, 'z': 36})[2], 'fits')
 
     def test_depth_not_checked(self):
         passes, _, size, _ = self.ev({'x': 24, 'y': 1.5, 'z': 36})
