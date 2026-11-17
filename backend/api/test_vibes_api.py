@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from .models import SpaceInspiration, VibeImport, VibeImportStatus
-from .test_fixtures.vibes_helpers import TempVibes, make_space
+from .test_fixtures.vibes_helpers import TempVibes, jpeg_bytes, make_space
 from .vibes import importer, paths
 
 URL = '/api/spaces/space1/vibe-imports/'
@@ -292,3 +292,53 @@ class GlobalInspirationsTests(VibeApiBase):
         self.assertEqual([r['primaryType'] for r in rows], ['furniture', 'lighting'])
         self.assertEqual([r['spaceId'] for r in rows], ['space1', 'space1'])
         self.assertEqual(self.client.post('/api/inspirations/').status_code, 405)
+
+
+class DeleteInspirationTests(VibeApiBase):
+    def pin(self, space, pin_id, rank=0):
+        rel = f'{space.id}/{pin_id}.jpg'
+        target = paths.vibes_dir() / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(jpeg_bytes())
+        return SpaceInspiration.objects.create(
+            space=space, pin_id=pin_id, pin_url='u', image_path=rel, board_rank=rank,
+            categorized_at=timezone.now())
+
+    def url(self, row, space_id='space1'):
+        return f'/api/spaces/{space_id}/inspirations/{row.pk}/'
+
+    def test_delete_removes_row_file_and_listings(self):
+        keep = self.pin(self.space, 'keep', 1)
+        gone = self.pin(self.space, 'gone', 0)
+        res = self.client.delete(self.url(gone))
+        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.content, b'')
+        self.assertFalse(SpaceInspiration.objects.filter(pk=gone.pk).exists())
+        self.assertFalse((paths.vibes_dir() / gone.image_path).exists())
+        self.assertTrue((paths.vibes_dir() / keep.image_path).is_file())
+        for url in ('/api/spaces/space1/inspirations/', '/api/inspirations/'):
+            rows = self.client.get(url).json()['inspirations']
+            self.assertEqual([r['pinId'] for r in rows], ['keep'])
+
+    def test_other_spaces_pin_and_unknown_id_are_404(self):
+        other = make_space('space2')
+        theirs = self.pin(other, 'theirs')
+        self.assertEqual(self.client.delete(self.url(theirs)).status_code, 404)
+        self.assertTrue(SpaceInspiration.objects.filter(pk=theirs.pk).exists())
+        self.assertTrue((paths.vibes_dir() / theirs.image_path).is_file())
+        self.assertEqual(self.client.delete('/api/spaces/space1/inspirations/999999/').status_code, 404)
+
+    def test_unknown_space_is_404(self):
+        row = self.pin(self.space, 'p1')
+        self.assertEqual(self.client.delete(self.url(row, 'nope')).status_code, 404)
+        self.assertTrue(SpaceInspiration.objects.filter(pk=row.pk).exists())
+
+    def test_active_import_is_409_and_keeps_the_pin(self):
+        row = self.pin(self.space, 'p1')
+        VibeImport.objects.create(
+            space=self.space, board_url=BOARD, status=VibeImportStatus.RUNNING, started_at=timezone.now())
+        res = self.client.delete(self.url(row))
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.json(), {'error': 'import_in_progress'})
+        self.assertTrue(SpaceInspiration.objects.filter(pk=row.pk).exists())
+        self.assertTrue((paths.vibes_dir() / row.image_path).is_file())

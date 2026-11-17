@@ -7,6 +7,7 @@ import {
   RiSearchLine,
   RiSettings3Line,
   RiShoppingCart2Line,
+  RiSparkling2Line,
 } from "@remixicon/react";
 import { Breadcrumb, BreadcrumbItem } from "@/components/base/breadcrumb/breadcrumb";
 import { Button } from "@/components/base/buttons/button";
@@ -18,7 +19,10 @@ import { useObjectDrawer } from "@/features/objects/use-object-drawer";
 import { useObjectSearch } from "@/features/objects/use-object-search";
 import { PanelResizer, usePanelSplit } from "@/features/spaces/panel-resizer";
 import { SpaceDesigner } from "@/features/spaces/space-designer";
+import { SeeTheVibeModal } from "@/features/spaces/see-the-vibe-modal";
 import { SpaceFormModal } from "@/features/spaces/space-form-modal";
+import { useSpaceInspirations } from "@/features/spaces/use-space-inspirations";
+import { WavyText } from "@/features/spaces/wavy-text";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { VibeImportStatus } from "@/features/spaces/vibe-import-status";
 import { formatDims, formatPrice } from "@/lib/format";
@@ -98,6 +102,8 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [vibeOpen, setVibeOpen] = useState(false);
+  const { inspirations, remove: removeInspiration } = useSpaceInspirations(spaceId);
   const panelSplit = usePanelSplit();
 
   // Pick up an import that is running or just finished (e.g. started in another tab).
@@ -164,6 +170,11 @@ function EditSpace({ spaceId }: { spaceId: string }) {
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           <VibeImportStatus spaceId={space.id} />
+          {inspirations.length > 0 && (
+            <Button variant="secondary" size="small" className="group" leadingIcon={RiSparkling2Line} onClick={() => setVibeOpen(true)}>
+              See the <WavyText text="Vibe" />
+            </Button>
+          )}
           <Button variant="secondary" size="small" leadingIcon={RiSettings3Line} onClick={() => setSettingsOpen(true)}>
             Space settings
           </Button>
@@ -224,6 +235,13 @@ function EditSpace({ spaceId }: { spaceId: string }) {
     </div>
 
     <SpaceFormModal isOpen={settingsOpen} onOpenChange={setSettingsOpen} spaceId={space.id} />
+    <SeeTheVibeModal
+      isOpen={vibeOpen}
+      onOpenChange={setVibeOpen}
+      spaceId={space.id}
+      inspirations={inspirations}
+      onRemove={removeInspiration}
+    />
     <AlertDialog
       isOpen={deleteOpen}
       onOpenChange={setDeleteOpen}

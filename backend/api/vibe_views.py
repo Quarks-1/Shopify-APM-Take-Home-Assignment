@@ -2,7 +2,7 @@
 a space's inspiration pins."""
 import logging
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 
 from .models import SpaceInspiration, Space, VibeImport, VibeImportStatus
@@ -88,6 +88,24 @@ def space_inspirations(request, space_id):
         return _not_found()
     rows = SpaceInspiration.objects.filter(space_id=space_id).order_by('board_rank', 'pk')
     return JsonResponse({'inspirations': [inspiration_to_json(r) for r in rows]})
+
+
+@_json_view
+@require_http_methods(['DELETE'])
+def space_inspiration_detail(request, space_id, inspiration_id):
+    """Remove one imported pin (row + image file) from a space."""
+    space = Space.objects.filter(pk=space_id).first()
+    if space is None:
+        return _not_found()
+    row = SpaceInspiration.objects.filter(pk=inspiration_id, space=space).first()
+    if row is None:
+        return _not_found()
+    if importer.active_import(space) is not None:
+        return JsonResponse({'error': 'import_in_progress'}, status=409)
+    image_path = row.image_path
+    row.delete()
+    importer.remove_files([image_path])
+    return HttpResponse(status=204)
 
 
 @_json_view

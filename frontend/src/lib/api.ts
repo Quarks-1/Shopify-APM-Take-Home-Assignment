@@ -641,3 +641,13 @@ export interface ApiInspiration {
 /** Every imported, sorted pin across spaces (de-duplicated), in board order. */
 export const listInspirations = (signal?: AbortSignal) =>
   request<{ inspirations: ApiInspiration[] }>("GET", "/api/inspirations/", { signal }).then((r) => r.inspirations);
+
+/** A space's imported, sorted and unsorted pins, in board order. */
+export const listSpaceInspirations = (spaceId: string, signal?: AbortSignal) =>
+  request<{ inspirations: ApiInspiration[] }>("GET", `/api/spaces/${seg(spaceId)}/inspirations/`, { signal }).then(
+    (r) => r.inspirations,
+  );
+
+/** Removes one imported pin. 409 `import_in_progress` while an import runs. */
+export const deleteSpaceInspiration = (spaceId: string, inspirationId: number) =>
+  request<void>("DELETE", `/api/spaces/${seg(spaceId)}/inspirations/${seg(String(inspirationId))}/`);

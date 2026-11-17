@@ -941,3 +941,14 @@ input[type="search"]::-webkit-search-cancel-button {
     animation: slider-hold-fade var(--slider-hold-ms, 450ms) ease-out forwards;
   }
 }
+
+/* "Vibe" lettering on the See the Vibe button: a gentle travelling wave, delayed per letter */
+@keyframes vibe-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}

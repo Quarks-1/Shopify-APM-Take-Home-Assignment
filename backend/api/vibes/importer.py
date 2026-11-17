@@ -93,12 +93,17 @@ class _Fail(Exception):
 
 # ------------------------------------------------------------------ queue
 
+def active_import(space):
+    """The space's oldest queued/running import, or None."""
+    return VibeImport.objects.filter(space=space, status__in=ACTIVE).order_by('created_at').first()
+
+
 def start_import(space, board_url):
     """(import, created). Raises pinterest.PinterestError for a bad link and
     ImportInProgress when a different board is already importing."""
     url = pinterest.normalize_input_url(board_url)
     with transaction.atomic():
-        active = VibeImport.objects.filter(space=space, status__in=ACTIVE).order_by('created_at').first()
+        active = active_import(space)
         if active is not None:
             if active.board_url == url:
                 return active, False
@@ -252,7 +257,7 @@ def _read_board(imp, client):
     return board, pins
 
 
-def _remove_files(rel_paths):
+def remove_files(rel_paths):
     """Best-effort delete of stored image files (relative to vibes_dir)."""
     for rel in rel_paths:
         if not rel:
@@ -283,7 +288,7 @@ def _prune_to_board(imp, pins):
             if row.vibe_import_id != imp.pk or row.board_rank != ranks[row.pin_id]:
                 SpaceInspiration.objects.filter(pk=row.pk).update(
                     vibe_import=imp, board_rank=ranks[row.pin_id])
-    _remove_files(path for _, path in stale)
+    remove_files(path for _, path in stale)
 
 
 def _download(imp, board, pins, client):

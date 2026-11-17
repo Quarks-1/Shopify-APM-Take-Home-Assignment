@@ -14,19 +14,19 @@ import { cx } from "@/utils/cx";
 type Group = ApiInspiration["primaryType"];
 type Filter = Group | "all";
 
-const GROUP_ORDER: Group[] = ["furniture", "lighting", "decor", "wall-art", "rug", "storage", "other"];
+export const GROUP_ORDER: Group[] = ["furniture", "lighting", "decor", "wall-art", "rug", "storage", "other"];
 const TRUSTED_IMAGE_PREFIX = "https://i.pinimg.com/";
 
-const groupLabel = (group: Group) =>
+export const groupLabel = (group: Group) =>
   group === "other" ? "Other" : (OBJECT_TYPE_OPTIONS.find((o) => o.value === group)?.label ?? group);
 
-function GroupIcon({ group, className }: { group: Group; className?: string }) {
+export function GroupIcon({ group, className }: { group: Group; className?: string }) {
   if (group === "other") return <RiShapesLine className={cx("text-foreground-icon-tertiary", className)} aria-hidden />;
   const { icon: Icon, iconColor } = OBJECT_TYPE_VISUALS[group];
   return <Icon className={cx(iconColor, className)} aria-hidden />;
 }
 
-function PinCard({ pin }: { pin: ApiInspiration }) {
+export function PinCard({ pin }: { pin: ApiInspiration }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = pin.imageUrl.startsWith(TRUSTED_IMAGE_PREFIX) && !imageFailed;
   const label = groupLabel(pin.primaryType);
