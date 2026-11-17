@@ -100,6 +100,13 @@ function ProductDetails({
             Selected
           </Chip>
         ) : null}
+        {priceNote ? (
+          <span className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+            <Chip color="yellow" variant="caption">
+              {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
+            </Chip>
+          </span>
+        ) : null}
       </span>
       <span className="flex min-w-0 flex-col gap-1 text-start">
         <span className="truncate text-body-medium text-text-primary">{product.title}</span>
@@ -109,11 +116,6 @@ function ProductDetails({
             <ProductRatingText rating={product.rating} className="shrink-0 text-caption-1-medium text-text-secondary" />
           ) : null}
         </span>
-        {priceNote ? (
-          <Chip color="yellow" variant="caption" className="self-start">
-            {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
-          </Chip>
-        ) : null}
         <span className="flex items-center justify-between gap-2">
           <bdi className="shrink-0 text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
           <ProductSize product={product} className="min-w-0 text-end" />
