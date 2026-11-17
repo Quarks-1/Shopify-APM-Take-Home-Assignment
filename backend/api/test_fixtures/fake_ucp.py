@@ -12,6 +12,13 @@ Query keywords (case-insensitive):
 Fixtures with more than 5 products are paged: no cursor returns the first 5
 with cursor "page2"; cursor "page2" returns the rest with no next page.
 
+`catalog get_product <gid>` prints a product with media: two jpgs (one repeated
+with another ?v=), a video, an off-allowlist host and a variant photo. A gid
+containing FAIL answers with a CLI error. A search payload with `like` is
+validated (one item, `id` or `image`); a like id containing NOEMB answers
+"similarity seed embedding is missing". Every search payload is appended to
+$FAKE_UCP_STATE.log.jsonl when that is set.
+
 Merchant commands (`cart create|update|get|cancel`, `checkout create`) keep
 their carts in the JSON file at $FAKE_UCP_STATE and append every call to
 $FAKE_UCP_STATE.log.jsonl as {argv, payload}. Behaviour by --business host:
@@ -211,9 +218,30 @@ def merchant(argv):
     return 0
 
 
+def get_product(argv):
+    gid = argv[2]
+    _log(argv, None)
+    if 'FAIL' in gid:
+        print(json.dumps({'code': 'NOT_FOUND', 'message': 'no such product', 'retryable': False}))
+        return 1
+    cdn = 'https://cdn.shopify.com/s/files/1/0001/files/'
+    img = lambda name, host=None: {'type': 'image', 'url': f'{host or cdn}{name}'}  # noqa: E731
+    product = {
+        'id': gid, 'title': 'Reference table',
+        'media': [img('a.jpg?v=1'), img('a.jpg?v=2'),
+                  {'type': 'video', 'url': cdn + 'clip.mp4'},
+                  img('b.png'), img('c.jpg', 'https://evil.example.com/files/')],
+        'variants': [{'media': [img('d.jpg')]}, {'media': [img('b.png?v=9'), img('e.jpg')]}],
+    }
+    print(json.dumps({'ucp': {'status': 'success'}, 'result': {'product': product}}))
+    return 0
+
+
 def main(argv):
     if argv[:1] in (['cart'], ['checkout']):
         return merchant(argv)
+    if argv[:2] == ['catalog', 'get_product']:
+        return get_product(argv)
     path = None
     for i, a in enumerate(argv):
         if a == '--input' and i + 1 < len(argv):
@@ -223,6 +251,18 @@ def main(argv):
         return 64
     with open(path[1:], encoding='utf-8') as fh:
         payload = json.load(fh)
+    _log(argv, payload)
+    like = payload.get('like')
+    if like is not None:
+        if not isinstance(like, list) or len(like) != 1 or not (
+                like[0].get('id') or (like[0].get('image') or {}).get('data')):
+            print(json.dumps({'code': 'SCHEMA_VALIDATION_FAILED', 'message': 'bad like',
+                              'retryable': False}))
+            return 1
+        if 'NOEMB' in str(like[0].get('id')):
+            print(json.dumps({'code': 'UPSTREAM', 'retryable': False,
+                              'message': 'similarity seed embedding is missing'}))
+            return 1
     q = payload.get('query', '').lower()
     if 'crash' in q:
         print('fake ucp crashed', file=sys.stderr)

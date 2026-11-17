@@ -33,8 +33,8 @@ from django.conf import settings
 from django.db import connection, transaction
 from django.utils import timezone
 
-from ..models import AgentMode, ObjectSource, RunStatus, RunStep, SearchRun, Verdict
-from . import engine, prompts
+from ..models import AgentMode, ObjectSource, RunStatus, RunStep, SearchMode, SearchRun, Verdict
+from . import engine, like_images, prompts, ucp_client
 from .object_state import sync_object_search
 
 BACKEND_DIR = Path(settings.BASE_DIR)
@@ -244,7 +244,28 @@ def finalize(run):
 
 # ---------------------------------------------------------- start/dispatch
 
-def start_search(space_object):
+def like_source_for(candidate):
+    """The reference-product record a like run starts from. Photos are added
+    by the worker (`prepare_like_run`)."""
+    return {
+        'candidateId': candidate.pk,
+        'productGid': candidate.product_gid,
+        'variantGid': candidate.variant_gid,
+        'title': candidate.title,
+        'seller': candidate.seller_name,
+        'description': candidate.description,
+        'imageUrls': [candidate.image_url] if candidate.image_url else [],
+        'images': [],
+    }
+
+
+def start_like_search(space_object, candidate):
+    """Start a "more like this" run seeded by one of the object's candidates.
+    Returns (run, created) like `start_search`."""
+    return start_search(space_object, like_candidate=candidate)
+
+
+def start_search(space_object, like_candidate=None):
     """Returns (run, created). Reuses the object's queued/running run if any."""
     if space_object.source == ObjectSource.IMPORTED:
         raise SearchRefused('imported objects are already owned')
@@ -255,7 +276,13 @@ def start_search(space_object):
         )
         if active is not None:
             return active, False
-        run = engine.create_run(space_object, status=RunStatus.QUEUED)
+        if like_candidate is None:
+            run = engine.create_run(space_object, status=RunStatus.QUEUED)
+        else:
+            run = engine.create_run(
+                space_object, status=RunStatus.QUEUED, mode=SearchMode.LIKE,
+                like_source=like_source_for(like_candidate),
+            )
     dispatch()
     run.refresh_from_db()
     return run, True
@@ -358,6 +385,39 @@ def cancel_run(run):
 
 # ------------------------------------------------------------------ worker
 
+LIKE_MAX_ROUNDS_CAP = 20
+
+
+def like_dir(run_id):
+    return _searches_dir() / str(run_id) / 'like'
+
+
+def prepare_like_run(run):
+    """Like runs, in the worker (step PLANNING): look up every photo of the
+    reference product, cache them and size the round budget. Never raises for
+    a missing photo: with none, the product-id round is still available."""
+    run_id = run.pk
+    source = dict(run.like_source or {})
+    fallback = [u for u in source.get('imageUrls') or [] if isinstance(u, str)]
+    urls = []
+    try:
+        envelope = ucp_client.get_product(source.get('productGid') or '')
+        urls = like_images.image_urls((envelope.get('result') or {}).get('product'))
+    except ucp_client.UcpError as exc:
+        _log(run_id, f'like: get_product failed ({exc}); using the candidate image')
+    log = lambda message: _log(run_id, message)  # noqa: E731
+    images = like_images.cache_images(urls, like_dir(run_id), log) if urls else []
+    if not images and urls != fallback and fallback:
+        urls = fallback[:settings.SEARCHER_LIKE_MAX_IMAGES]
+        images = like_images.cache_images(urls, like_dir(run_id), log)
+    source['imageUrls'] = urls
+    source['images'] = images
+    max_rounds = max(settings.SEARCHER_MAX_ROUNDS,
+                     min(LIKE_MAX_ROUNDS_CAP, 2 * len(images) + 2))
+    SearchRun.objects.filter(pk=run_id).update(like_source=source, max_rounds=max_rounds)
+    run.refresh_from_db()
+    _log(run_id, f'like: {len(images)} photo(s) cached, {max_rounds} rounds allowed')
+
 def execute(run):
     """Worker body: run the agent (or the deterministic loop), then finalize.
     Never leaves the run running, and always dispatches queued runs after."""
@@ -377,6 +437,12 @@ def execute(run):
         SearchRun.objects.filter(pk=run_id, status=RunStatus.RUNNING).update(**fields)
         sync_object_search(run.object_id)
         run.refresh_from_db()
+        if run.mode == SearchMode.LIKE:
+            try:
+                prepare_like_run(run)
+            except Exception:  # photos are a bonus; the product-id round still works
+                _log(run_id, 'like: preparing photos failed:\n' + traceback.format_exc())
+                run.refresh_from_db()
         mode = settings.SEARCHER_AGENT
         _log(run_id, f'worker {os.getpid()} started (agent={mode}, db={db_path()})')
         if mode == AgentMode.DETERMINISTIC:
@@ -436,7 +502,7 @@ def build_argv(run):
         '--model', settings.SEARCHER_MODEL,
         '--output-format', 'json',
         '--json-schema', prompts.output_schema_json(),
-        '--system-prompt', prompts.SYSTEM_PROMPT,
+        '--system-prompt', prompts.system_prompt(run),
         '--tools', 'Bash',
         '--allowedTools', *ALLOWED_TOOLS,
         '--permission-mode', 'dontAsk',

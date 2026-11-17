@@ -4,14 +4,16 @@ import { cx } from "@/utils/cx";
 
 export interface SearchProgressProps {
   step?: SearchStep;
+  /** Set for "More like this" runs: the product being matched. */
+  likeTitle?: string;
   className?: string;
 }
 
-export function SearchProgress({ step = "planning", className }: SearchProgressProps) {
+export function SearchProgress({ step = "planning", likeTitle, className }: SearchProgressProps) {
   const index = SEARCH_STEPS.indexOf(step) + 1;
   return (
     <div className={cx("flex flex-wrap items-center gap-x-3 gap-y-1", className)}>
-      <AgentThinking variant="wave" label={SEARCH_STEP_LABELS[step]} showTimer={false} />
+      <AgentThinking variant="wave" label={likeTitle ? `Finding items like "${likeTitle}"` : SEARCH_STEP_LABELS[step]} showTimer={false} />
       <span className="text-caption-1-medium text-text-tertiary">
         Step {index} of {SEARCH_STEPS.length}
       </span>

@@ -217,6 +217,10 @@ export interface ApiSearchRun {
   id: string;
   objectId: string;
   status: ApiRunStatus;
+  /** Absent on responses from before like runs existed. */
+  mode?: "search" | "like";
+  likeCandidateId?: number;
+  likeTitle?: string;
   step: SearchStep | null;
   round: number;
   maxRounds: number;
@@ -463,8 +467,8 @@ interface RunReadOptions {
 const includeQuery = (includeAll?: boolean) => (includeAll ? "?include=all" : "");
 
 /** Starts a run (HTTP 202), or returns the object's active one (200). Imported objects are refused (400). */
-export const startSearch = (objectId: string) =>
-  request<ApiSearchRun>("POST", `/api/objects/${seg(objectId)}/searches/`);
+export const startSearch = (objectId: string, opts?: { mode: "like"; candidateId: number }) =>
+  request<ApiSearchRun>("POST", `/api/objects/${seg(objectId)}/searches/`, opts ? { body: opts } : undefined);
 
 export const getSearch = (runId: string, { includeAll, signal }: RunReadOptions = {}) =>
   request<ApiSearchRun>("GET", `/api/searches/${seg(runId)}/${includeQuery(includeAll)}`, { signal });

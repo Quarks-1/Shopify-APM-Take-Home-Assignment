@@ -16,6 +16,7 @@ from ..models import (
     CatalogQuery,
     RunStatus,
     RunStep,
+    SearchMode,
     SearchRun,
     Verdict,
 )
@@ -61,13 +62,18 @@ def _previous_queries(run):
 def available_strategies(run):
     prev = _previous_queries(run)
     used = [q['query'] for q in prev]
-    return query_builder.strategies(run.object_snapshot, used, prev)
+    return query_builder.strategies(run.object_snapshot, used, prev, like=_like(run))
+
+
+def _like(run):
+    """The run's reference product and photos, or None for a text search."""
+    return (run.like_source or {}) if run.mode == SearchMode.LIKE else None
 
 
 def _default_strategy(run, available):
     """After expand threshold, prefer broadening before more ladder steps."""
-    if _accepted(run) >= run.target:
-        return available[0]
+    if _accepted(run) >= run.target or run.mode == SearchMode.LIKE:
+        return available[0]  # like runs walk their photo ladder in order
     if run.round_count >= settings.SEARCHER_EXPAND_AFTER:
         for name in ('broad', 'more'):
             if name in available:
@@ -148,7 +154,8 @@ def _stop(reason, run):
 
 # ------------------------------------------------------------------- runs
 
-def create_run(space_object, status=RunStatus.RUNNING, agent_mode=''):
+def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
+               mode=SearchMode.SEARCH, like_source=None):
     """A running run (CLI `start`, tests) or a queued one for the runner."""
     snapshot = object_to_json(space_object)
     placement = space_object.placements.select_related('space').order_by('pk').first()
@@ -164,6 +171,8 @@ def create_run(space_object, status=RunStatus.RUNNING, agent_mode=''):
         max_rounds=settings.SEARCHER_MAX_ROUNDS,
         started_at=timezone.now() if running else None,
         agent_mode=agent_mode,
+        mode=mode,
+        like_source=like_source,
     )
     sync_object_search(space_object.pk)
     return run
@@ -193,23 +202,34 @@ def next_round(run, strategy=None):
 
     snapshot = run.object_snapshot
     _set_step(run, RunStep.BUILDING_QUERY)
-    payload = query_builder.build_payload(snapshot, strategy, _previous_queries(run))
+    like = _like(run)
+    previous = _previous_queries(run)
+    payload = stored = None
+    error = ''
+    try:
+        stored = query_builder.build_stored_payload(snapshot, strategy, previous, like)
+        payload = query_builder.build_payload(snapshot, strategy, previous, like)
+    except (ValueError, OSError) as exc:
+        if like is None:
+            raise
+        error = f'could not build like query: {exc}'  # e.g. a cached photo vanished
+        stored = {'like_error': True}
     _set_step(run, RunStep.QUERYING_CATALOG)
 
     run.round_count += 1
     run.save(update_fields=['round_count'])
     started = time.monotonic()
-    error = ''
     envelope = None
-    try:
-        envelope = ucp_client.search_catalog(payload)
-    except ucp_client.UcpError as exc:
-        error = str(exc)
+    if payload is not None:
+        try:
+            envelope = ucp_client.search_catalog(payload)
+        except ucp_client.UcpError as exc:
+            error = str(exc)
     duration_ms = int((time.monotonic() - started) * 1000)
 
     if envelope is None:
         CatalogQuery.objects.create(
-            run=run, round=run.round_count, strategy=strategy, payload=payload,
+            run=run, round=run.round_count, strategy=strategy, payload=stored,
             response_meta={}, error=error, duration_ms=duration_ms,
         )
         left = available_strategies(run)
@@ -217,7 +237,7 @@ def next_round(run, strategy=None):
             _set_step(run, RunStep.RANKING)
         return {
             'error': error, 'round': run.round_count, 'strategy': strategy,
-            'query': payload['query'], 'accepted': accepted, 'target': run.target,
+            'query': stored.get('query', ''), 'accepted': accepted, 'target': run.target,
             'rounds_left': run.max_rounds - run.round_count,
             'strategies_left': left,
         }
@@ -233,10 +253,12 @@ def next_round(run, strategy=None):
     }
 
     known = set(run.candidates.values_list('product_gid', flat=True))
+    if like and like.get('productGid'):
+        known.add(like['productGid'])  # the reference product is never its own match
     rows = []
     with transaction.atomic():
         cq = CatalogQuery.objects.create(
-            run=run, round=run.round_count, strategy=strategy, payload=payload,
+            run=run, round=run.round_count, strategy=strategy, payload=stored,
             response_meta=meta, returned_count=len(products), duration_ms=duration_ms,
         )
         for product in products:
@@ -267,7 +289,7 @@ def next_round(run, strategy=None):
     return {
         'round': run.round_count,
         'strategy': strategy,
-        'query': payload['query'],
+        'query': stored.get('query', ''),
         'returned': len(products),
         'new': len(rows),
         'passing': passing,

@@ -3,8 +3,10 @@
 Hard filters (price, availability, shipping) always go in the payload; no
 strategy and no caller can drop them.
 """
+import base64
 import copy
 import re
+from pathlib import Path
 
 from django.conf import settings
 
@@ -98,8 +100,11 @@ def pick_more_source(previous_queries):
     return best
 
 
-def strategies(snapshot, used_queries, previous_queries=()):
-    """Available strategies in ladder order."""
+def strategies(snapshot, used_queries, previous_queries=(), like=None):
+    """Available strategies in ladder order. `like` is a like run's
+    like_source: it switches to the photo ladder."""
+    if like is not None:
+        return like_strategies(like, previous_queries)
     used = {normalize_query(q) for q in used_queries or []}
     ladder = ['exact', 'relax-style', 'name']
     ladder += [f'similar:{i}' for i in range(len(snapshot.get('similarItems') or []))]
@@ -114,6 +119,66 @@ def strategies(snapshot, used_queries, previous_queries=()):
     if pick_more_source(previous_queries) is not None:
         out.append('more')
     return out
+
+
+# ------------------------------------------------------------- like mode
+#
+# A like run seeds the catalog's `like` parameter (one item per request) with
+# photos of a reference product instead of building text queries. Ladder:
+# like:0..N (photo + the object's name), like:product (the product id),
+# like-visual:0..N (photo alone, a wider net), then more (next page).
+
+LIKE_IMAGE_RE = re.compile(r'^<image (\d+),')
+LIKE_TITLE_LEN = 120
+
+
+def like_strategies(like, previous_queries=()):
+    """Like-mode ladder. A strategy counts as used once any round ran it
+    (like rounds share one query text, so text de-duplication can't be used)."""
+    used = {_pq(q)['strategy'] for q in previous_queries or []}
+    count = len(like.get('images') or [])
+    ladder = [f'like:{i}' for i in range(count)]
+    if like.get('productGid'):
+        ladder.append('like:product')
+    ladder += [f'like-visual:{i}' for i in range(count)]
+    out = [s for s in ladder if s not in used]
+    if pick_more_source(previous_queries) is not None:
+        out.append('more')
+    return out
+
+
+def _like_query(snapshot):
+    return _name(snapshot) or _type_noun(snapshot)
+
+
+def _image_item(like, index, redact=False):
+    """`like` item for cached photo `index`. With redact=True the data is a
+    placeholder (`<image 2, 123456 bytes>`) and no file is read: that form is
+    what gets stored, so base64 never lands in the database."""
+    for image in like.get('images') or []:
+        if image.get('index') != index:
+            continue
+        if redact:
+            data = f'<image {index}, {image.get("bytes", 0)} bytes>'
+        else:
+            try:
+                data = base64.b64encode(Path(image['path']).read_bytes()).decode('ascii')
+            except OSError as exc:
+                raise ValueError(f'cannot read like image {index}: {exc}')
+        return {'image': {'content_type': image['contentType'], 'data': data}}
+    raise ValueError(f'unknown like image: {index}')
+
+
+def _like_item_from_payload(like, payload, redact=False):
+    """Rebuild the `like` item of an earlier (stored, redacted) payload."""
+    items = (payload or {}).get('like') or []
+    item = items[0] if items and isinstance(items[0], dict) else {}
+    if item.get('id'):
+        return {'id': item['id']}
+    match = LIKE_IMAGE_RE.match(str((item.get('image') or {}).get('data') or ''))
+    if match:
+        return _image_item(like, int(match.group(1)), redact)
+    raise ValueError('earlier like query has no usable like item')
 
 
 def _usd(value):
@@ -185,9 +250,38 @@ def build_intent(snapshot):
     return ', '.join(parts) + '.'
 
 
-def build_payload(snapshot, strategy, previous_queries=()):
-    cursor = None
+def _like_parts(snapshot, strategy, previous_queries, like, redact):
+    """(query or None, like item, cursor) of a like-mode round."""
     if strategy == 'more':
+        src = pick_more_source(previous_queries)
+        if src is None:
+            raise ValueError('no earlier query has another page')
+        payload = src.get('payload') or {}
+        item = _like_item_from_payload(like, payload, redact)
+        return payload.get('query') or None, item, (src.get('response_meta') or {}).get('cursor')
+    kind, _, arg = strategy.partition(':')
+    if strategy == 'like:product' and like.get('productGid'):
+        return _like_query(snapshot) or None, {'id': like['productGid']}, None
+    if kind in ('like', 'like-visual') and arg.isdigit():
+        item = _image_item(like, int(arg), redact)
+        return (_like_query(snapshot) or None) if kind == 'like' else None, item, None
+    raise ValueError(f'unknown strategy: {strategy}')
+
+
+def build_stored_payload(snapshot, strategy, previous_queries=(), like=None):
+    """The payload to save on CatalogQuery: `build_payload` with image data
+    replaced by a placeholder."""
+    return build_payload(snapshot, strategy, previous_queries, like, redact=True)
+
+
+def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=False):
+    """The ucp catalog search payload. With `like` (a like run's like_source)
+    it holds real base64 image data: never store it, use build_stored_payload."""
+    cursor = None
+    like_item = None
+    if like is not None:
+        query, like_item, cursor = _like_parts(snapshot, strategy, previous_queries, like, redact)
+    elif strategy == 'more':
         src = pick_more_source(previous_queries)
         if src is None:
             raise ValueError('no earlier query has another page')
@@ -208,10 +302,14 @@ def build_payload(snapshot, strategy, previous_queries=()):
     min_rating = snapshot.get('minRating')
     if min_rating is not None:
         filters['rating'] = {'variant': {'min': float(min_rating)}}
+    intent = build_intent(snapshot)
+    if like is not None and like.get('title'):
+        title = re.sub(r'\s+', ' ', str(like['title'])).strip()[:LIKE_TITLE_LEN]
+        intent += f' Visually similar to: {title}.'
     payload = {
         'query': query,
         'context': {
-            'intent': build_intent(snapshot),
+            'intent': intent,
             'address_country': 'US',
             'currency': 'USD',
             'language': 'en-US',
@@ -221,4 +319,8 @@ def build_payload(snapshot, strategy, previous_queries=()):
     }
     if cursor:
         payload['pagination']['cursor'] = cursor
+    if like_item is not None:
+        payload['like'] = [like_item]
+        if not query:
+            del payload['query']  # photo alone: the catalog allows no query with `like`
     return copy.deepcopy(payload)

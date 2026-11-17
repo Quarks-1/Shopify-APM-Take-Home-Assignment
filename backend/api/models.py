@@ -165,6 +165,11 @@ class AgentMode(models.TextChoices):
     MANUAL = 'manual'  # CLI `searcher start`: no worker, never reaped
 
 
+class SearchMode(models.TextChoices):
+    SEARCH = 'search'  # text queries built from the object
+    LIKE = 'like'  # "more like this": catalog `like` seeded by a chosen product
+
+
 class SearchRun(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     object = models.ForeignKey(
@@ -195,6 +200,12 @@ class SearchRun(models.Model):
     agent_result = models.JSONField(null=True, blank=True)
     # Why the agent was replaced by the deterministic loop, if it was.
     fallback_reason = models.TextField(blank=True, default='')
+
+    # "More like this": the reference product and its cached photos
+    # ({candidateId, productGid, variantGid, title, seller, description,
+    # imageUrls, images: [{index, path, contentType, bytes}]}).
+    mode = models.CharField(max_length=8, choices=SearchMode.choices, default=SearchMode.SEARCH)
+    like_source = models.JSONField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']

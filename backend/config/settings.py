@@ -150,6 +150,14 @@ SEARCHER_MAX_ROUNDS = int(os.environ.get('SEARCHER_MAX_ROUNDS', '12'))
 SEARCHER_EXPAND_AFTER = int(os.environ.get('SEARCHER_EXPAND_AFTER', '5'))
 SEARCHER_SIZE_TOLERANCE = float(os.environ.get('SEARCHER_SIZE_TOLERANCE', '1.15'))
 SEARCHER_UCP_TIMEOUT = float(os.environ.get('SEARCHER_UCP_TIMEOUT', '60'))
+# "More like this" runs: photos of the reference product seed the catalog's
+# `like` search, one round per photo. Only these hosts are ever downloaded from.
+SEARCHER_LIKE_MAX_IMAGES = int(os.environ.get('SEARCHER_LIKE_MAX_IMAGES', '8'))
+SEARCHER_LIKE_IMAGE_HOSTS = [
+    h.strip().lower()
+    for h in os.environ.get('SEARCHER_LIKE_IMAGE_HOSTS', 'cdn.shopify.com').split(',')
+    if h.strip()
+]
 
 # Search runner (api.searcher.runner): background runs driven by a headless
 # Claude Code session on the user's subscription login (no API key).

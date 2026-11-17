@@ -95,7 +95,7 @@ type Action =
   | { type: "object/update"; id: string; patch: ObjectPatch }
   | { type: "object/delete"; id: string }
   | { type: "search/set-state"; id: string; search: SearchState }
-  | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string }
+  | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string; keepSelection?: boolean }
   | { type: "product/select"; objectId: string; productId: string }
   | { type: "cart/add"; objectIds: string[]; ids: string[] }
   | { type: "cart/set-qty"; lineId: string; qty: number }
@@ -229,7 +229,18 @@ function reducer(state: AppState, action: Action): AppState {
       const obj = getObject(state, action.id);
       if (!obj) return state;
       const { products, stores } = mergeCandidates(state.products, state.stores, [obj], action.candidates);
-      const ids = action.candidates.map((c) => candidateProductId(c.id));
+      const found = action.candidates.map((c) => candidateProductId(c.id));
+      const kept = action.keepSelection ? obj.selectedProductId : undefined;
+      if (kept) {
+        // "More like this" keeps the source product (first), its cart line and its product/store entries.
+        const ids = [kept, ...found.filter((id) => id !== kept)];
+        return mapObject({ ...state, products, stores }, action.id, (o) => ({
+          ...o,
+          candidateIds: ids,
+          search: { status: "done", lastRunAt: action.lastRunAt },
+        }));
+      }
+      const ids = found;
       // A fresh search never picks for the user: clear the selection and its cart lines.
       const next: AppState = {
         ...mapObject(state, action.id, (o) => ({
@@ -327,7 +338,12 @@ export interface AppActions {
   /** Local only: the backend derives search state from its runs. */
   setSearchState(id: string, search: SearchState): void;
   /** Merges a finished run's accepted candidates and keeps (or auto-picks) the selection. */
-  applySearchResults(objectId: string, candidates: api.ApiCandidate[], finishedAt?: string | null): void;
+  applySearchResults(
+    objectId: string,
+    candidates: api.ApiCandidate[],
+    finishedAt?: string | null,
+    opts?: { keepSelection?: boolean },
+  ): void;
   selectProduct(objectId: string, productId: string): void;
 
   addToCart(objectId: string): boolean;
@@ -769,15 +785,22 @@ export function createAppStore(): AppStore {
     },
 
     setSearchState: (id, search) => dispatch({ type: "search/set-state", id, search }),
-    applySearchResults(objectId, candidates, finishedAt) {
+    applySearchResults(objectId, candidates, finishedAt, opts) {
       const obj = getObject(state, objectId);
       if (!obj) return;
       const accepted = candidates.filter((c) => c.verdict === "accepted" && c.objectId === objectId);
       // Results never auto-select: the user picks a card. Clear any previous pick on the backend too.
       const line = getCartLineForObject(state, objectId);
       const oldStore = line ? storeOfLine(state, line) : undefined;
-      dispatch({ type: "search/results", id: objectId, candidates: accepted, lastRunAt: finishedAt ?? nowIso() });
-      if (!obj.selectedProductId) return;
+      const keepSelection = opts?.keepSelection ?? false;
+      dispatch({
+        type: "search/results",
+        id: objectId,
+        candidates: accepted,
+        lastRunAt: finishedAt ?? nowIso(),
+        keepSelection,
+      });
+      if (!obj.selectedProductId || keepSelection) return;
       if (oldStore) {
         // Clearing the pick deletes the object's cart line on the backend.
         writeCart([oldStore], async () => {

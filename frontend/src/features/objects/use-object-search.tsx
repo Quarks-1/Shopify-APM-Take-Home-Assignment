@@ -8,9 +8,13 @@ import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
 export interface ObjectSearchApi {
   search(objectId: string): void;
+  /** Finds products visually similar to the candidate (a "like" run); keeps the user's selection. */
+  searchLike(objectId: string, candidateId: number): void;
   searchAll(objectIds: string[]): void;
   cancel(objectId: string): void;
   isRunning(objectId: string): boolean;
+  /** Title of the product a running "like" search is matching, once the backend has reported it. */
+  likeTitle(objectId: string): string | undefined;
 }
 
 const ObjectSearchContext = createContext<ObjectSearchApi | null>(null);
@@ -31,6 +35,8 @@ interface Tracker {
   holdStep2: boolean;
   /** When "building-query" went on screen for `runId`. */
   step2Since?: number;
+  /** Set from the polled run when it is a "More like this" run. */
+  likeTitle?: string;
   stopped: boolean;
   /** Cancel was pressed before the start request returned a run id. */
   cancelRequested: boolean;
@@ -87,8 +93,13 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       switch (run.status) {
         case "done":
         case "empty":
-          // Results of any kind clear the pick; an empty run shows "No matches". The user chooses a card.
-          actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt);
+          // Results of a normal search clear the pick (the user chooses a card); a "like" run keeps it.
+          actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt, {
+            keepSelection: run.mode === "like",
+          });
+          if (run.mode === "like" && run.status === "empty") {
+            toast("No similar items found", { description: "Your current matches are unchanged." });
+          }
           break;
         case "failed":
           toast.error(`Search failed for ${obj.name}`, {
@@ -114,6 +125,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
         tracker.step2Since = undefined;
       }
       tracker.runId = run.id;
+      tracker.likeTitle = run.mode === "like" ? run.likeTitle : undefined;
       if (tracker.holdStep2 && (tracker.step2Since === undefined || Date.now() - tracker.step2Since < STEP_2_MIN_MS)) {
         const held = findObject(tracker.objectId);
         if (!held) {
@@ -184,14 +196,14 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       return tracker;
     };
 
-    const search = (objectId: string) => {
+    const startRun = (objectId: string, opts?: { mode: "like"; candidateId: number }) => {
       const obj = findObject(objectId);
       // A second press while running is a no-op; the backend would hand back the same run anyway.
       if (!obj || obj.source !== "search" || trackers.current.has(objectId)) return;
       const tracker = track(objectId, true);
       actions.setSearchState(objectId, { status: "running", step: "planning", lastRunAt: obj.search.lastRunAt });
       // Queued behind pending writes, so a just-created object reaches the backend first.
-      enqueue(() => api.startSearch(objectId))
+      enqueue(() => api.startSearch(objectId, opts))
         .then((run) => {
           if (tracker.cancelRequested) {
             // A newer search for this object gets the same active run back, so cancelling it would kill that one.
@@ -207,6 +219,9 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
           toast.error(`Couldn't start the search for ${obj.name}`, { description: describeError(error) });
         });
     };
+
+    const search = (objectId: string) => startRun(objectId);
+    const searchLike = (objectId: string, candidateId: number) => startRun(objectId, { mode: "like", candidateId });
 
     const resume = (objectId: string) => {
       if (trackers.current.has(objectId)) return;
@@ -235,7 +250,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       settleIdle(objectId);
     };
 
-    return { search, resume, cancel, stop, stopAll };
+    return { search, searchLike, resume, cancel, stop, stopAll };
   }, [actions, enqueue, getState]);
 
   // Follow runs that are going without us (after a reload, from another tab), and drop deleted objects.
@@ -256,10 +271,12 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
   const searchApi = useMemo<ObjectSearchApi>(
     () => ({
       search: engine.search,
+      searchLike: engine.searchLike,
       // The backend queues runs (two at a time), so they can all start at once.
       searchAll: (objectIds) => objectIds.forEach(engine.search),
       cancel: engine.cancel,
       isRunning: (objectId) => trackers.current.has(objectId),
+      likeTitle: (objectId) => trackers.current.get(objectId)?.likeTitle,
     }),
     // `version` makes isRunning consumers re-render when a run starts or ends.
     // eslint-disable-next-line react-hooks/exhaustive-deps

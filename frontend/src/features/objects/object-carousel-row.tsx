@@ -1,4 +1,4 @@
-import { RiCheckLine, RiSearchLine, RiShoppingCart2Line } from "@remixicon/react";
+import { RiCheckLine, RiSearchLine, RiSparkling2Line, RiShoppingCart2Line } from "@remixicon/react";
 import { useNavigate } from "react-router";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { toast } from "@/components/base/toast/toast";
 import { formatDims, formatPrice, formatRelativeTime } from "@/lib/format";
 import { OBJECT_TYPE_OPTIONS } from "@/mocks/types";
+import { candidateIdOf } from "@/state/remote";
 import { useAppActions, useAppState } from "@/state/app-store";
 import {
   getCandidateProducts,
@@ -73,6 +74,8 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
     (a, b) => Number(b.id === object.selectedProductId) - Number(a.id === object.selectedProductId),
   );
 
+  const likeCandidateId = candidateIdOf(object.selectedProductId);
+
   const buy = () => {
     if (!selectedProduct) return;
     if (!actions.addToCart(objectId)) return;
@@ -123,6 +126,17 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
       onClick={() => onFocusRow?.(objectId)}
       role="presentation"
     >
+      {owned ? null : (
+        <Button
+          variant="secondary"
+          size="small"
+          leadingIcon={RiSparkling2Line}
+          disabled={!selectedProduct || likeCandidateId === undefined || running}
+          onClick={() => likeCandidateId !== undefined && search.searchLike(objectId, likeCandidateId)}
+        >
+          More like this
+        </Button>
+      )}
       <Button variant="ghost" size="small" onClick={() => drawer.open(objectId)}>
         Details
       </Button>
@@ -188,7 +202,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   } else if (running) {
     body = (
       <div className="flex flex-col gap-4">
-        <SearchProgress step={object.search.step} />
+        <SearchProgress step={object.search.step} likeTitle={search.likeTitle(objectId)} />
         <div className="flex gap-3 overflow-hidden" aria-hidden>
           <SkeletonCard />
           <SkeletonCard />

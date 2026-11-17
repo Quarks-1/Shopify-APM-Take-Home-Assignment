@@ -127,6 +127,12 @@ def search_catalog(payload):
     return _run(('catalog', 'search'), payload)
 
 
+def get_product(gid):
+    """Full detail of one product (all its photos). The id is a positional
+    argv entry, validated by `_run`. Raises UcpError."""
+    return _run(('catalog', 'get_product'), positional=(gid,))
+
+
 def _merchant(command, domain, payload=None, positional=()):
     business_url(domain)  # a merchant command always names its business
     return _run(command, payload, positional=positional, business=domain, profile=True,

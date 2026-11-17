@@ -17,7 +17,7 @@ from .searcher import engine, runner
 FAKE_UCP = str(Path(__file__).parent / 'test_fixtures' / 'fake_ucp.py')
 
 RUN_KEYS = {
-    'id', 'objectId', 'status', 'step', 'round', 'maxRounds', 'accepted', 'target', 'partial',
+    'id', 'objectId', 'mode', 'status', 'step', 'round', 'maxRounds', 'accepted', 'target', 'partial',
     'createdAt', 'startedAt', 'finishedAt', 'error', 'agent', 'queries', 'candidates',
 }
 AGENT_KEYS = {'mode', 'model', 'turns', 'sessionId', 'outcome', 'notes', 'fallbackReason',

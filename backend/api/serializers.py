@@ -217,9 +217,15 @@ def run_to_json(run, include_all=False):
     structured = result.get('structured_output') or {}
     if not isinstance(structured, dict):
         structured = {}
+    like = {}
+    if run.mode == 'like':
+        source = run.like_source or {}
+        like = {'likeCandidateId': source.get('candidateId'), 'likeTitle': source.get('title')}
     return {
         'id': str(run.id),
         'objectId': run.object_id,
+        'mode': run.mode,
+        **like,
         'status': run.status,
         'step': run.step,
         'round': run.round_count,
