@@ -63,9 +63,11 @@ class SearchApiTests(TestCase):
         engine.next_round(run, 'more')
         passing = list(Candidate.objects.filter(run=run, passes_filters=True).order_by('pk'))
         accept = [c.pk for c in passing[:3]]
-        reject = {}
-        if len(passing) > 3:
-            reject = {passing[3].pk: 'a book, not a table'}
+        # Reject the next passing candidate, else the first filtered-out one that
+        # is not too big (filtered-out candidates may be rejected, never accepted).
+        rest = (Candidate.objects.filter(run=run).exclude(pk__in=accept)
+                .exclude(size_status='too_big').order_by('-passes_filters', 'pk'))
+        reject = {rest[0].pk: 'a book, not a table'}
         engine.judge(run, accept, reject)
         runner.finalize(run)
         return run, [c.pk for c in passing]
@@ -152,17 +154,21 @@ class SearchApiTests(TestCase):
         run, ids = self.judged_run()
         body = self.client.get(f'/api/searches/{run.pk}/?include=all').json()
         verdicts = [c['verdict'] for c in body['candidates']]
-        self.assertEqual(len(verdicts), 5)
-        self.assertEqual(verdicts[:3], ['accepted'] * 3)
-        self.assertEqual(sorted(verdicts[3:]), ['pending', 'rejected'])
+        # Both fixture pages (8 products): the 2 verified fits are accepted, one
+        # unverified product is rejected, the other 5 stay pending (filtered out).
+        self.assertEqual(len(verdicts), 8)
+        self.assertEqual(verdicts[:2], ['accepted'] * 2)
+        self.assertEqual(sorted(verdicts[2:]), ['pending'] * 5 + ['rejected'])
         rejected = next(c for c in body['candidates'] if c['verdict'] == 'rejected')
         self.assertEqual(rejected['verdictReason'], 'a book, not a table')
-        filtered = next(c for c in body['candidates'] if c['verdict'] == 'pending')
+        pending = [c for c in body['candidates'] if c['verdict'] == 'pending']
+        self.assertTrue(all(c['filterReasons'] for c in pending))
+        filtered = next(c for c in pending if c['sizeStatus'] == 'too_big')
         self.assertTrue(filtered['filterReasons'][0].startswith('too large'))
-        self.assertEqual(filtered['sizeStatus'], 'too_big')
-        self.assertEqual(body['accepted'], 3)
+        self.assertIn(['size unverified'], [c['filterReasons'] for c in pending])
+        self.assertEqual(body['accepted'], 2)
         latest = self.client.get('/api/objects/obj1/searches/latest/?include=all').json()
-        self.assertEqual(len(latest['candidates']), 5)
+        self.assertEqual(len(latest['candidates']), 8)
 
     def test_agent_block(self):
         run, _ = self.judged_run()
@@ -214,14 +220,15 @@ class SearchApiTests(TestCase):
     def test_select_validation(self):
         run, ids = self.judged_run()
         other_run, other_ids = self.judged_run(make_object('obj2'))
-        pending = Candidate.objects.get(run=run, verdict=Verdict.PENDING).pk
+        pending = Candidate.objects.filter(run=run, verdict=Verdict.PENDING).first().pk
+        rejected = Candidate.objects.get(run=run, verdict=Verdict.REJECTED).pk
 
         def details(body, status=400):
             r = self.post('/api/objects/obj1/select/', body)
             self.assertEqual(r.status_code, status, r.content)
             return r.json().get('details', {})
 
-        self.assertIn('not accepted', details({'candidateId': ids[3]})['candidateId'])  # rejected
+        self.assertIn('not accepted', details({'candidateId': rejected})['candidateId'])
         self.assertIn('not accepted', details({'candidateId': pending})['candidateId'])
         self.assertIn('not a candidate', details({'candidateId': other_ids[0]})['candidateId'])
         self.assertIn('not a candidate', details({'candidateId': 999999})['candidateId'])
@@ -324,7 +331,8 @@ class SearchApiTests(TestCase):
                                      dims={'x': 100, 'y': 100}, created_at=timezone.now(),
                                      updated_at=timezone.now())
         Placement.objects.create(space=space, object=self.obj, x=0, y=0)
-        self.judged_run()
+        _, ids = self.judged_run()
+        accepted = len(ids)  # every verified fit in the fixture (2)
         with self.assertNumQueries(5):
             self.client.get('/api/state/')
         for i in range(3):
@@ -333,7 +341,10 @@ class SearchApiTests(TestCase):
             self.post(f'/api/objects/{obj.pk}/select/', {'candidateId': ids[0]})
             self.judged_run(obj)  # the selection is now from an older run
         with self.assertNumQueries(5):
-            self.assertEqual(len(self.client.get('/api/state/').json()['candidates']), 3 + 3 * 4)
+            # obj1's accepted + per extra object: its accepted plus the older selection
+            self.assertEqual(len(self.client.get('/api/state/').json()['candidates']),
+                             accepted + 3 * (accepted + 1))
+        self.assertEqual(accepted, 2)
 
     def test_detail_query_count_is_constant(self):
         run, _ = self.judged_run()

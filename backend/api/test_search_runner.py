@@ -71,7 +71,8 @@ class RunnerIntegrationTests(TempVarDir, TransactionTestCase):
             SEARCHER_VAR_DIR=self.var, SEARCHER_AGENT_CWD=self.cwd,
             SEARCHER_UCP_BIN=FAKE_UCP, SEARCHER_CLAUDE_BIN=FAKE_CLAUDE,
             SEARCHER_AGENT='claude', SEARCHER_FALLBACK='deterministic', SEARCHER_RUN_TIMEOUT=60,
-            SEARCHER_TARGET=3, SEARCHER_MODEL='sonnet',
+            # The coffee-table fixture has exactly 2 verified fits (one per page).
+            SEARCHER_TARGET=2, SEARCHER_MODEL='sonnet',
         )
         cm.enable()
         self.addCleanup(cm.disable)
@@ -105,7 +106,9 @@ class RunnerIntegrationTests(TempVarDir, TransactionTestCase):
         self.assertIsNotNone(run.finished_at)
         self.assertIsNone(run.agent_pid)
         self.assertEqual(run.worker_pid, os.getpid())  # in-process
-        self.assertEqual(run.round_count, 1)
+        # Page 1 has one fit; the agent's default `next` widens to page 2 ('more')
+        # on round SEARCHER_EXPAND_AFTER + 1 and stops as soon as the target is met.
+        self.assertEqual(run.round_count, 6)
 
         # Verdicts came from the agent's `searcher judge` calls.
         info = self.dump(run)

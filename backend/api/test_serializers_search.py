@@ -23,10 +23,12 @@ class BrandDiverseSortTests(SimpleTestCase):
             cand(4, 'c.shop', price=170),
         ]
         ordered = sort_accepted_brand_diverse(items)
-        self.assertEqual([c.pk for c in ordered], [2, 3, 4, 1])
+        # One per seller first, sellers ranked by their best candidate
+        # (a: $150, c: $170, b: $180), then a's second candidate.
+        self.assertEqual([c.pk for c in ordered], [2, 4, 3, 1])
         self.assertEqual(
             [seller_group_key(c) for c in ordered[:3]],
-            ['a.shop', 'b.shop', 'c.shop'],
+            ['a.shop', 'c.shop', 'b.shop'],
         )
 
     def test_within_brand_fits_and_price(self):

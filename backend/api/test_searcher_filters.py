@@ -4,6 +4,7 @@ from .searcher.filters import evaluate
 
 TOL = 1.15
 OBJ = {'dims': {'x': 46, 'y': 24, 'z': 17}, 'priceLimit': 400, 'weight': 40}
+FIT = {'x': 40, 'y': 20, 'z': 15}  # verified dims that fit OBJ, so only the axis under test fails
 
 
 def prod(**kw):
@@ -18,12 +19,13 @@ class FilterTests(SimpleTestCase):
         return evaluate(fields, snapshot, TOL)
 
     def test_price(self):
-        self.assertTrue(self.ev(prod(price_cents=40000))[0])
-        passes, reasons, *_ = self.ev(prod(price_cents=45000))
+        self.assertTrue(self.ev(prod(price_cents=40000, dims=FIT))[0])
+        passes, reasons, *_ = self.ev(prod(price_cents=45000, dims=FIT))
         self.assertFalse(passes)
         self.assertEqual(reasons, ['over price limit: $450.00 > $400.00'])
         # no limit -> any USD price passes
-        self.assertTrue(evaluate(prod(price_cents=10**7), {'dims': {'x': 1, 'y': 1}}, TOL)[0])
+        self.assertTrue(evaluate(prod(price_cents=10**7, dims={'x': 1, 'y': 1}),
+                                 {'dims': {'x': 1, 'y': 1}}, TOL)[0])
 
     def test_min_rating(self):
         snap = {**OBJ, 'minRating': 4}
@@ -102,7 +104,7 @@ class FilterTests(SimpleTestCase):
     def test_weight(self):
         self.assertEqual(self.ev(prod(weight_lb=30))[3], 'fits')
         self.assertEqual(self.ev(prod(weight_lb=45))[3], 'fits')  # within tolerance
-        passes, reasons, _, weight = self.ev(prod(weight_lb=56))
+        passes, reasons, _, weight = self.ev(prod(weight_lb=56, dims=FIT))
         self.assertEqual((passes, weight), (False, 'too_heavy'))
         self.assertEqual(reasons, ['too heavy: 56 lb exceeds 40 lb (+15%)'])
         self.assertEqual(self.ev(prod())[3], 'unverified')

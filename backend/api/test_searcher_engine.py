@@ -179,8 +179,10 @@ class EngineTests(TestCase):
         self.assertStop(engine.next_round(self.run), 'max rounds')
 
     def test_stop_target_reached(self):
-        out = engine.next_round(self.run)
-        ids = [c['id'] for c in out['candidates']][:2]
+        # The fixture has one verified fit per page: page 1 (exact) and page 2 (more).
+        ids = [c['id'] for c in engine.next_round(self.run)['candidates']]
+        ids += [c['id'] for c in engine.next_round(self.run, 'more')['candidates']]
+        self.assertEqual(len(ids), 2)
         SearchRun.objects.filter(pk=self.run.pk).update(target=2)
         engine.judge(self.run, ids)
         self.run.refresh_from_db()
@@ -204,28 +206,29 @@ class EngineTests(TestCase):
 
     # ----------------------------------------------------------- judge
     def test_judge_accept_reject_rejudge(self):
-        engine.next_round(self.run)
+        # One verified fit per fixture page: page 1 (exact) and page 2 (more).
+        ids = [x['id'] for x in engine.next_round(self.run)['candidates']]
         out = engine.next_round(self.run, 'more')
-        ids = [x['id'] for x in out['candidates']]
-        self.assertGreaterEqual(len(ids), 2, out)
-        a, b = ids[0], ids[1]
-        rejects = {ids[2]: 'x' * 500} if len(ids) > 2 else {}
-        res = engine.judge(self.run, [a, b], rejects)
-        self.assertEqual(
-            res,
-            {'accepted': 2, 'target': 10, 'done': False, 'pending': len(ids) - 2 - len(rejects)},
-        )
-        if rejects:
-            self.assertEqual(Candidate.objects.get(pk=ids[2]).verdict_reason, 'x' * 200)
+        ids += [x['id'] for x in out['candidates']]
+        self.assertEqual(len(ids), 2, out)
+        a, b = ids
+        # Filtered-out candidates can still be rejected (never accepted).
+        c = Candidate.objects.get(run=self.run, title__startswith='Garvee').pk
+        res = engine.judge(self.run, [a, b], {c: 'x' * 500})
+        self.assertEqual(res, {'accepted': 2, 'target': 10, 'done': False, 'pending': 0})
+        self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, 'x' * 200)
         self.run.refresh_from_db()
         self.assertEqual(self.run.step, 'ranking')
-        if len(ids) > 2:
-            c = ids[2]
-            res = engine.judge(self.run, [c], {a: 'changed my mind'})
-            self.assertEqual((res['accepted'], res['pending']), (2, 0))
-            self.assertEqual(Candidate.objects.get(pk=a).verdict, 'rejected')
-            self.assertEqual(Candidate.objects.get(pk=c).verdict, 'accepted')
-            self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, '')
+        # Re-judging flips verdicts both ways; re-accepting clears the old reason.
+        res = engine.judge(self.run, [], {a: 'changed my mind'})
+        self.assertEqual((res['accepted'], res['pending']), (1, 0))
+        self.assertEqual(Candidate.objects.get(pk=a).verdict, 'rejected')
+        self.assertEqual(Candidate.objects.get(pk=a).verdict_reason, 'changed my mind')
+        res = engine.judge(self.run, [a], {b: 'changed my mind'})
+        self.assertEqual((res['accepted'], res['pending']), (1, 0))
+        self.assertEqual(Candidate.objects.get(pk=b).verdict, 'rejected')
+        self.assertEqual(Candidate.objects.get(pk=a).verdict, 'accepted')
+        self.assertEqual(Candidate.objects.get(pk=a).verdict_reason, '')
 
     def test_judge_done_flag(self):
         engine.next_round(self.run)
@@ -277,7 +280,10 @@ class EngineTests(TestCase):
         SearchRun.objects.filter(pk=self.run.pk).update(target=2)
         self.run.refresh_from_db()
         res = engine.run_deterministic(self.run)
-        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 2, 2))
+        # Page 1 holds one verified fit; rounds 2-5 (relax-style, name, similar:0,
+        # broad) return the same page, then round 6 widens to page 2 ('more')
+        # after SEARCHER_EXPAND_AFTER and finds the second fit.
+        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 2, 6))
         self.assertEqual(res['unverified'], 0)
         self.run.refresh_from_db()
         self.assertEqual((self.run.status, self.run.step), ('done', None))
@@ -396,14 +402,18 @@ class CommandTests(TestCase):
         nxt = self.run_cmd('next', run_id=run_id)
         self.assertEqual(nxt['strategy'], 'exact')
         ids = [c['id'] for c in nxt['candidates']]
-        res = self.run_cmd('judge', '--accept', str(ids[0]), str(ids[1]),
-                           '--reject', f'{ids[2]}=wrong type', f'{ids[3]}="coffee table book"',
+        self.assertEqual(len(ids), 1)  # page 1 holds one verified fit
+        # Reject two filtered-out candidates to exercise --reject parsing.
+        garvee = Candidate.objects.get(run_id=run_id, title__startswith='Garvee').pk
+        onyx = Candidate.objects.get(run_id=run_id, title__startswith='Onyx').pk
+        res = self.run_cmd('judge', '--accept', str(ids[0]),
+                           '--reject', f'{garvee}=wrong type', f'{onyx}="coffee table book"',
                            run_id=run_id)
-        self.assertEqual((res['accepted'], res['pending']), (2, 0))
-        self.assertEqual(Candidate.objects.get(pk=ids[2]).verdict_reason, 'wrong type')
-        self.assertEqual(Candidate.objects.get(pk=ids[3]).verdict_reason, 'coffee table book')
+        self.assertEqual((res['accepted'], res['pending']), (1, 0))
+        self.assertEqual(Candidate.objects.get(pk=garvee).verdict_reason, 'wrong type')
+        self.assertEqual(Candidate.objects.get(pk=onyx).verdict_reason, 'coffee table book')
         st = self.run_cmd('status', run_id=run_id)
-        self.assertEqual((st['round'], st['accepted']), (1, 2))
+        self.assertEqual((st['round'], st['accepted']), (1, 1))
         self.assertEqual(self.run_cmd('next', '--strategy', 'broad', run_id=run_id)['strategy'], 'broad')
         auto = self.run_cmd('auto', run_id=run_id)
         self.assertEqual(auto['status'], 'done')
