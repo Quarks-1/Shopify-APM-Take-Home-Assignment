@@ -56,6 +56,14 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const unit = (spaceId ? getSpace(state, spaceId)?.unit : undefined) ?? "in";
   const typeLabel = OBJECT_TYPE_OPTIONS.find((o) => o.value === object.type)?.label ?? object.type;
   const owned = object.source === "imported";
+  const priceRangeLabel =
+    object.priceMin !== undefined && object.priceLimit !== undefined
+      ? `${formatPrice(object.priceMin)} – ${formatPrice(object.priceLimit)}`
+      : object.priceLimit !== undefined
+        ? `≤ ${formatPrice(object.priceLimit)}`
+        : object.priceMin !== undefined
+          ? `≥ ${formatPrice(object.priceMin)}`
+          : undefined;
   const running = search.isRunning(objectId) || object.search.status === "running";
   const cartLine = getCartLineForObject(state, objectId);
   const selectedProduct = getSelectedProduct(state, object);
@@ -95,9 +103,9 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
         <Chip color="soft" variant="caption">
           {typeLabel}
         </Chip>
-        {object.priceLimit !== undefined ? (
+        {priceRangeLabel ? (
           <Chip color="soft" variant="caption">
-            <bdi>≤ {formatPrice(object.priceLimit)}</bdi>
+            <bdi>{priceRangeLabel}</bdi>
           </Chip>
         ) : null}
       </div>
@@ -186,7 +194,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   } else if (candidates.length === 0 && object.search.status === "empty") {
     body = (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-background-secondary-default p-4">
-        <p className="text-body-regular text-text-secondary">No matches. Loosen the price limit or size.</p>
+        <p className="text-body-regular text-text-secondary">No matches. Loosen the price range or size.</p>
         <Button variant="secondary" size="small" onClick={() => drawer.open(objectId)}>
           Details
         </Button>

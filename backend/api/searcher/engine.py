@@ -304,7 +304,8 @@ def status(run):
         'object': {
             'name': snap.get('name'), 'type': snap.get('type'),
             'style': snap.get('style'), 'material': snap.get('material'),
-            'dims': d, 'priceLimit': snap.get('priceLimit'),
+            'dims': d, 'priceMin': snap.get('priceMin'),
+            'priceLimit': snap.get('priceLimit'),
         },
     }
 

@@ -43,6 +43,12 @@ class EngineTests(TestCase):
         self.assertEqual(r.object_snapshot['priceLimit'], 400)
         self.assertNotIn('space', r.object_snapshot)
 
+    def test_snapshot_includes_price_minimum(self):
+        self.obj.price_min = 100
+        self.obj.save()
+        run = engine.create_run(self.obj)
+        self.assertEqual((run.object_snapshot['priceMin'], run.object_snapshot['priceLimit']), (100, 400))
+
     def test_snapshot_includes_first_space_and_is_frozen(self):
         space = Space.objects.create(id='s1', name='Den', type='shelf', unit='in',
                                      dims={'x': 50, 'y': 12}, created_at=timezone.now(),

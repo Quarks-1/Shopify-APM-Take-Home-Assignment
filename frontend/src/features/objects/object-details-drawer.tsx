@@ -22,6 +22,7 @@ import { getObject, getParentSpaces, getProduct, getSelectedProduct, getStore } 
 import { ProductSize } from "./product-card";
 import { ProductTile } from "./product-tile";
 import { useObjectDrawer } from "./use-object-drawer";
+import { PriceRangeSlider, type PriceRange } from "./price-range-slider";
 import { useObjectSearch } from "./use-object-search";
 
 const ANY = "any";
@@ -76,7 +77,7 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const [weight, setWeight] = useState(object.weight ?? NaN);
   const [material, setMaterial] = useState<string>(object.material ?? ANY);
   const [style, setStyle] = useState<string>(object.style ?? ANY);
-  const [priceLimit, setPriceLimit] = useState(object.priceLimit ?? NaN);
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: object.priceMin, max: object.priceLimit });
   const [similar, setSimilar] = useState(object.similarItems);
   const [similarDraft, setSimilarDraft] = useState("");
   const [spaceIds, setSpaceIds] = useState(initialSpaceIds);
@@ -113,7 +114,8 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
       weight: numberOrUndefined(weight),
       material: parseOption(MATERIAL_OPTIONS, material),
       style: parseOption(STYLE_OPTIONS, style),
-      priceLimit: numberOrUndefined(priceLimit),
+      priceMin: priceRange.min,
+      priceLimit: priceRange.max,
       similarItems: similar,
     });
     for (const space of state.spaces) {
@@ -207,14 +209,7 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
               ))}
             </Select>
           </div>
-          <NumberField
-            label="Price limit"
-            value={priceLimit}
-            onChange={setPriceLimit}
-            minValue={0}
-            formatOptions={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }}
-            hint="Optional"
-          />
+          <PriceRangeSlider value={priceRange} onChange={setPriceRange} />
         </Section>
 
         <Section title="Similar items">

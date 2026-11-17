@@ -279,6 +279,7 @@ export interface ApiObjectCreate {
   weight?: number | null;
   material?: Material | null;
   style?: Style | null;
+  priceMin?: number | null;
   priceLimit?: number | null;
   similarItems?: string[];
   source?: SpaceObject["source"];

@@ -116,6 +116,11 @@ def strategies(snapshot, used_queries, previous_queries=()):
     return out
 
 
+def _usd(value):
+    value = float(value)
+    return f'${value:,.0f}' if value == int(value) else f'${value:,.2f}'
+
+
 def _fmt(v):
     return f'{round(float(v), 2):g}'
 
@@ -161,10 +166,14 @@ def build_intent(snapshot):
         parts.append(f'fitting within {size} inches')
     if snapshot.get('weight') is not None:
         parts.append(f'weighing at most {_fmt(snapshot["weight"])} lb')
+    minimum = snapshot.get('priceMin')
     limit = snapshot.get('priceLimit')
-    if limit is not None:
-        money = f'${limit:,.0f}' if float(limit) == int(limit) else f'${limit:,.2f}'
-        parts.append(f'priced under {money}')
+    if minimum is not None and limit is not None:
+        parts.append(f'priced between {_usd(minimum)} and {_usd(limit)}')
+    elif limit is not None:
+        parts.append(f'priced under {_usd(limit)}')
+    elif minimum is not None:
+        parts.append(f'priced over {_usd(minimum)}')
     similar = [s for s in (snapshot.get('similarItems') or []) if s]
     if similar:
         parts.append('similar to: ' + ', '.join(similar))
@@ -185,9 +194,15 @@ def build_payload(snapshot, strategy, previous_queries=()):
     else:
         query = strategy_query(snapshot, strategy)
     filters = {'available': True, 'ships_to': {'country': 'US'}}
+    price = {}
+    minimum = snapshot.get('priceMin')
+    if minimum is not None:
+        price['min'] = int(round(float(minimum) * 100))
     limit = snapshot.get('priceLimit')
     if limit is not None:
-        filters['price'] = {'max': int(round(float(limit) * 100))}
+        price['max'] = int(round(float(limit) * 100))
+    if price:
+        filters['price'] = price
     payload = {
         'query': query,
         'context': {
