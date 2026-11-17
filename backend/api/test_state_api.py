@@ -151,6 +151,16 @@ class ObjectTests(Base):
         self.assertEqual(self.call('delete', f'/api/objects/{o["id"]}/').status_code, 204)
         self.assertEqual(self.call('get', f'/api/objects/{o["id"]}/').status_code, 404)
 
+    def test_min_rating_round_trip(self):
+        o = self.make_object(minRating=4.5)
+        self.assertEqual(o['minRating'], 4.5)
+        for v in (0, 5):
+            p = self.call('patch', f'/api/objects/{o["id"]}/', {'minRating': v}).json()
+            self.assertEqual(p['minRating'], v)
+        p = self.call('patch', f'/api/objects/{o["id"]}/', {'minRating': None}).json()
+        self.assertNotIn('minRating', p)
+        self.assertNotIn('minRating', self.call('get', f'/api/objects/{o["id"]}/').json())
+
     def test_client_created_at_and_conflict(self):
         o = self.make_object(id='obj_x', createdAt='2024-03-01T10:00:00Z')
         self.assertEqual(o['createdAt'], '2024-03-01T10:00:00Z')
@@ -171,6 +181,10 @@ class ObjectTests(Base):
         self.assertIn('style', details(style=3))
         self.assertIn('weight', details(weight=True))
         self.assertIn('priceLimit', details(priceLimit=-5))
+        self.assertIn('minRating', details(minRating=-1))
+        self.assertIn('minRating', details(minRating=5.1))
+        self.assertIn('minRating', details(minRating='4'))
+        self.assertIn('minRating', details(minRating=True))
         self.assertIn('dims.x', details(dims={'x': 0, 'y': 1}))
         self.assertIn('similarItems[2]', details(similarItems=['a', 'b', 3]))
         self.assertIn('similarItems[0]', details(similarItems=['a' * 81]))
@@ -260,7 +274,7 @@ def app_state():
         ],
         'objects': [
             {'id': 'obj_sofa', 'name': 'Sofa', 'dims': {'x': 80, 'y': 36, 'z': 30}, 'weight': 120,
-             'type': 'furniture', 'material': 'fabric', 'style': 'modern', 'priceLimit': 1500,
+             'type': 'furniture', 'material': 'fabric', 'style': 'modern', 'priceLimit': 1500, 'minRating': 4,
              'similarItems': ['loveseat'], 'source': 'search', 'candidateIds': ['p1', 'p2'],
              'selectedProductId': 'p1',
              'search': {'status': 'done', 'step': 'ranking', 'lastRunAt': '2024-05-01T12:00:00.000Z'},
@@ -370,13 +384,13 @@ class ImportTests(Base):
         self.call('post', '/api/state/import/', payload)
         first = self.snapshot()
         self.assertEqual(first['objects'][0]['material'], 'fabric')
-        for k in ('weight', 'material', 'style', 'priceLimit', 'selectedProductId'):
+        for k in ('weight', 'material', 'style', 'priceLimit', 'minRating', 'selectedProductId'):
             del payload['objects'][0][k]
         payload['objects'][0].update(candidateIds=[], similarItems=[], search={'status': 'idle'})
         del payload['spaces'][0]['weightLimit']
         self.assertEqual(self.call('post', '/api/state/import/', payload).status_code, 200)
         snap = self.snapshot()
-        for k in ('weight', 'material', 'style', 'priceLimit', 'selectedProductId'):
+        for k in ('weight', 'material', 'style', 'priceLimit', 'minRating', 'selectedProductId'):
             self.assertNotIn(k, snap['objects'][0])
         self.assertNotIn('weightLimit', snap['spaces'][0])
 

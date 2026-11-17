@@ -280,6 +280,7 @@ export interface ApiObjectCreate {
   material?: Material | null;
   style?: Style | null;
   priceLimit?: number | null;
+  minRating?: number | null;
   similarItems?: string[];
   source?: SpaceObject["source"];
   owned?: OwnedInfo | null;

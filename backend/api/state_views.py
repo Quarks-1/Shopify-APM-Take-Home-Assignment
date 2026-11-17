@@ -266,6 +266,7 @@ def state_import(request):
             # Import is a full snapshot: absent optional fields reset to defaults.
             defaults = {
                 'weight': None, 'material': None, 'style': None, 'price_limit': None,
+                'min_rating': None,
                 'owned': None, 'selected_product_id': None, 'similar_items': [],
                 'candidate_ids': [], 'search': default_search(), 'source': 'search',
             }

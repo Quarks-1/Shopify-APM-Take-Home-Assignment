@@ -20,6 +20,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PAGE = 5
 
 
+def _rating(product):
+    r = product.get('rating')
+    if not r:
+        variants = product.get('variants') or []
+        r = variants[0].get('rating') if variants else None
+    return (r or {}).get('value')
+
+
 def main(argv):
     path = None
     for i, a in enumerate(argv):
@@ -48,6 +56,9 @@ def main(argv):
         env = json.load(fh)
     result = env['result']
     products = result['products']
+    min_rating = (((payload.get('filters') or {}).get('rating') or {}).get('variant') or {}).get('min')
+    if min_rating is not None:
+        products = [p for p in products if _rating(p) is not None and _rating(p) >= min_rating]
     cursor = (payload.get('pagination') or {}).get('cursor')
     if 'empty' in q:
         products = []

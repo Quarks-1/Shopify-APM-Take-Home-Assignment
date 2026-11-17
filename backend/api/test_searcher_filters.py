@@ -25,6 +25,26 @@ class FilterTests(SimpleTestCase):
         # no limit -> any USD price passes
         self.assertTrue(evaluate(prod(price_cents=10**7), {'dims': {'x': 1, 'y': 1}}, TOL)[0])
 
+    def test_min_rating(self):
+        snap = {**OBJ, 'minRating': 4}
+        fit = {'dims': {'x': 40, 'y': 20, 'z': 10}, 'dims_longest': 40, 'weight_lb': 30}
+
+        def prod(**kw):
+            return globals()['prod'](**{**fit, **kw})
+
+        passes, reasons, *_ = self.ev(prod(rating_value=3.9), snap)
+        self.assertFalse(passes)
+        self.assertEqual(reasons, ['below rating minimum: 3.9 < 4'])
+        passes, reasons, *_ = self.ev(prod(), snap)
+        self.assertFalse(passes)
+        self.assertEqual(reasons, ['rating unknown'])
+        self.assertTrue(self.ev(prod(rating_value=4.0), snap)[0])
+        self.assertTrue(self.ev(prod(rating_value=4.7), snap)[0])
+        # no minimum -> unrated and low-rated products pass
+        self.assertTrue(self.ev(prod())[0])
+        self.assertTrue(self.ev(prod(rating_value=1.0))[0])
+        self.assertTrue(self.ev(prod(), {**OBJ, 'minRating': None})[0])
+
     def test_currency(self):
         passes, reasons, *_ = self.ev(prod(currency='EUR'))
         self.assertFalse(passes)

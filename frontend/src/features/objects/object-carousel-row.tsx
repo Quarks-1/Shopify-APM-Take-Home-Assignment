@@ -100,6 +100,11 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
             <bdi>≤ {formatPrice(object.priceLimit)}</bdi>
           </Chip>
         ) : null}
+        {object.minRating !== undefined ? (
+          <Chip color="soft" variant="caption">
+            <bdi>★ {object.minRating}+</bdi>
+          </Chip>
+        ) : null}
       </div>
     </div>
   );

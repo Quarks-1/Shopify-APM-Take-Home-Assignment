@@ -39,6 +39,15 @@ def evaluate(fields, snapshot, tolerance):
     if limit is not None and cents is not None and cents > round(limit * 100):
         reasons.append(f'over price limit: {_money(cents)} > ${limit:,.2f}')
 
+    # ---- rating (unrated products are excluded when a minimum is set)
+    min_rating = snapshot.get('minRating')
+    if min_rating is not None:
+        rv = fields.get('rating_value')
+        if rv is None:
+            reasons.append('rating unknown')
+        elif rv < min_rating:
+            reasons.append(f'below rating minimum: {_n(rv)} < {_n(min_rating)}')
+
     # ---- size
     if cents is not None and cents <= 0:
         reasons.append('price unknown')
