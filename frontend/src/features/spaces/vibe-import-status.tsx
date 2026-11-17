@@ -1,6 +1,6 @@
 import { AgentThinking } from "@/components/application/agent-thinking/agent-thinking";
 import { CloseButton } from "@/components/base/buttons/close-button";
-import { Notification, NotificationViewport } from "@/components/base/notification/notification";
+import { Notification } from "@/components/base/notification/notification";
 import { ProgressBar } from "@/components/base/progress/progress";
 import { VIBE_IMPORT_STEPS, vibeImportLabel } from "@/mocks/types";
 import { cx } from "@/utils/cx";
@@ -20,7 +20,7 @@ export function VibeImportStatus({ spaceId }: { spaceId: string }) {
         key="vibe-import-running"
         className={cx(
           "relative flex w-full flex-col gap-2 rounded-3xl border border-border-button-default",
-          "bg-background-primary-default p-4 pe-11 shadow-dropdown",
+          "bg-background-primary-default px-4 py-3 pe-11 shadow-dropdown",
         )}
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -65,5 +65,11 @@ export function VibeImportStatus({ spaceId }: { spaceId: string }) {
     );
   }
 
-  return <NotificationViewport position="top-center">{content}</NotificationViewport>;
+  if (!content) return null;
+
+  return (
+    <div className="flex w-full shrink-0 justify-center">
+      <div className="w-full max-w-sm">{content}</div>
+    </div>
+  );
 }
