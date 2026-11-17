@@ -155,7 +155,6 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   return (
   <>
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-3rem)] lg:overflow-hidden">
-      <VibeImportStatus spaceId={space.id} />
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="truncate text-title-3-medium text-text-primary">{space.name}</h1>
@@ -163,7 +162,8 @@ function EditSpace({ spaceId }: { spaceId: string }) {
             {typeLabel} · {formatDims(space.dims, space.unit)} · Est. {formatPrice(estimated)}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <VibeImportStatus spaceId={space.id} />
           <Button variant="secondary" size="small" leadingIcon={RiSettings3Line} onClick={() => setSettingsOpen(true)}>
             Space settings
           </Button>

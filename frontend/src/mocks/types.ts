@@ -223,7 +223,7 @@ export const VIBE_IMPORT_STEPS: readonly VibeImportStep[] = ["reading-board", "d
 export interface VibeImportLabelInput {
   status: "queued" | "running" | "done" | "failed";
   step: VibeImportStep | null;
-  pins: { new: number };
+  pins: { new: number; downloaded?: number };
   batches: { total: number; done: number };
 }
 
@@ -235,7 +235,7 @@ export function vibeImportLabel(imp: VibeImportLabelInput | undefined, step?: Vi
     case "reading-board":
       return "Reading your board";
     case "downloading":
-      return `Downloading ${imp.pins.new} pins`;
+      return (imp.pins.downloaded ?? 0) > 0 ? `Downloading ${imp.pins.downloaded} of ${imp.pins.new} pins` : `Downloading ${imp.pins.new} pins`;
     case "sorting":
       return `Sorting your vibes (batch ${Math.min(imp.batches.done + 1, imp.batches.total)} of ${imp.batches.total})`;
     case "saving":
