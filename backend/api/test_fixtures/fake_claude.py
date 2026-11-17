@@ -18,6 +18,13 @@ prompt). Markers avoid the fake ucp's keywords (crash, garbage, empty...):
   fake=exit1        prints nothing useful and exits 1
   fake=error_json   prints a result with is_error: true (exit 0)
   fake=notjson      prints text that is not JSON (exit 0)
+
+Two invocation styles, like the real CLI:
+  text      `-p <prompt> --output-format json`: prints the result object only
+  stream    `-p --input-format stream-json --output-format stream-json --verbose`:
+            the first user message (JSON line) is read from stdin, its text and
+            image blocks are recorded as `stdin_text` / `image_types`, and a few
+            event lines precede the result object, which is the last line
 """
 import json
 import os
@@ -52,15 +59,25 @@ def variadic(argv, flag):
 
 def check_flags(argv):
     problems = []
-    if not argv or argv[0] != '-p' or len(argv) < 2 or argv[1].startswith('-'):
-        problems.append('-p must come first, followed by the prompt')
+    stream = '--input-format' in argv
+    if not argv or argv[0] != '-p':
+        problems.append('-p must come first')
+    elif stream:
+        if flag_value(argv, '--input-format') != 'stream-json':
+            problems.append('--input-format must be stream-json')
+        if '--verbose' not in argv:
+            problems.append('stream-json output needs --verbose')
+        if len(argv) > 1 and not argv[1].startswith('-'):
+            problems.append('no positional prompt in stream-json input mode')
+    elif len(argv) < 2 or argv[1].startswith('-'):
+        problems.append('-p must be followed by the prompt')
     if variadic(argv, '--allowedTools') != ALLOWED:
         problems.append(f'--allowedTools must be exactly {ALLOWED}')
     if variadic(argv, '--tools') != ['Bash']:
         problems.append('--tools must be exactly Bash')
     expect = {
         '--setting-sources': 'project,local', '--permission-mode': 'dontAsk',
-        '--output-format': 'json',
+        '--output-format': 'stream-json' if stream else 'json',
     }
     for flag, value in expect.items():
         if flag_value(argv, flag) != value:
@@ -114,11 +131,41 @@ def result_doc(turns, accepted, outcome, is_error=False, subtype='success'):
     }
 
 
+def read_stdin_message():
+    """The first user message of a stream-json session: (text, [image media types])."""
+    line = sys.stdin.readline()
+    msg = json.loads(line)
+    content = msg['message']['content']
+    if isinstance(content, str):
+        return content, [], []
+    text = '\n'.join(b.get('text', '') for b in content if b.get('type') == 'text')
+    images = [b['source'] for b in content if b.get('type') == 'image']
+    return text, [i.get('media_type') for i in images], [len(i.get('data', '')) for i in images]
+
+
+def emit(doc, stream):
+    """Print the result; in stream mode, behind a few other events like the real CLI."""
+    if stream:
+        print(json.dumps({'type': 'system', 'subtype': 'init', 'tools': ['Bash', 'StructuredOutput']}))
+        print(json.dumps({'type': 'assistant', 'message': {'role': 'assistant', 'content': [
+            {'type': 'text', 'text': 'working on it'}]}}))
+        print(json.dumps({'type': 'rate_limit_event', 'rate_limit_info': {'status': 'allowed'}}))
+    print(json.dumps(doc))
+
+
 def main(argv):
     info = {'argv': argv, 'env': dict(os.environ), 'pid': os.getpid(), 'children': []}
     problems = check_flags(argv)
     info['problems'] = problems
-    prompt = argv[1] if len(argv) > 1 else ''
+    stream = '--input-format' in argv
+    info['stream'] = stream
+    prompt = argv[1] if len(argv) > 1 and not argv[1].startswith('-') else ''
+    if stream and not problems:
+        try:
+            prompt, info['image_types'], info['image_chars'] = read_stdin_message()
+            info['stdin_text'] = prompt
+        except (ValueError, KeyError, TypeError) as exc:
+            problems.append(f'stdin is not a stream-json user message: {exc}')
     mode = mode_of(prompt)
     info['mode'] = mode
     dump(info)
@@ -141,7 +188,7 @@ def main(argv):
         print('this is not json')
         return 0
     if mode == 'error_json':
-        print(json.dumps(result_doc(2, 0, 'gave_up', is_error=True, subtype='error_during_execution')))
+        emit(result_doc(2, 0, 'gave_up', is_error=True, subtype='error_during_execution'), stream)
         return 0
 
     turns, accepted, outcome = 0, 0, 'exhausted'
@@ -163,7 +210,7 @@ def main(argv):
             outcome = 'target_reached'
             break
     dump(info)
-    print(json.dumps(result_doc(turns + 1, accepted, outcome)))
+    emit(result_doc(turns + 1, accepted, outcome), stream)
     return 0
 
 

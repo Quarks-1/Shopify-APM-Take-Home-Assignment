@@ -16,6 +16,7 @@ start_new_session=True, so its pid is also its process-group id and
 timeout/cancel signal the whole group. Subprocesses always get argv lists,
 never a shell.
 """
+import base64
 import json
 import logging
 import os
@@ -494,15 +495,68 @@ def _run_agent(run):
         SearchRun.objects.filter(pk=run_id).update(error=failure)
 
 
-def build_argv(run):
-    """The exact `claude -p` invocation. The prompt must directly follow -p,
-    before the variadic --tools/--allowedTools."""
-    return [
-        settings.SEARCHER_CLAUDE_BIN, '-p', prompts.build_user_prompt(run),
+IMAGE_MEDIA_TYPES = ('image/jpeg', 'image/png', 'image/gif', 'image/webp')
+
+
+def like_photo_entries(run):
+    """The cached reference photos that can go to the agent: like runs only, in
+    index order, each file must still exist inside the run's like dir, be a
+    supported image type and at most like_images.MAX_BYTES. Others are skipped."""
+    if getattr(run, 'mode', None) != SearchMode.LIKE:
+        return []
+    folder = like_dir(run.pk).resolve()
+    out = []
+    items = [i for i in (run.like_source or {}).get('images') or [] if isinstance(i, dict)]
+    for item in sorted(items, key=lambda i: i.get('index') if isinstance(i.get('index'), int) else 0):
+        media_type = item.get('contentType')
+        try:
+            path = Path(item.get('path') or '').resolve()
+            if (media_type not in IMAGE_MEDIA_TYPES or folder not in path.parents
+                    or not path.is_file() or path.stat().st_size > like_images.MAX_BYTES):
+                continue
+        except (OSError, ValueError):
+            continue
+        out.append({'index': item.get('index'), 'path': path, 'contentType': media_type})
+    return out[:settings.SEARCHER_LIKE_MAX_IMAGES]
+
+
+def build_stdin_message(run, photos):
+    """One stream-json user message (a single JSON line, bytes): the like user
+    prompt as a text block, then one base64 image block per photo."""
+    content = [{'type': 'text', 'text': prompts.build_user_prompt(run, photos_attached=len(photos))}]
+    for photo in photos:
+        data = Path(photo['path']).read_bytes()
+        content.append({'type': 'image', 'source': {
+            'type': 'base64', 'media_type': photo['contentType'],
+            'data': base64.b64encode(data).decode('ascii')}})
+    line = json.dumps({'type': 'user', 'message': {'role': 'user', 'content': content}})
+    return (line + '\n').encode('utf-8')
+
+
+def stdin_path(run_id):
+    return _searches_dir() / f'{run_id}.stdin.jsonl'
+
+
+def build_argv(run, photos=None):
+    """The exact `claude -p` invocation.
+
+    Text mode (search runs, and like runs without photos): the prompt must
+    directly follow -p, before the variadic --tools/--allowedTools.
+    Photo mode (like runs with at least one cached photo): the prompt and the
+    photos arrive as one stream-json user message on stdin, so no positional
+    prompt; stream-json output needs --verbose. Same tools either way."""
+    if photos is None:
+        photos = like_photo_entries(run)
+    photo_mode = bool(photos)
+    head = [settings.SEARCHER_CLAUDE_BIN, '-p']
+    if photo_mode:
+        head += ['--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose']
+    else:
+        head += [prompts.build_user_prompt(run, photos_attached=0), '--output-format', 'json']
+    return head + [
         '--model', settings.SEARCHER_MODEL,
-        '--output-format', 'json',
         '--json-schema', prompts.output_schema_json(),
-        '--system-prompt', prompts.system_prompt(run),
+        '--system-prompt', prompts.system_prompt(run, photos_attached=len(photos)),
         '--tools', 'Bash',
         '--allowedTools', *ALLOWED_TOOLS,
         '--permission-mode', 'dontAsk',
@@ -553,10 +607,25 @@ def trim_agent_result(data):
 
 
 def _parse_output(raw):
+    """The agent's result object. `--output-format json` prints one object;
+    stream-json prints one event per line with the result object last. Take
+    the last line that is a {"type": "result"} dict, else the whole output or
+    its last line as JSON."""
     raw = (raw or '').strip()
     if not raw:
         return None
-    for text in (raw, raw.splitlines()[-1]):
+    lines = raw.splitlines()
+    if len(lines) > 1:
+        for line in reversed(lines):
+            if '"result"' not in line:
+                continue
+            try:
+                data = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(data, dict) and data.get('type') == 'result':
+                return data
+    for text in (raw, lines[-1]):
         try:
             data = json.loads(text)
         except ValueError:
@@ -580,16 +649,38 @@ def _terminate(proc):
 def _invoke_claude(run):
     """Run the agent to completion. Returns (failure_reason_or_None, trimmed_result_or_None)."""
     run_id = run.pk
+    try:
+        return _invoke_claude_with(run, run_id)
+    finally:
+        try:
+            stdin_path(run_id).unlink()
+        except OSError:
+            pass
+
+
+def _invoke_claude_with(run, run_id):
     argv = build_argv(run)
+    stream = '--input-format' in argv
+    photos = like_photo_entries(run) if stream else []
     env = agent_env(run, ensure_wrapper())
     out_path = agent_output_path(run_id)
-    _log(run_id, f'agent: {argv[0]} -p <prompt> --model {settings.SEARCHER_MODEL} '
+    if stream:
+        try:
+            message = build_stdin_message(run, photos)
+            fd = os.open(stdin_path(run_id), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, 'wb') as fh:
+                fh.write(message)
+        except OSError as exc:
+            return f'could not prepare the agent input: {exc}', None
+    how = f'stream-json stdin with {len(photos)} photo(s) attached' if stream else '-p <prompt>'
+    _log(run_id, f'agent: {argv[0]} {how} --model {settings.SEARCHER_MODEL} '
                  f'--max-turns {settings.SEARCHER_MAX_TURNS} (timeout {settings.SEARCHER_RUN_TIMEOUT:g}s)')
     try:
-        with open(out_path, 'wb') as out, open(log_path(run_id), 'ab') as err:
+        with open(out_path, 'wb') as out, open(log_path(run_id), 'ab') as err, \
+                (open(stdin_path(run_id), 'rb') if stream else open(os.devnull, 'rb')) as inp:
             proc = subprocess.Popen(
                 argv, cwd=str(agent_cwd(run_id)), env=env, shell=False, start_new_session=True,
-                stdin=subprocess.DEVNULL, stdout=out, stderr=err,
+                stdin=inp, stdout=out, stderr=err,
             )
     except OSError as exc:
         return f'claude could not start: {exc}', None

@@ -2,6 +2,7 @@
 and a deterministic run end to end. No network: image downloads are mocked
 and `ucp` is the fake CLI."""
 import base64
+import os
 import json
 import shutil
 import tempfile
@@ -9,13 +10,14 @@ import urllib.error
 from pathlib import Path
 from unittest import mock
 
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from .models import Candidate, CatalogQuery, RunStatus, SearchMode, SearchRun, SpaceObject, Verdict
 from .searcher import engine, like_images, prompts, query_builder, runner, ucp_client
 
 FAKE_UCP = str(Path(__file__).parent / 'test_fixtures' / 'fake_ucp.py')
+FAKE_CLAUDE = str(Path(__file__).parent / 'test_fixtures' / 'fake_claude.py')
 PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 64
 JPG = b'\xff\xd8\xff\xe0' + b'\x01' * 64
 SOURCE_GID = 'gid://shopify/p/IKAjRltyX0rlkX0y47B7c'  # first product of the coffee-table fixture
@@ -498,3 +500,204 @@ class LikeRunTests(LikeBase):
         self.assertEqual(argv[argv.index('--tools') + 1], 'Bash')
         self.assertIn('MORE LIKE THIS', argv[argv.index('--system-prompt') + 1])
         self.assertNotIn('Read', ' '.join(argv[argv.index('--allowedTools'):argv.index('--permission-mode')]))
+
+
+# ------------------------------------------------- the agent sees the photos
+
+class LikeAgentArgvTests(LikeBase):
+    def tool_rules(self, argv):
+        return argv[argv.index('--allowedTools') + 1:argv.index('--permission-mode')]
+
+    def test_like_run_with_photos_uses_stream_json_stdin(self):
+        run = self.like_run(images=3)
+        argv = runner.build_argv(run)
+        self.assertEqual(argv[:2], [settings_bin(), '-p'])
+        self.assertEqual(argv[2:7], ['--input-format', 'stream-json', '--output-format',
+                                     'stream-json', '--verbose'])
+        self.assertEqual(argv[argv.index('--tools') + 1], 'Bash')
+        self.assertEqual(self.tool_rules(argv), list(runner.ALLOWED_TOOLS))
+        self.assertNotIn('Read', ' '.join(argv))
+        for flag in ('--strict-mcp-config', '--safe-mode', '--no-session-persistence'):
+            self.assertIn(flag, argv)
+        self.assertEqual(argv[argv.index('--setting-sources') + 1], 'project,local')
+        self.assertIn('are attached to the first message', argv[argv.index('--system-prompt') + 1])
+        self.assertNotIn(prompts.build_user_prompt(run, photos_attached=3), argv)
+
+    def test_search_run_argv_is_unchanged(self):
+        run = engine.create_run(self.obj)
+        argv = runner.build_argv(run)
+        self.assertEqual(argv[:2], [settings_bin(), '-p'])
+        self.assertEqual(argv[2], prompts.build_user_prompt(run))
+        self.assertEqual(argv[3:5], ['--output-format', 'json'])
+        for flag in ('--input-format', '--verbose', 'stream-json'):
+            self.assertNotIn(flag, argv)
+
+    def test_like_run_without_photos_is_text_only(self):
+        run = self.like_run(images=0)
+        argv = runner.build_argv(run)
+        self.assertEqual(argv[3:5], ['--output-format', 'json'])
+        self.assertNotIn('--input-format', argv)
+        self.assertIn('You cannot see the reference photos', argv[2])
+        self.assertIn('not available to you', argv[argv.index('--system-prompt') + 1])
+
+    def test_photos_that_vanished_fall_back_to_text_only(self):
+        run = self.like_run(images=2)
+        for image in run.like_source['images']:
+            Path(image['path']).unlink()
+        self.assertEqual(runner.like_photo_entries(run), [])
+        self.assertNotIn('--input-format', runner.build_argv(run))
+
+    def test_stdin_message_has_text_then_images_in_order(self):
+        run = self.like_run(images=3)
+        # Make the middle one a png.
+        src = run.like_source
+        png_path = Path(src['images'][1]['path']).with_suffix('.png')
+        png_path.write_bytes(PNG)
+        Path(src['images'][1]['path']).unlink()
+        src['images'][1].update(path=str(png_path), contentType='image/png')
+        SearchRun.objects.filter(pk=run.pk).update(like_source=src)
+        run.refresh_from_db()
+        photos = runner.like_photo_entries(run)
+        raw = runner.build_stdin_message(run, photos)
+        self.assertTrue(raw.endswith(b'\n'))
+        self.assertEqual(raw.count(b'\n'), 1)
+        msg = json.loads(raw)
+        self.assertEqual((msg['type'], msg['message']['role']), ('user', 'user'))
+        blocks = msg['message']['content']
+        self.assertEqual([b['type'] for b in blocks], ['text', 'image', 'image', 'image'])
+        self.assertEqual(blocks[0]['text'], prompts.build_user_prompt(run, photos_attached=3))
+        self.assertIn('attached to this message', blocks[0]['text'])
+        self.assertEqual([b['source']['media_type'] for b in blocks[1:]],
+                         ['image/jpeg', 'image/png', 'image/jpeg'])
+        self.assertEqual([base64.b64decode(b['source']['data']) for b in blocks[1:]],
+                         [JPG + b'\x00', PNG, JPG + b'\x02'])
+        self.assertTrue(all(b['source']['type'] == 'base64' for b in blocks[1:]))
+
+    def test_missing_oversized_and_foreign_files_are_skipped(self):
+        run = self.like_run(images=4)
+        images = run.like_source['images']
+        Path(images[0]['path']).unlink()  # gone
+        with open(images[1]['path'], 'wb') as fh:  # too big
+            fh.truncate(like_images.MAX_BYTES + 1)
+        outside = self.var / 'outside.jpg'  # not in the run's like dir
+        outside.write_bytes(JPG)
+        images[2]['path'] = str(outside)
+        photos = runner.like_photo_entries(run)
+        self.assertEqual([p['index'] for p in photos], [3])
+        blocks = json.loads(runner.build_stdin_message(run, photos))['message']['content']
+        self.assertEqual(len(blocks), 2)
+
+    def test_photos_are_capped(self):
+        run = self.like_run(images=5)
+        with override_settings(SEARCHER_LIKE_MAX_IMAGES=2):
+            self.assertEqual(len(runner.like_photo_entries(run)), 2)
+
+
+def settings_bin():
+    from django.conf import settings
+    return settings.SEARCHER_CLAUDE_BIN
+
+
+class ParseOutputTests(SimpleTestCase):
+    RESULT = {'type': 'result', 'subtype': 'success', 'is_error': False, 'num_turns': 3,
+              'total_cost_usd': 0.01, 'result': 'ok', 'structured_output': {'outcome': 'x'}}
+
+    def test_single_object_is_unchanged(self):
+        self.assertEqual(runner._parse_output(json.dumps(self.RESULT)), self.RESULT)
+        self.assertEqual(runner._parse_output('log noise\n' + json.dumps(self.RESULT)), self.RESULT)
+        self.assertIsNone(runner._parse_output('not json'))
+        self.assertIsNone(runner._parse_output(''))
+
+    def test_stream_json_takes_the_last_result_line(self):
+        early = dict(self.RESULT, subtype='error_max_turns', is_error=True)
+        lines = [
+            {'type': 'system', 'subtype': 'init'},
+            {'type': 'assistant', 'message': {'content': [{'type': 'text', 'text': '"result"'}]}},
+            early,
+            self.RESULT,
+            {'type': 'system', 'subtype': 'post_turn_summary'},
+        ]
+        raw = '\n'.join(json.dumps(x) for x in lines) + '\n'
+        data = runner._parse_output(raw)
+        self.assertEqual(data, self.RESULT)
+        trimmed = runner.trim_agent_result(data)
+        self.assertEqual(trimmed['subtype'], 'success')
+        self.assertEqual(trimmed['structured_output'], {'outcome': 'x'})
+
+    def test_stream_without_a_result_is_invalid(self):
+        raw = '\n'.join(json.dumps(x) for x in [{'type': 'system'}, {'type': 'assistant'}])
+        self.assertEqual(runner._parse_output(raw), {'type': 'assistant'})  # last-line fallback, as before
+        self.assertIsNone(runner._parse_output('{"type": "system"}\ngarbage'))
+
+
+class LikeAgentEndToEndTests(TransactionTestCase):
+    """Real subprocesses: fake claude (stream-json) -> real searcher wrapper ->
+    management command -> fake ucp, all on the (file) test database."""
+    accepted_candidate = LikeBase.accepted_candidate
+
+    def setUp(self):
+        self.var = Path(tempfile.mkdtemp(prefix='searcher-var-'))
+        self.addCleanup(shutil.rmtree, self.var, True)
+        self.cwd = self.var / 'agent-cwd'
+        cm = override_settings(
+            SEARCHER_VAR_DIR=self.var, SEARCHER_AGENT_CWD=self.cwd, SEARCHER_UCP_BIN=FAKE_UCP,
+            SEARCHER_CLAUDE_BIN=FAKE_CLAUDE, SEARCHER_AGENT='claude',
+            SEARCHER_FALLBACK='deterministic', SEARCHER_RUN_TIMEOUT=60, SEARCHER_TARGET=2,
+            SEARCHER_MODEL='haiku')
+        cm.enable()
+        self.addCleanup(cm.disable)
+        for p in (mock.patch.object(runner, '_spawn_worker', side_effect=AssertionError('no workers')),
+                  mock.patch.object(like_images, '_read', side_effect=fake_read)):
+            p.start()
+            self.addCleanup(p.stop)
+        self.obj = make_object(dims={'x': 48, 'y': 24, 'z': 18})
+
+    def run_like(self):
+        run = engine.create_run(self.obj, status=RunStatus.QUEUED, mode=SearchMode.LIKE,
+                                like_source=runner.like_source_for(self.accepted_candidate()))
+        runner.execute(run)
+        run.refresh_from_db()
+        return run
+
+    def dump(self, run):
+        return json.loads((self.cwd / f'fake-claude-{run.pk}.json').read_text())
+
+    def test_like_run_through_fake_agent_sees_the_photos(self):
+        run = self.run_like()
+        self.assertEqual(run.status, RunStatus.DONE, run.error)
+        self.assertEqual((run.agent_mode, run.fallback_reason), ('claude', ''))
+        self.assertGreaterEqual(Candidate.objects.filter(run=run, verdict=Verdict.ACCEPTED).count(), 1)
+        info = self.dump(run)
+        self.assertEqual(info['problems'], [])
+        self.assertTrue(info['stream'])
+        self.assertEqual(info['image_types'], ['image/jpeg', 'image/png', 'image/jpeg', 'image/jpeg'])
+        self.assertIn('Walnut table', info['stdin_text'])
+        self.assertNotIn('Read', ' '.join(info['argv']))
+        self.assertEqual(info['argv'][info['argv'].index('--tools') + 1], 'Bash')
+        # The result object came from the last line of the stream.
+        self.assertEqual(run.agent_result['subtype'], 'success')
+        self.assertEqual(run.agent_result['structured_output']['outcome'], 'target_reached')
+        self.assertGreater(len(runner.agent_output_path(run.pk).read_text().splitlines()), 1)
+        self.assertIn('4 photo(s) attached', runner.log_path(run.pk).read_text())
+        self.assertFalse(runner.stdin_path(run.pk).exists())  # temp stdin file is gone
+
+    def test_like_run_without_photos_is_text_only_through_fake_agent(self):
+        cand = self.accepted_candidate(gid='gid://shopify/p/FAIL2', image_url='')
+        run = engine.create_run(self.obj, status=RunStatus.QUEUED, mode=SearchMode.LIKE,
+                                like_source=runner.like_source_for(cand))
+        runner.execute(run)
+        run.refresh_from_db()
+        info = self.dump(run)
+        self.assertEqual(info['problems'], [])
+        self.assertFalse(info['stream'])
+        self.assertNotIn('image_types', info)
+        self.assertEqual(run.agent_result['subtype'], 'success')
+        self.assertFalse(runner.stdin_path(run.pk).exists())
+
+    def test_fake_agent_rejects_extra_tools(self):
+        import subprocess
+        argv = [a for a in runner.build_argv(engine.create_run(self.obj))]
+        argv[argv.index('--tools') + 1] = 'Bash,Read'
+        proc = subprocess.run([FAKE_CLAUDE, *argv[1:]], capture_output=True, text=True,
+                              cwd=self.var, env={**os.environ, 'SEARCH_RUN_ID': 'x'})
+        self.assertEqual(proc.returncode, 3)

@@ -29,7 +29,7 @@ FAKE_CLAUDE = str(FIXTURES / 'fake_claude.py')
 
 def make_object(oid='obj1', **kw):
     fields = dict(
-        id=oid, name='Coffee table', dims={'x': 46, 'y': 24, 'z': 17}, type='furniture',
+        id=oid, name='Coffee table', dims={'x': 48, 'y': 24, 'z': 18}, type='furniture',
         material='wood', style='mid-century', price_limit=400, similar_items=['cocktail table'],
         created_at=timezone.now(),
     )
