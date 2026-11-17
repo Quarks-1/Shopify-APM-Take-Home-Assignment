@@ -157,6 +157,13 @@ function ProductDetails({
             Selected
           </Chip>
         ) : null}
+        {priceNote ? (
+          <span className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+            <Chip color="yellow" variant="caption">
+              {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
+            </Chip>
+          </span>
+        ) : null}
       </span>
       <span className="flex min-w-0 flex-col gap-1 text-start">
         <span className={cx("truncate text-body-medium text-text-primary", dim)}>{product.title}</span>
@@ -170,11 +177,6 @@ function ProductDetails({
           ) : null}
           {onVote && variant !== "cart" ? <VoteButtons title={product.title} vote={vote} onVote={onVote} /> : null}
         </span>
-        {priceNote ? (
-          <Chip color="yellow" variant="caption" className={cx("self-start", dim)}>
-            {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
-          </Chip>
-        ) : null}
         <span className={cx("flex items-center justify-between gap-2", dim)}>
           <bdi className="shrink-0 text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
           <ProductSize product={product} className="min-w-0 text-end" />
