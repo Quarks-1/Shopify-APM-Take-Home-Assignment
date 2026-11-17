@@ -256,6 +256,25 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   /* ------------------------------------------------------------- keyboard */
 
+  // Rotate the selected object 90 degrees clockwise (swap w/h around its centre).
+  // Rect keydown events bubble to the root handler, so this is only called from there.
+  const rotateSelected = () => {
+    if (!selectedObjectId || dragRef.current) return;
+    const item = items.find((it) => it.object.id === selectedObjectId);
+    if (!item) return;
+    const { object, rect } = item;
+    const { w, h } = rect;
+    if (w === h) return;
+    if (h > dims.x || w > dims.y) {
+      toast(`${object.name} doesn't fit rotated`);
+      return;
+    }
+    const x = clamp(round4(rect.x + w / 2 - h / 2), 0, dims.x - h);
+    const y = clamp(round4(rect.y + h / 2 - w / 2), 0, dims.y - w);
+    actions.resizeObject(object.id, { w: h, h: w }, spaceId);
+    if (x !== rect.x || y !== rect.y) actions.moveObject(spaceId, object.id, { x, y });
+  };
+
   const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable='true']")) return;
@@ -265,7 +284,11 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === "v" || e.key === "V") setMode("select");
-    else if (e.key === "r" || e.key === "R") setMode("draw");
+    else if (e.key === "d" || e.key === "D") setMode("draw");
+    else if (e.key === "r" || e.key === "R") {
+      e.preventDefault();
+      rotateSelected();
+    }
   };
 
   const onRectKeyDown = (e: ReactKeyboardEvent<SVGGElement>, item: (typeof items)[number]) => {
@@ -342,7 +365,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
               Select
             </span>
           </SegmentedControlItem>
-          <SegmentedControlItem id="draw" aria-label="Draw (R)">
+          <SegmentedControlItem id="draw" aria-label="Draw (D)">
             <span className="inline-flex items-center gap-1.5">
               <RiShape2Line aria-hidden className="size-4" />
               Draw
@@ -577,7 +600,11 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         {" "}
         · Drag to move · corner to resize ·{" "}
         <span className="inline-flex items-center gap-1">
-          <Kbd>R</Kbd> draw
+          <Kbd>R</Kbd> rotate
+        </span>{" "}
+        ·{" "}
+        <span className="inline-flex items-center gap-1">
+          <Kbd>D</Kbd> draw
         </span>{" "}
         ·{" "}
         <span className="inline-flex items-center gap-1">
