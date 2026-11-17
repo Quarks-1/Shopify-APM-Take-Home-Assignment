@@ -80,7 +80,12 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const [weight, setWeight] = useState(object.weight ?? NaN);
   const [material, setMaterial] = useState<string>(object.material ?? ANY);
   const [style, setStyle] = useState<string>(object.style ?? ANY);
-  const [priceRange, setPriceRange] = useState<PriceRange>({ min: object.priceMin, max: object.priceLimit });
+  const [priceRange, setPriceRange] = useState<PriceRange>({
+    min: object.priceMin,
+    max: object.priceLimit,
+    minFuzzy: object.priceMinFuzzy,
+    maxFuzzy: object.priceLimitFuzzy,
+  });
   const [minRating, setMinRating] = useState<string>(object.minRating === undefined ? ANY : String(object.minRating));
   const [similar, setSimilar] = useState(object.similarItems);
   const [similarDraft, setSimilarDraft] = useState("");
@@ -125,6 +130,8 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
       style: parseOption(STYLE_OPTIONS, style),
       priceMin: priceRange.min,
       priceLimit: priceRange.max,
+      priceMinFuzzy: priceRange.minFuzzy,
+      priceLimitFuzzy: priceRange.maxFuzzy,
       minRating: minRating === ANY ? undefined : Number(minRating),
       similarItems: similar,
     });

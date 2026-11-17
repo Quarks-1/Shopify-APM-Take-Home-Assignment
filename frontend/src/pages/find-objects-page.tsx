@@ -58,6 +58,8 @@ export function FindObjectsPage() {
       type,
       priceMin: priceRange.min,
       priceLimit: priceRange.max,
+      priceMinFuzzy: priceRange.minFuzzy,
+      priceLimitFuzzy: priceRange.maxFuzzy,
     });
     setName("");
     setType("furniture");

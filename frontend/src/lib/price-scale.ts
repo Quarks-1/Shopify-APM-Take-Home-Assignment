@@ -53,3 +53,38 @@ export function priceToStopIndex(price: number): number {
   }
   return nearest;
 }
+
+/** Fractional stop index of `price`: linear between neighbouring stops, clamped to the scale. */
+export function priceToFractionalIndex(price: number): number {
+  if (!Number.isFinite(price) || price <= PRICE_STOPS[0]) return MIN_STOP_INDEX;
+  if (price >= MAX_STOP_PRICE) return MAX_STOP_INDEX;
+  let i = 1;
+  while (i < PRICE_STOPS.length - 1 && PRICE_STOPS[i] < price) i++;
+  const lo = PRICE_STOPS[i - 1];
+  const hi = PRICE_STOPS[i];
+  return i - 1 + (price - lo) / (hi - lo);
+}
+
+/** How far an approximate ("around") price end reaches either way: ±15%. */
+export const PRICE_FUZZ = 0.15;
+
+export type PriceBand = "in" | "over" | "under" | "out";
+
+/**
+ * Where `price` sits against a budget whose ends may be approximate:
+ * "over"/"under" are inside the fuzzy margin past an approximate end,
+ * "out" is beyond any margin, "in" is within the range.
+ */
+export function priceBand(
+  price: number,
+  range: { min?: number; max?: number; minFuzzy?: boolean; maxFuzzy?: boolean },
+): PriceBand {
+  const { min, max, minFuzzy, maxFuzzy } = range;
+  if (max !== undefined && price > max) {
+    return maxFuzzy && price <= max * (1 + PRICE_FUZZ) ? "over" : "out";
+  }
+  if (min !== undefined && price < min) {
+    return minFuzzy && price >= min * (1 - PRICE_FUZZ) ? "under" : "out";
+  }
+  return "in";
+}

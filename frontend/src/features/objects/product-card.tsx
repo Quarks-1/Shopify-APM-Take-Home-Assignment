@@ -18,6 +18,8 @@ export interface ProductCardProps {
   onSelect?: () => void;
   /** Rendered below the details of a `cart` card (quantity, remove, ...). */
   footer?: ReactNode;
+  /** The price is within the fuzzy margin past an approximate budget end. */
+  priceNote?: "over" | "under";
   className?: string;
 }
 
@@ -53,7 +55,15 @@ export function ProductRatingText({ rating, className }: { rating: ProductRating
   );
 }
 
-function ProductDetails({ product, variant }: { product: Product; variant: ProductCardVariant }) {
+function ProductDetails({
+  product,
+  variant,
+  priceNote,
+}: {
+  product: Product;
+  variant: ProductCardVariant;
+  priceNote?: "over" | "under";
+}) {
   const store = getStore(useAppState(), product.storeId);
   // Candidate cards are buttons, so a link can't sit inside them; the selected card carries it.
   const link = variant !== "candidate" && product.url ? product.url : undefined;
@@ -99,6 +109,11 @@ function ProductDetails({ product, variant }: { product: Product; variant: Produ
             <ProductRatingText rating={product.rating} className="shrink-0 text-caption-1-medium text-text-secondary" />
           ) : null}
         </span>
+        {priceNote ? (
+          <Chip color="yellow" variant="caption" className="self-start">
+            {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
+          </Chip>
+        ) : null}
         <span className="flex items-center justify-between gap-2">
           <bdi className="shrink-0 text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
           <ProductSize product={product} className="min-w-0 text-end" />
@@ -108,7 +123,7 @@ function ProductDetails({ product, variant }: { product: Product; variant: Produ
   );
 }
 
-export function ProductCard({ product, variant, onSelect, footer, className }: ProductCardProps) {
+export function ProductCard({ product, variant, onSelect, footer, priceNote, className }: ProductCardProps) {
   if (variant === "candidate") {
     return (
       <button
@@ -123,7 +138,7 @@ export function ProductCard({ product, variant, onSelect, footer, className }: P
           className,
         )}
       >
-        <ProductDetails product={product} variant={variant} />
+        <ProductDetails product={product} variant={variant} priceNote={priceNote} />
       </button>
     );
   }
@@ -137,7 +152,7 @@ export function ProductCard({ product, variant, onSelect, footer, className }: P
         className,
       )}
     >
-      <ProductDetails product={product} variant={variant} />
+      <ProductDetails product={product} variant={variant} priceNote={priceNote} />
       {variant === "cart" && footer ? <div>{footer}</div> : null}
     </div>
   );

@@ -883,3 +883,61 @@ input[type="search"]::-webkit-search-cancel-button {
     box-shadow: inset 0 0 0 2px var(--color-border-button-hover);
   }
 }
+
+/* Slider thumb hold ring.
+ *
+ * Fills clockwise over the long-press duration so the user sees the hold
+ * registering. Same two-layer mask recipe as `.landing-glass-stroke` (shorthand
+ * first, composite last) to keep only a 2px stroke of the conic gradient. */
+@property --slider-hold-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes slider-hold-fill {
+  from {
+    --slider-hold-angle: 0deg;
+  }
+  to {
+    --slider-hold-angle: 360deg;
+  }
+}
+
+@keyframes slider-hold-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.slider-hold-ring {
+  pointer-events: none;
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    var(--color-accent-500) var(--slider-hold-angle),
+    transparent var(--slider-hold-angle)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: slider-hold-fill var(--slider-hold-ms, 450ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slider-hold-ring {
+    background: var(--color-accent-500);
+    animation: slider-hold-fade var(--slider-hold-ms, 450ms) ease-out forwards;
+  }
+}

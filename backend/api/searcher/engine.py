@@ -131,8 +131,8 @@ def _size_text(c):
     return c.size_status
 
 
-def _compact(c):
-    return {
+def _compact(c, snapshot=None):
+    out = {
         'id': c.pk,
         'title': c.title,
         'seller': c.seller_name,
@@ -143,6 +143,12 @@ def _compact(c):
         'specs': list(c.specs)[:MAX_COMPACT_SPECS],
         'summary': (c.description or '')[:SUMMARY_LEN],
     }
+    status = filters.price_status(c.price_cents, snapshot or {})
+    if status == 'slightly-over':
+        out['priceNote'] = 'slightly over budget'
+    elif status == 'slightly-under':
+        out['priceNote'] = 'slightly under minimum'
+    return out
 
 
 def _stop(reason, run):
@@ -298,7 +304,7 @@ def next_round(run, strategy=None):
         'target': run.target,
         'rounds_left': run.max_rounds - run.round_count,
         'strategies_left': left,
-        'candidates': [_compact(c) for c in new_passing],
+        'candidates': [_compact(c, run.object_snapshot or {}) for c in new_passing],
     }
 
 
@@ -358,6 +364,8 @@ def status(run):
             'style': snap.get('style'), 'material': snap.get('material'),
             'dims': d, 'priceMin': snap.get('priceMin'),
             'priceLimit': snap.get('priceLimit'),
+            'priceMinFuzzy': snap.get('priceMinFuzzy'),
+            'priceLimitFuzzy': snap.get('priceLimitFuzzy'),
             'minRating': snap.get('minRating'),
         },
     }

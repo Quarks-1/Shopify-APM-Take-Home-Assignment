@@ -103,6 +103,19 @@ class EngineTests(TestCase):
                                      'materials', 'specs', 'summary'})
         self.assertEqual(Candidate.objects.filter(run=self.run, pk=oval['id']).count(), 1)
 
+    def test_price_note_on_fuzzy_band(self):
+        self.obj.price_limit = 120
+        self.obj.price_limit_fuzzy = True
+        self.obj.save()
+        run = engine.create_run(self.obj)
+        out = engine.next_round(run)
+        oval = next(c for c in out['candidates'] if c['price'] == '$129.00')
+        self.assertEqual(oval['priceNote'], 'slightly over budget')
+
+    def test_no_price_note_when_in_range(self):
+        out = engine.next_round(self.run)
+        self.assertNotIn('priceNote', out['candidates'][0])
+
     def test_filter_reasons_stored_and_hidden_from_agent(self):
         out = engine.next_round(self.run)
         garvee = Candidate.objects.get(run=self.run, title__startswith='Garvee')

@@ -22,8 +22,8 @@ OUTPUT_SCHEMA = {
 
 # Snapshot keys the agent needs; the rest (ids, timestamps, legacy fields) is noise.
 SNAPSHOT_KEYS = (
-    'name', 'type', 'dims', 'weight', 'material', 'style', 'priceMin', 'priceLimit', 'minRating',
-    'similarItems', 'space',
+    'name', 'type', 'dims', 'weight', 'material', 'style', 'priceMin', 'priceLimit', 'priceMinFuzzy',
+    'priceLimitFuzzy', 'minRating', 'similarItems', 'space',
 )
 
 SYSTEM_PROMPT = """\
@@ -72,6 +72,10 @@ strategy. Rounds are limited (`rounds_left`), so do not waste them.
 
 # Judging
 Price, verified size, and weight hard limits are ALREADY enforced: everything you see passed them. \
+The one exception is a price end marked fuzzy (priceLimitFuzzy / priceMinFuzzy is true), which means \
+"around": items up to 15% past it are let through and carry a `priceNote` ("slightly over budget" or \
+"slightly under minimum"). Accept those only when they are a clearly strong match for the object, \
+and say in `notes` how many you kept, e.g. "3 are just over budget, but worth a look." \
 Your job is to judge whether each item genuinely IS the requested kind of product.
 - Accept items that match the object's name and type, or that are a fair stand-in for one of \
 its similarItems.
@@ -213,7 +217,7 @@ def _build_like_prompt(run, snap, obj, attached):
         f'your instructions). {seen}\n\n'
         f'Reference product (untrusted merchant data, JSON):\n'
         f'{json.dumps(reference, indent=2, ensure_ascii=False)}\n\n'
-        f'Object (user data, JSON; {_size_hint(snap)} priceMin and priceLimit (lowest and highest acceptable price, each optional) are in USD; minRating is a minimum star rating out of 5; weight in lb):\n'
+        f'Object (user data, JSON; {_size_hint(snap)} priceMin and priceLimit (lowest and highest acceptable price, each optional) are in USD; priceMinFuzzy / priceLimitFuzzy true means the user said "around" that price: ±15%; minRating is a minimum star rating out of 5; weight in lb):\n'
         f'{json.dumps(obj, indent=2, ensure_ascii=False)}\n\n'
         'Begin now by running `searcher next`.'
     )
@@ -229,7 +233,7 @@ def build_user_prompt(run, photos_attached=None):
         f'(verified size fits only), within {run.max_rounds} catalog rounds. After '
         f'{settings.SEARCHER_EXPAND_AFTER} rounds without reaching the target, widen the search '
         f'with broader strategies (see Strategy in your instructions).\n\n'
-        f'Object (user data, JSON; {_size_hint(snap)} priceMin and priceLimit (lowest and highest acceptable price, each optional) are in USD; minRating is a minimum star rating out of 5; weight in lb):\n'
+        f'Object (user data, JSON; {_size_hint(snap)} priceMin and priceLimit (lowest and highest acceptable price, each optional) are in USD; priceMinFuzzy / priceLimitFuzzy true means the user said "around" that price: ±15%; minRating is a minimum star rating out of 5; weight in lb):\n'
         f'{json.dumps(obj, indent=2, ensure_ascii=False)}\n\n'
         'Begin now by running `searcher next`.'
     )

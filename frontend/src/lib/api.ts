@@ -397,6 +397,8 @@ export interface ApiObjectCreate {
   style?: Style | null;
   priceMin?: number | null;
   priceLimit?: number | null;
+  priceMinFuzzy?: boolean | null;
+  priceLimitFuzzy?: boolean | null;
   minRating?: number | null;
   similarItems?: string[];
   source?: SpaceObject["source"];

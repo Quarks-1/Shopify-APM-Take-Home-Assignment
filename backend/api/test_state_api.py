@@ -495,3 +495,32 @@ class QueryCountTests(Base):
                 self.assertEqual(r.json()['candidates'], [])
             with self.assertNumQueries(2):
                 self.assertEqual(self.client.get('/api/spaces/').status_code, 200)
+
+
+class FuzzyPriceTests(Base):
+    def test_fuzzy_flags(self):
+        o = self.make_object(priceMin=100, priceLimit=400, priceLimitFuzzy=True)
+        self.assertTrue(o['priceLimitFuzzy'])
+        self.assertNotIn('priceMinFuzzy', o)
+        path = f'/api/objects/{o["id"]}/'
+        p = self.call('patch', path, {'priceMinFuzzy': True}).json()
+        self.assertTrue(p['priceMinFuzzy'] and p['priceLimitFuzzy'])
+        p = self.call('patch', path, {'priceLimitFuzzy': False}).json()
+        self.assertNotIn('priceLimitFuzzy', p)
+        self.assertTrue(p['priceMinFuzzy'])
+
+    def test_non_bool_rejected(self):
+        o = self.make_object(priceLimit=400)
+        r = self.call('patch', f'/api/objects/{o["id"]}/', {'priceLimitFuzzy': 'yes'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('priceLimitFuzzy', r.json()['details'])
+
+    def test_coerced_when_price_cleared(self):
+        o = self.make_object(priceLimit=400, priceLimitFuzzy=True)
+        path = f'/api/objects/{o["id"]}/'
+        p = self.call('patch', path, {'priceLimit': None}).json()
+        self.assertNotIn('priceLimit', p)
+        self.assertNotIn('priceLimitFuzzy', p)
+        # fuzzy without any price on create is coerced too
+        o2 = self.make_object(priceMinFuzzy=True)
+        self.assertNotIn('priceMinFuzzy', o2)

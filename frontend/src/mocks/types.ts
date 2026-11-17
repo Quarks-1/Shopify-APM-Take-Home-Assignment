@@ -57,6 +57,10 @@ export interface SpaceObject {
   priceMin?: number;
   /** Highest acceptable price in USD; undefined means no maximum. */
   priceLimit?: number;
+  /** The minimum is approximate ("around"): the agent treats it as ±15%. */
+  priceMinFuzzy?: boolean;
+  /** The maximum is approximate ("around"): the agent treats it as ±15%. */
+  priceLimitFuzzy?: boolean;
   /** Minimum product star rating (0-5) to accept; unset means any. */
   minRating?: number;
   similarItems: string[];

@@ -24,6 +24,35 @@ def is_wall_mode(snapshot):
     return snapshot.get('type') == 'wall-art' or (snapshot.get('space') or {}).get('type') == 'wall'
 
 
+def _fuzz():
+    from django.conf import settings
+    return float(getattr(settings, 'SEARCHER_PRICE_FUZZ', 0.15))
+
+
+def price_bounds(snapshot, fuzz):
+    """Effective (min_cents, max_cents), widened by `fuzz` on fuzzy ends."""
+    lo = snapshot.get('priceMin')
+    hi = snapshot.get('priceLimit')
+    if lo is not None:
+        lo = round(lo * (1 - fuzz) * 100) if snapshot.get('priceMinFuzzy') else round(lo * 100)
+    if hi is not None:
+        hi = round(hi * (1 + fuzz) * 100) if snapshot.get('priceLimitFuzzy') else round(hi * 100)
+    return lo, hi
+
+
+def price_status(cents, snapshot):
+    """'in-range' | 'slightly-over' | 'slightly-under' vs the stated bounds."""
+    if cents is None or cents <= 0:
+        return 'in-range'
+    hi = snapshot.get('priceLimit')
+    lo = snapshot.get('priceMin')
+    if hi is not None and snapshot.get('priceLimitFuzzy') and cents > round(hi * 100):
+        return 'slightly-over'
+    if lo is not None and snapshot.get('priceMinFuzzy') and cents < round(lo * 100):
+        return 'slightly-under'
+    return 'in-range'
+
+
 def evaluate(fields, snapshot, tolerance):
     """Returns (passes, reasons, size_status, weight_status)."""
     reasons = []
@@ -34,13 +63,24 @@ def evaluate(fields, snapshot, tolerance):
     currency = (fields.get('currency') or '').upper()
     if currency != 'USD':
         reasons.append(f'currency is not USD: {currency or "unknown"}')
+    fuzz = _fuzz()
+    pct = round(fuzz * 100)
+    lo_cents, hi_cents = price_bounds(snapshot, fuzz)
     limit = snapshot.get('priceLimit')
     cents = fields.get('price_cents')
-    if limit is not None and cents is not None and cents > round(limit * 100):
-        reasons.append(f'over price limit: {_money(cents)} > ${limit:,.2f}')
+    if hi_cents is not None and cents is not None and cents > hi_cents:
+        if snapshot.get('priceLimitFuzzy'):
+            reasons.append(
+                f'over price limit: {_money(cents)} > around ${limit:,.2f} (+{pct}%)')
+        else:
+            reasons.append(f'over price limit: {_money(cents)} > ${limit:,.2f}')
     minimum = snapshot.get('priceMin')
-    if minimum is not None and cents is not None and 0 < cents < round(minimum * 100):
-        reasons.append(f'under price minimum: {_money(cents)} < ${minimum:,.2f}')
+    if lo_cents is not None and cents is not None and 0 < cents < lo_cents:
+        if snapshot.get('priceMinFuzzy'):
+            reasons.append(
+                f'under price minimum: {_money(cents)} < around ${minimum:,.2f} (-{pct}%)')
+        else:
+            reasons.append(f'under price minimum: {_money(cents)} < ${minimum:,.2f}')
 
     # ---- rating (unrated products are excluded when a minimum is set)
     min_rating = snapshot.get('minRating')

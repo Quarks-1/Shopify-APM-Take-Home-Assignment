@@ -239,7 +239,9 @@ def object_detail(request, object_id):
         return err
     fields = validate_object(
         data, partial=True,
-        current={'price_min': obj.price_min, 'price_limit': obj.price_limit})
+        current={'price_min': obj.price_min, 'price_limit': obj.price_limit,
+                 'price_min_fuzzy': obj.price_min_fuzzy,
+                 'price_limit_fuzzy': obj.price_limit_fuzzy})
     for k, v in fields.items():
         setattr(obj, k, v)
     if fields:
@@ -278,7 +280,8 @@ def state_import(request):
             # Import is a full snapshot: absent optional fields reset to defaults.
             defaults = {
                 'weight': None, 'material': None, 'style': None, 'price_min': None,
-                'price_limit': None, 'min_rating': None,
+                'price_limit': None, 'price_min_fuzzy': False,
+                'price_limit_fuzzy': False, 'min_rating': None,
                 'owned': None, 'selected_product_id': None, 'similar_items': [],
                 'candidate_ids': [], 'search': default_search(), 'source': 'search',
             }

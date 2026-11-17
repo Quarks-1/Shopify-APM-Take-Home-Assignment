@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from .searcher.filters import evaluate
+from .searcher.filters import evaluate, price_bounds, price_status
 
 TOL = 1.15
 OBJ = {'dims': {'x': 46, 'y': 24, 'z': 17}, 'priceLimit': 400, 'weight': 40}
@@ -212,3 +212,39 @@ class PriceUnknownTests(SimpleTestCase):
         self.assertFalse(passes)
         self.assertIn('price unknown', reasons)
         self.assertFalse(evaluate(prod(price_cents=0), {'dims': {'x': 1, 'y': 1}}, TOL)[0])
+
+
+class FuzzyPriceTests(SimpleTestCase):
+    FITS = {'dims': {'x': 40, 'y': 20, 'z': 10}, 'dims_longest': 40}
+
+    def ev(self, cents, snap):
+        return evaluate(prod(price_cents=cents, **self.FITS), snap, TOL)
+
+    def test_fuzzy_max(self):
+        snap = {**OBJ, 'priceLimitFuzzy': True}
+        self.assertEqual(price_bounds(snap, 0.15), (None, 46000))
+        self.assertTrue(self.ev(45000, snap)[0])
+        self.assertEqual(price_status(45000, snap), 'slightly-over')
+        self.assertEqual(price_status(40000, snap), 'in-range')
+        passes, reasons, *_ = self.ev(46100, snap)
+        self.assertFalse(passes)
+        self.assertEqual(reasons, ['over price limit: $461.00 > around $400.00 (+15%)'])
+
+    def test_fuzzy_min(self):
+        snap = {'priceMin': 100, 'priceMinFuzzy': True}
+        self.assertEqual(price_bounds(snap, 0.15), (8500, None))
+        self.assertTrue(self.ev(8500, snap)[0])
+        self.assertEqual(price_status(9000, snap), 'slightly-under')
+        self.assertEqual(price_status(10000, snap), 'in-range')
+        passes, reasons, *_ = self.ev(8400, snap)
+        self.assertFalse(passes)
+        self.assertEqual(reasons, ['under price minimum: $84.00 < around $100.00 (-15%)'])
+
+    def test_non_fuzzy_unchanged(self):
+        snap = {**OBJ, 'priceMin': 100}
+        self.assertEqual(price_bounds(snap, 0.15), (10000, 40000))
+        self.assertFalse(self.ev(45000, snap)[0])
+        self.assertEqual(price_status(45000, snap), 'in-range')
+        # fuzzy flag on one end does not widen the other
+        snap = {**OBJ, 'priceLimitFuzzy': True, 'priceMin': 100}
+        self.assertFalse(self.ev(9900, snap)[0])

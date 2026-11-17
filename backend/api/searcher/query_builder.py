@@ -10,6 +10,8 @@ from pathlib import Path
 
 from django.conf import settings
 
+from .filters import price_bounds
+
 TYPE_NOUNS = {
     'lighting': 'lamp',
     'rug': 'area rug',
@@ -233,12 +235,18 @@ def build_intent(snapshot):
         parts.append(f'weighing at most {_fmt(snapshot["weight"])} lb')
     minimum = snapshot.get('priceMin')
     limit = snapshot.get('priceLimit')
+    min_txt = None if minimum is None else (
+        f'around {_usd(minimum)}' if snapshot.get('priceMinFuzzy') else _usd(minimum))
+    max_txt = None if limit is None else (
+        f'around {_usd(limit)}' if snapshot.get('priceLimitFuzzy') else _usd(limit))
     if minimum is not None and limit is not None:
-        parts.append(f'priced between {_usd(minimum)} and {_usd(limit)}')
+        parts.append(f'priced between {min_txt} and {max_txt}')
     elif limit is not None:
-        parts.append(f'priced under {_usd(limit)}')
+        parts.append(f'priced around {_usd(limit)}' if snapshot.get('priceLimitFuzzy')
+                     else f'priced under {_usd(limit)}')
     elif minimum is not None:
-        parts.append(f'priced over {_usd(minimum)}')
+        parts.append(f'priced around {_usd(minimum)} or more' if snapshot.get('priceMinFuzzy')
+                     else f'priced over {_usd(minimum)}')
     if snapshot.get('minRating') is not None:
         parts.append(f'rated at least {_fmt(snapshot["minRating"])} stars')
     similar = [s for s in (snapshot.get('similarItems') or []) if s]
@@ -291,12 +299,11 @@ def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=Fal
         query = strategy_query(snapshot, strategy)
     filters = {'available': True, 'ships_to': {'country': 'US'}}
     price = {}
-    minimum = snapshot.get('priceMin')
-    if minimum is not None:
-        price['min'] = int(round(float(minimum) * 100))
-    limit = snapshot.get('priceLimit')
-    if limit is not None:
-        price['max'] = int(round(float(limit) * 100))
+    lo_cents, hi_cents = price_bounds(snapshot, settings.SEARCHER_PRICE_FUZZ)
+    if lo_cents is not None:
+        price['min'] = lo_cents
+    if hi_cents is not None:
+        price['max'] = hi_cents
     if price:
         filters['price'] = price
     min_rating = snapshot.get('minRating')

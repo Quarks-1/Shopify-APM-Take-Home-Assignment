@@ -195,6 +195,23 @@ class PriceIntentTests(SimpleTestCase):
         self.assertNotIn('under', text)
 
 
+class FuzzyPriceQueryTests(SimpleTestCase):
+    def test_widened_filter(self):
+        p = qb.build_payload(snap(priceMin=100, priceMinFuzzy=True, priceLimitFuzzy=True), 'exact')
+        self.assertEqual(p['filters']['price'], {'min': 8500, 'max': 46000})
+        p = qb.build_payload(snap(priceMin=100, priceLimitFuzzy=True), 'exact')
+        self.assertEqual(p['filters']['price'], {'min': 10000, 'max': 46000})
+
+    def test_intent(self):
+        self.assertIn('priced around $400', qb.build_intent(snap(priceLimitFuzzy=True)))
+        self.assertIn('priced between $100 and around $400',
+                      qb.build_intent(snap(priceMin=100, priceLimitFuzzy=True)))
+        self.assertIn('priced between around $100 and $400',
+                      qb.build_intent(snap(priceMin=100, priceMinFuzzy=True)))
+        self.assertIn('priced around $100 or more',
+                      qb.build_intent(snap(priceMin=100, priceLimit=None, priceMinFuzzy=True)))
+
+
 class WallIntentTests(SimpleTestCase):
     def test_wall_mode_size_is_w_x_h(self):
         s = {'name': 'Gallery poster', 'type': 'wall-art', 'dims': {'x': 24, 'y': 1, 'z': 36}}

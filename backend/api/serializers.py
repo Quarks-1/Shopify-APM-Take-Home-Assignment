@@ -31,7 +31,7 @@ SOURCES = set(ObjectSource.values)
 SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
 OBJECT_KEYS = {
     'name', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
-    'minRating',
+    'priceMinFuzzy', 'priceLimitFuzzy', 'minRating',
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
     # ignored. Selection changes only via POST /api/objects/<id>/select/.
@@ -92,6 +92,10 @@ def object_to_json(obj):
         out['priceMin'] = obj.price_min
     if obj.price_limit is not None:
         out['priceLimit'] = obj.price_limit
+    if obj.price_min_fuzzy:
+        out['priceMinFuzzy'] = True
+    if obj.price_limit_fuzzy:
+        out['priceLimitFuzzy'] = True
     if obj.min_rating is not None:
         out['minRating'] = obj.min_rating
     out['similarItems'] = list(obj.similar_items)
@@ -535,6 +539,19 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
         present, v = _nullable_num(data, 'priceLimit', prefix + 'priceLimit', errors)
         if present:
             out['price_limit'] = v
+        for key, field, price_field in (
+            ('priceMinFuzzy', 'price_min_fuzzy', 'price_min'),
+            ('priceLimitFuzzy', 'price_limit_fuzzy', 'price_limit'),
+        ):
+            if has(key):
+                if not isinstance(data[key], bool):
+                    errors[prefix + key] = 'must be a boolean'
+                else:
+                    out[field] = data[key]
+            # A fuzzy flag means nothing without its price end.
+            price_now = out[price_field] if price_field in out else (current or {}).get(price_field)
+            if price_now is None and (out.get(field) or (field not in out and (current or {}).get(field))):
+                out[field] = False
         if (prefix + 'priceMin') not in errors and (prefix + 'priceLimit') not in errors:
             lo = out['price_min'] if 'price_min' in out else (current or {}).get('price_min')
             hi = out['price_limit'] if 'price_limit' in out else (current or {}).get('price_limit')

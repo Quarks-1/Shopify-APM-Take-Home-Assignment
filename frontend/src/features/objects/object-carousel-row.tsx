@@ -1,5 +1,6 @@
 import { RiCheckLine, RiSearchLine, RiSparkling2Line, RiShoppingCart2Line } from "@remixicon/react";
 import { useNavigate } from "react-router";
+import { priceBand } from "@/lib/price-scale";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { Carousel, CarouselItem } from "@/components/base/carousel/carousel";
@@ -57,14 +58,33 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const unit = (spaceId ? getSpace(state, spaceId)?.unit : undefined) ?? "in";
   const typeLabel = OBJECT_TYPE_OPTIONS.find((o) => o.value === object.type)?.label ?? object.type;
   const owned = object.source === "imported";
+  const minFuzzy = object.priceMin !== undefined && !!object.priceMinFuzzy;
+  const maxFuzzy = object.priceLimit !== undefined && !!object.priceLimitFuzzy;
+  const minText = object.priceMin !== undefined ? `${minFuzzy ? "~" : ""}${formatPrice(object.priceMin)}` : "";
+  const maxText = object.priceLimit !== undefined ? `${maxFuzzy ? "~" : ""}${formatPrice(object.priceLimit)}` : "";
   const priceRangeLabel =
     object.priceMin !== undefined && object.priceLimit !== undefined
-      ? `${formatPrice(object.priceMin)} – ${formatPrice(object.priceLimit)}`
+      ? `${minText} – ${maxText}`
       : object.priceLimit !== undefined
-        ? `≤ ${formatPrice(object.priceLimit)}`
+        ? `≤ ${maxText}`
         : object.priceMin !== undefined
-          ? `≥ ${formatPrice(object.priceMin)}`
+          ? `≥ ${minText}`
           : undefined;
+  const fuzzyTitle = [
+    minFuzzy && object.priceMin !== undefined ? `around ${formatPrice(object.priceMin)} (±15%)` : null,
+    maxFuzzy && object.priceLimit !== undefined ? `around ${formatPrice(object.priceLimit)} (±15%)` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const priceNoteFor = (price: number): "over" | "under" | undefined => {
+    const band = priceBand(price, {
+      min: object.priceMin,
+      max: object.priceLimit,
+      minFuzzy: object.priceMinFuzzy,
+      maxFuzzy: object.priceLimitFuzzy,
+    });
+    return band === "over" || band === "under" ? band : undefined;
+  };
   const running = search.isRunning(objectId) || object.search.status === "running";
   const cartLine = getCartLineForObject(state, objectId);
   const selectedProduct = getSelectedProduct(state, object);
@@ -107,7 +127,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
           {typeLabel}
         </Chip>
         {priceRangeLabel ? (
-          <Chip color="soft" variant="caption">
+          <Chip color="soft" variant="caption" title={fuzzyTitle || undefined}>
             <bdi>{priceRangeLabel}</bdi>
           </Chip>
         ) : null}
@@ -245,11 +265,12 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
         {candidates.map((product) => (
           <CarouselItem key={product.id} className={CARD_WIDTH}>
             {product.id === object.selectedProductId ? (
-              <ProductCard product={product} variant="selected" />
+              <ProductCard product={product} variant="selected" priceNote={priceNoteFor(product.price)} />
             ) : (
               <ProductCard
                 product={product}
                 variant="candidate"
+                priceNote={priceNoteFor(product.price)}
                 onSelect={() => actions.selectProduct(objectId, product.id)}
               />
             )}

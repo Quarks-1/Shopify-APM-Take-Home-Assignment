@@ -149,6 +149,8 @@ SEARCHER_TARGET = int(os.environ.get('SEARCHER_TARGET', '10'))
 SEARCHER_MAX_ROUNDS = int(os.environ.get('SEARCHER_MAX_ROUNDS', '12'))
 SEARCHER_EXPAND_AFTER = int(os.environ.get('SEARCHER_EXPAND_AFTER', '5'))
 SEARCHER_SIZE_TOLERANCE = float(os.environ.get('SEARCHER_SIZE_TOLERANCE', '1.15'))
+# A price end marked "around" (fuzzy) is read as +/- this fraction.
+SEARCHER_PRICE_FUZZ = float(os.environ.get('SEARCHER_PRICE_FUZZ', '0.15'))
 SEARCHER_UCP_TIMEOUT = float(os.environ.get('SEARCHER_UCP_TIMEOUT', '60'))
 # "More like this" runs: photos of the reference product seed the catalog's
 # `like` search, one round per photo. Only these hosts are ever downloaded from.
