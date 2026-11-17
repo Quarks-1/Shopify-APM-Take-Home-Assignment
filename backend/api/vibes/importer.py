@@ -337,10 +337,7 @@ def _save_batch(import_id, batch, result):
     with transaction.atomic():
         for idx, label in result.labels.items():
             SpaceInspiration.objects.filter(pk=batch[idx].pk).update(
-                categories=label['categories'], item=label['item'], styles=label['styles'],
-                colors=label['colors'], materials=label['materials'],
-                description=label['description'], categorized_at=when,
-            )
+                categorized_at=when, **categorize.row_fields(label))
         changed = VibeImport.objects.filter(pk=import_id, status=VibeImportStatus.RUNNING).update(
             batches_done=F('batches_done') + (1 if ok else 0),
             batches_failed=F('batches_failed') + (0 if ok else 1),

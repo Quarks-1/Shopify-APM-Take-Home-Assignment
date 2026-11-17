@@ -14,7 +14,7 @@ from api import claude_cli
 from api.models import ObjectType
 from api.searcher import runner
 
-from . import prompts
+from . import patterns, prompts
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,22 @@ def _clean_list(value, max_items, limit=40):
     return out
 
 
+BOX_MIN_AREA = 0.04
+
+
+def parse_box(value):
+    """[x0, y0, x1, y1] as four floats clamped to 0-1, or None when it is not
+    four numbers, is empty or inverted, or covers under 4% of the image."""
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        return None
+    if any(isinstance(v, bool) or not isinstance(v, (int, float)) or v != v for v in value):
+        return None
+    x0, y0, x1, y1 = (min(1.0, max(0.0, float(v))) for v in value)
+    if x1 <= x0 or y1 <= y0 or (x1 - x0) * (y1 - y0) < BOX_MIN_AREA:
+        return None
+    return [round(v, 4) for v in (x0, y0, x1, y1)]
+
+
 def parse_labels(structured, n):
     """Clean `structured_output` into {index: label} for 0 <= index < n.
     Out-of-range and repeated indexes are dropped; categories are filtered to
@@ -110,8 +126,25 @@ def parse_labels(structured, n):
             'colors': _clean_list(entry.get('colors'), prompts.COLORS_MAX),
             'materials': _clean_list(entry.get('materials'), prompts.MATERIALS_MAX),
             'description': _clean(entry.get('description'), prompts.DESCRIPTION_LEN),
+            'patterns': patterns.canonical_list(
+                _clean_list(entry.get('patterns'), prompts.PATTERNS_MAX), prompts.PATTERNS_MAX),
+            'box': parse_box(entry.get('box')) if categories else None,
         }
     return labels
+
+
+def row_fields(label):
+    """SpaceInspiration field values for one parsed label. `patterns` is the
+    model's own list plus lexicon hits in the label's text; `model_patterns`
+    is the model's list alone."""
+    model_patterns = patterns.canonical_list(label.get('patterns') or [])
+    return {
+        'categories': label['categories'], 'item': label['item'], 'styles': label['styles'],
+        'colors': label['colors'], 'materials': label['materials'],
+        'description': label['description'],
+        'patterns': patterns.derive_patterns({**label, 'model_patterns': model_patterns}),
+        'model_patterns': model_patterns, 'item_box': label.get('box'),
+    }
 
 
 def _failure_text(run, labels, n):

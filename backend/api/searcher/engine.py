@@ -11,6 +11,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Count
 from django.utils import timezone
 
 from ..models import (
@@ -64,12 +65,18 @@ def _pending(run):
 
 
 def _previous_queries(run):
+    accepted = {
+        row['query_id']: row['n']
+        for row in run.candidates.filter(verdict=Verdict.ACCEPTED)
+        .values('query_id').annotate(n=Count('pk'))
+    }
     return [
         {
             'round': q.round, 'strategy': q.strategy,
             'query': (q.payload or {}).get('query', ''),
             'payload': q.payload, 'response_meta': q.response_meta,
             'passing_count': q.passing_count,
+            'accepted_count': accepted.get(q.pk, 0),
         }
         for q in run.queries.exclude(strategy=PINNED_STRATEGY)
     ]
@@ -208,7 +215,7 @@ def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
         logger.exception('vibes: matching failed for object %s', space_object.pk)
     max_rounds = max_rounds or settings.SEARCHER_MAX_ROUNDS
     if vibes and mode in (SearchMode.SEARCH, SearchMode.REFINE):
-        extra = 1 + len(vibes.get('photos') or [])
+        extra = 1 + len(vibes.get('photos') or []) + (1 if vibes.get('theme') else 0)
         max_rounds = max(max_rounds, min(VIBES_MAX_ROUNDS_CAP, max_rounds + extra))
     running = status == RunStatus.RUNNING
     run = SearchRun.objects.create(

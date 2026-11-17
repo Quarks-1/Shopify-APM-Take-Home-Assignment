@@ -28,6 +28,7 @@ from .vibes import paths as vibe_paths
 from .serializers import (
     ValidationFailed,
     sort_accepted_brand_diverse,
+    theme_from_vibes,
     candidate_to_json,
     generate_id,
     now,
@@ -84,12 +85,15 @@ def state_candidates(objects):
     came from another run. Two queries however many objects or runs exist."""
     has_accepted = Candidate.objects.filter(run=OuterRef('pk'), verdict=Verdict.ACCEPTED)
     newest = {}
-    for object_id, run_id in (
+    themes = {}
+    for object_id, run_id, vibes in (
         SearchRun.objects.filter(Exists(has_accepted))
         .order_by('-created_at', '-pk')
-        .values_list('object_id', 'pk')
+        .values_list('object_id', 'pk', 'vibes')
     ):
-        newest.setdefault(object_id, run_id)
+        if object_id not in newest:
+            newest[object_id] = run_id
+            themes[object_id] = theme_from_vibes(vibes)
     selected = {o.selected_candidate_id for o in objects if o.selected_candidate_id is not None}
 
     by_object = defaultdict(list)
@@ -103,7 +107,8 @@ def state_candidates(objects):
         mine = by_object.get(obj.pk, [])
         run_id = newest.get(obj.pk)
         accepted = sort_accepted_brand_diverse(
-            [c for c in mine if c.run_id == run_id and c.verdict == Verdict.ACCEPTED]
+            [c for c in mine if c.run_id == run_id and c.verdict == Verdict.ACCEPTED],
+            themes.get(obj.pk),
         )
         ids = {c.pk for c in accepted}
         extra = [c for c in mine if c.pk == obj.selected_candidate_id and c.pk not in ids]

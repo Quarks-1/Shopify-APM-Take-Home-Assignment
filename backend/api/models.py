@@ -400,6 +400,13 @@ class SpaceInspiration(models.Model):
     colors = models.JSONField(default=list)
     materials = models.JSONField(default=list)
     description = models.CharField(max_length=200, blank=True, default='')
+    # Canonical pattern names (leopard print, stripe, ...); see vibes.patterns.
+    patterns = models.JSONField(default=list)
+    # Just the canonical patterns the labeling model wrote; `patterns` is this
+    # plus lexicon hits in the text, recomputed whenever the lexicon changes.
+    model_patterns = models.JSONField(default=list)
+    # [x0, y0, x1, y1] fractions (0-1) around the pin's main item, or null.
+    item_box = models.JSONField(null=True, blank=True)
     # Null until Haiku has sorted the pin.
     categorized_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

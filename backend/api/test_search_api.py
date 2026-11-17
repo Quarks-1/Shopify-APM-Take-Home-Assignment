@@ -102,6 +102,34 @@ class SearchApiTests(TestCase):
         self.assertEqual(self.client.get('/api/objects/obj1/searches/').status_code, 405)
         self.assertEqual(SearchRun.objects.count(), 0)
 
+    # ----------------------------------------------------------- theme order
+    def themed_run(self):
+        run, ids = self.judged_run()
+        accepted = list(Candidate.objects.filter(run=run, verdict=Verdict.ACCEPTED).order_by('pk'))
+        plain, zebra = accepted[0], accepted[-1]
+        Candidate.objects.filter(pk=plain.pk).update(title='Plain Chair', description='', price_cents=9900)
+        Candidate.objects.filter(pk=zebra.pk).update(title='Zebra Print Chair', price_cents=57000)
+        return run, plain, zebra
+
+    def test_theme_orders_themed_first_in_latest_and_state(self):
+        run, plain, zebra = self.themed_run()
+        before = [c['id'] for c in self.client.get('/api/objects/obj1/searches/latest/').json()['candidates']]
+        self.assertEqual(before[0], plain.pk)
+        SearchRun.objects.filter(pk=run.pk).update(vibes={'theme': {
+            'family': 'animal print', 'patterns': ['zebra print'], 'pins': 3, 'boardPins': 5}})
+        latest = [c['id'] for c in self.client.get('/api/objects/obj1/searches/latest/').json()['candidates']]
+        self.assertEqual(latest[0], zebra.pk)
+        state = [c['id'] for c in self.state_candidates()]
+        self.assertEqual(state, latest)
+
+    def test_malformed_theme_is_ignored(self):
+        run, plain, _ = self.themed_run()
+        SearchRun.objects.filter(pk=run.pk).update(vibes={'theme': 'nope'})
+        latest = self.client.get('/api/objects/obj1/searches/latest/').json()['candidates']
+        self.assertEqual(latest[0]['id'], plain.pk)
+        SearchRun.objects.filter(pk=run.pk).update(vibes=['x'])
+        self.assertEqual(self.client.get('/api/state/').status_code, 200)
+
     # ----------------------------------------------------------- latest
     def test_latest(self):
         self.assertEqual(self.client.get('/api/objects/obj1/searches/latest/').status_code, 404)

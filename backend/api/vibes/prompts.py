@@ -7,6 +7,7 @@ TYPES = tuple(ObjectType.values)
 ITEM_LEN = 40
 DESCRIPTION_LEN = 200
 STYLE_MAX, COLORS_MAX, MATERIALS_MAX = 4, 5, 4
+PATTERNS_MAX = 4
 PIN_TEXT_LEN = 200
 
 CATEGORIZE_SCHEMA = {
@@ -20,7 +21,7 @@ CATEGORIZE_SCHEMA = {
                 'type': 'object',
                 'additionalProperties': False,
                 'required': ['index', 'categories', 'item', 'style', 'colors', 'materials',
-                             'description'],
+                             'description', 'patterns', 'box'],
                 'properties': {
                     'index': {'type': 'integer'},
                     'categories': {'type': 'array', 'items': {'type': 'string', 'enum': list(TYPES)}},
@@ -30,6 +31,10 @@ CATEGORIZE_SCHEMA = {
                     'materials': {'type': 'array', 'items': {'type': 'string'},
                                   'maxItems': MATERIALS_MAX},
                     'description': {'type': 'string', 'maxLength': DESCRIPTION_LEN},
+                    'patterns': {'type': 'array', 'items': {'type': 'string'},
+                                 'maxItems': PATTERNS_MAX},
+                    'box': {'type': 'array', 'items': {'type': 'number'},
+                            'minItems': 4, 'maxItems': 4},
                 },
             },
         },
@@ -53,6 +58,8 @@ Also fill in, per image:
 - colors: up to 5 dominant colors of the furnishings.
 - materials: up to 4 visible materials (for example "oak", "boucle").
 - description: one short plain sentence about the look, 200 characters at most.
+- patterns: up to 4 short lowercase names of the patterns or prints visible on the furnishings (for example "leopard print", "zebra stripe", "cowhide", "tortoiseshell", "stripe", "check", "floral", "polka dot"). Name animal prints specifically (leopard, zebra, cheetah, tiger, giraffe, cowhide, snakeskin), never just "animal print". Use [] when the furnishings are solid or plain.
+- box: [x0, y0, x1, y1], fractions from 0 to 1 of the image (left, top, right, bottom), drawn tightly around the single most prominent shoppable item (the `item`). Use [0, 0, 1, 1] when the item fills the image and [0, 0, 0, 0] when categories is empty.
 
 Images with no furnishings at all (people, food, outfits, text graphics, landscapes) get `categories: []`, item "" and empty lists.
 

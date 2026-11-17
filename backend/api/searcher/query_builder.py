@@ -81,13 +81,23 @@ def _pq(q):
         'query': (q.payload or {}).get('query', ''),
         'payload': q.payload, 'response_meta': q.response_meta,
         'passing_count': q.passing_count,
+        'accepted_count': getattr(q, 'accepted_count', None),
     }
+
+
+def _photo_round(q):
+    """True for a vibe photo round or a `more` page chained from one."""
+    if str(q.get('strategy') or '').startswith('vibe-photo:'):
+        return True
+    return q.get('strategy') == 'more' and is_vibe_query(q)
 
 
 def pick_more_source(previous_queries):
     """The earlier query to continue: most passing candidates among those that
     still have a next page and a cursor which no later query has consumed.
-    Ties go to the earliest query. Returns a dict or None."""
+    Ties go to the earliest query. A vibe photo round (or a `more` page of one)
+    that the agent has accepted nothing from is not continued; an unknown
+    accepted count (None) allows it. Returns a dict or None."""
     prev = [_pq(q) for q in previous_queries or []]
     consumed = {
         ((q.get('payload') or {}).get('pagination') or {}).get('cursor') for q in prev
@@ -98,6 +108,8 @@ def pick_more_source(previous_queries):
         meta = q.get('response_meta') or {}
         cursor = meta.get('cursor')
         if not (meta.get('has_next_page') and cursor) or cursor in consumed:
+            continue
+        if q.get('accepted_count') == 0 and _photo_round(q):
             continue
         if best is None or (q.get('passing_count') or 0) > (best.get('passing_count') or 0):
             best = q
@@ -270,17 +282,20 @@ def build_intent(snapshot):
 # ------------------------------------------------------------ vibe rounds
 #
 # A run whose object matched the space's Pinterest vibes gets extra rounds:
-# `vibe` (a text query shaped by the pins' top style and material) and
-# vibe-photo:N (catalog `like` seeded with the Nth matching pin photo plus the
-# object's name). The vibe sentence goes into the intent of every round.
+# `vibe` (a text query shaped by the board's dominant pattern, else the pins'
+# top style and material), `vibe:2` (the same with the next pattern; only when
+# the board has a theme) and vibe-photo:N (catalog `like` seeded with the Nth
+# matching pin photo, cropped to its item, plus the theme query). The vibe
+# sentence goes into the intent of every round.
 
 VIBE_QUERY_LEN = 120
 VIBE_INTENT_LEN = 300
 VIBE_SENTENCE_LABELS = 3
+VIBE_TEXT_ROUNDS = ('vibe', 'vibe:2')
 
 
 def _is_vibe_round(strategy):
-    return strategy == 'vibe' or strategy.startswith('vibe-photo:')
+    return strategy in VIBE_TEXT_ROUNDS or strategy.startswith('vibe-photo:')
 
 
 def _vibe_image_item(vibes, payload, redact):
@@ -296,7 +311,8 @@ def _vibe_image_item(vibes, payload, redact):
 
 def is_vibe_query(q):
     """True for a vibe round, or a `more` page of a photo round (its query is
-    the object name, which the plain `name` rung must not be skipped for)."""
+    the theme query or the object name, which the plain `name` rung must not be
+    skipped for)."""
     q = _pq(q)
     if _is_vibe_round(q['strategy']):
         return True
@@ -307,10 +323,35 @@ def is_vibe_query(q):
                 and LIKE_IMAGE_RE.match(str((items[0].get('image') or {}).get('data') or '')))
 
 
+def _theme(vibes):
+    """The board's dominant look ({family, patterns, ...}) or None."""
+    theme = (vibes or {}).get('theme')
+    return theme if isinstance(theme, dict) and theme.get('family') else None
+
+
+def theme_terms(vibes):
+    """(first, second) pattern words for the theme queries: the top specific
+    pattern, then the next distinct one or the family name. ('', '') without a
+    theme; the second is '' when there is nothing different to ask for."""
+    theme = _theme(vibes)
+    if theme is None:
+        return '', ''
+    found = [str(p).strip() for p in theme.get('patterns') or [] if str(p).strip()]
+    family = str(theme['family']).strip()
+    first = found[0] if found else family
+    if len(found) > 1:
+        return first, found[1]
+    return first, family if family != first else ''
+
+
 def vibe_strategies(vibes, previous_queries=()):
-    """vibe, vibe-photo:N (each once, minus those already run)."""
+    """vibe, vibe:2 (with a theme), vibe-photo:N (each once, minus those
+    already run)."""
     used = {_pq(q)['strategy'] for q in previous_queries or []}
-    ladder = ['vibe'] + [f'vibe-photo:{p.get("index")}' for p in (vibes or {}).get('photos') or []]
+    ladder = ['vibe']
+    if theme_terms(vibes)[1]:
+        ladder.append('vibe:2')
+    ladder += [f'vibe-photo:{p.get("index")}' for p in (vibes or {}).get('photos') or []]
     return [s for s in ladder if s not in used]
 
 
@@ -318,16 +359,52 @@ def _summary(vibes, key):
     return [str(v) for v in (((vibes or {}).get('summary') or {}).get(key) or []) if v]
 
 
-def vibe_query(snapshot, vibes):
-    """Top style + top material of the matching pins, then the object's name."""
+def _vibe_name(snapshot):
+    return _name(snapshot) or _type_noun(snapshot)
+
+
+def vibe_query(snapshot, vibes, second=False):
+    """With a theme: its top pattern (second=True: the next one) then the
+    object's name. Without: top style + top material, then the name."""
+    name = _vibe_name(snapshot)
+    first, other = theme_terms(vibes)
+    if first:
+        term = other if second else first
+        if not term:
+            raise ValueError('no second theme term')
+        return _join(term, name)[:VIBE_QUERY_LEN]
+    if second:
+        raise ValueError('no theme for vibe:2')
     styles, materials = _summary(vibes, 'styles'), _summary(vibes, 'materials')
-    name = _name(snapshot) or _type_noun(snapshot)
     return _join(styles[0] if styles else '', materials[0] if materials else '', name
                  )[:VIBE_QUERY_LEN]
 
 
+def vibe_photo_query(snapshot, vibes):
+    """Query sent with a vibe photo: the theme query, else the object's name.
+    Never empty while the object has a name."""
+    first, _ = theme_terms(vibes)
+    return (_join(first, _vibe_name(snapshot))[:VIBE_QUERY_LEN] if first
+            else _like_query(snapshot)) or None
+
+
 def vibe_sentence(vibes):
-    """' Their space inspiration favors <styles>, <colors>, <materials>.', or ''."""
+    """With a theme: ' Their space inspiration is dominated by animal print
+    (leopard print, zebra print) - strongly prefer pieces in these prints. It
+    also favors <styles>, <colors>.' Without: ' Their space inspiration favors
+    <styles>, <colors>, <materials>.' ('' when there is nothing to say.)"""
+    theme = _theme(vibes)
+    if theme is not None:
+        family = str(theme['family'])
+        found = [str(p) for p in theme.get('patterns') or [] if p and str(p) != family]
+        listed = f' ({", ".join(found[:VIBE_SENTENCE_LABELS])})' if found else ''
+        text = (f' Their space inspiration is dominated by {family}{listed} \u2014 strongly '
+                f'prefer pieces in {"these prints" if found else "this print"}.')
+        labels = _summary(vibes, 'styles')[:VIBE_SENTENCE_LABELS]
+        labels += _summary(vibes, 'colors')[:VIBE_SENTENCE_LABELS]
+        if labels:
+            text += ' It also favors ' + ', '.join(labels) + '.'
+        return text[:VIBE_INTENT_LEN]
     labels = []
     for key in ('styles', 'colors', 'materials'):
         labels += _summary(vibes, key)[:VIBE_SENTENCE_LABELS]
@@ -513,14 +590,14 @@ def build_payload(snapshot, strategy, previous_queries=(), like=None, redact=Fal
         if not arg.isdigit() or int(arg) >= len(gids):
             raise ValueError(f'unknown strategy: {strategy}')
         query, like_item = _like_query(snapshot) or None, {'id': gids[int(arg)]}
-    elif vibes is not None and strategy == 'vibe':
-        query = vibe_query(snapshot, vibes)
+    elif vibes is not None and strategy in VIBE_TEXT_ROUNDS:
+        query = vibe_query(snapshot, vibes, second=strategy == 'vibe:2')
     elif vibes is not None and strategy.startswith('vibe-photo:'):
         arg = strategy.partition(':')[2]
         if not arg.isdigit():
             raise ValueError(f'unknown strategy: {strategy}')
         like_item = _image_item({'images': vibes.get('photos') or []}, int(arg), redact)
-        query = _like_query(snapshot) or None
+        query = vibe_photo_query(snapshot, vibes)
     elif strategy == 'more':
         src = pick_more_source(previous_queries)
         if src is None:

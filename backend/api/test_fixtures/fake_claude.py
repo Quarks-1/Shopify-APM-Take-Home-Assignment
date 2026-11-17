@@ -150,12 +150,20 @@ def categorize_labels(text):
         m = re.search(r'cat=([a-z,-]*)', title)
         if m:
             cats = [c for c in m.group(1).split(',') if c]
-        m = re.search(r'item=([a-z -]*?)(?:$| cat=| fake=)', title)
+        m = re.search(r'item=([a-z -]*?)(?:$| cat=| fake=| pat=| box=)', title)
         if m:
             item = m.group(1).strip()
+        pats = []
+        m = re.search(r'pat=([a-z,-]*)', title)
+        if m:  # `pat=leopard-print,zebra-print` -> ['leopard print', 'zebra print']
+            pats = [p.replace('-', ' ') for p in m.group(1).split(',') if p]
+        box = [0.1, 0.1, 0.9, 0.9] if cats else [0, 0, 0, 0]
+        m = re.search(r'box=([0-9.]+),([0-9.]+),([0-9.]+),([0-9.]+)', title)
+        if m:
+            box = [float(v) for v in m.groups()]
         out.append({'index': pin['index'], 'categories': cats, 'item': item,
                     'style': ['modern'], 'colors': ['white'], 'materials': ['wood'],
-                    'description': f'a {item}' if cats else ''})
+                    'description': f'a {item}' if cats else '', 'patterns': pats, 'box': box})
     return out
 
 

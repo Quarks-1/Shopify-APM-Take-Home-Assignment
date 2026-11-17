@@ -32,7 +32,7 @@ class ImportBase(TempVibes, TestCase):
 class ImportFlowTests(ImportBase):
     def test_forty_pins_in_three_batches(self):
         pins = pins_for('p', 40)
-        pins[0]['grid_title'] = 'cat=furniture,lighting item=sofa'
+        pins[0]['grid_title'] = 'cat=furniture,lighting item=sofa pat=zebra-print'
         client = FakeClient(pins, pin_count=57)
         sizes, steps = [], []
         real_batch = categorize.categorize_batch
@@ -76,6 +76,8 @@ class ImportFlowTests(ImportBase):
         first = SpaceInspiration.objects.get(space=self.space, pin_id='p000')
         self.assertEqual((first.categories, first.item, first.board_rank),
                          (['furniture', 'lighting'], 'sofa', 0))
+        self.assertEqual(first.model_patterns, ['zebra print'])
+        self.assertEqual(first.patterns, ['zebra print'])
         self.assertEqual(SpaceInspiration.objects.get(pin_id='p001').categories, ['decor'])
         # Temp stdin files are gone; logs / outputs remain.
         leftovers = [p.name for p in paths.import_dir(imp.pk).iterdir()]

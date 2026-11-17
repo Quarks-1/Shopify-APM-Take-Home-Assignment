@@ -195,9 +195,32 @@ def seller_group_key(c):
     return f'__{c.pk}'
 
 
-def candidate_sort_key(c):
-    """Within a brand: verified fits first, then cheapest."""
-    return (SIZE_ORDER.get(c.size_status, 3), c.price_cents, c.pk)
+def theme_from_vibes(vibes):
+    """The board theme dict of a run's vibes snapshot, else None."""
+    theme = vibes.get('theme') if isinstance(vibes, dict) else None
+    return theme if isinstance(theme, dict) and theme else None
+
+
+def carries_board_theme(c, theme):
+    """True when the candidate's title or description names a pattern of the theme."""
+    if not isinstance(theme, dict):
+        return False
+    from .vibes.patterns import family, find_patterns
+
+    fam = theme.get('family')
+    names = theme.get('patterns')
+    wanted = set(names) if isinstance(names, (list, tuple)) else set()
+    text = f'{getattr(c, "title", "") or ""} {getattr(c, "description", "") or ""}'
+    return any(family(p) == fam or p in wanted for p in find_patterns(text))
+
+
+def candidate_sort_key(c, theme=None):
+    """Within a brand: verified fits first, then cheapest. With a theme,
+    candidates carrying it sort ahead of the rest."""
+    key = (SIZE_ORDER.get(c.size_status, 3), c.price_cents, c.pk)
+    if theme:
+        return (0 if carries_board_theme(c, theme) else 1,) + key
+    return key
 
 
 def _pinned(c):
@@ -205,25 +228,36 @@ def _pinned(c):
     return getattr(getattr(c, 'query', None), 'strategy', None) == PINNED_STRATEGY
 
 
-def sort_accepted_brand_diverse(candidates):
-    """Round-robin accepted candidates across sellers for display. Pinned
-    candidates (a refine run's liked carry-overs) come first, in pin order."""
+def _round_robin(items, theme):
     from collections import defaultdict
 
-    pins = sorted((c for c in candidates if _pinned(c)), key=lambda c: c.pk)
     groups = defaultdict(list)
-    for c in candidates:
-        if not _pinned(c):
-            groups[seller_group_key(c)].append(c)
+    for c in items:
+        groups[seller_group_key(c)].append(c)
     for group in groups.values():
-        group.sort(key=candidate_sort_key)
-    order = sorted(groups, key=lambda k: candidate_sort_key(groups[k][0]))
-    out = pins
+        group.sort(key=lambda c: candidate_sort_key(c, theme))
+    order = sorted(groups, key=lambda k: candidate_sort_key(groups[k][0], theme))
+    out = []
     while any(groups[k] for k in order):
         for k in order:
             if groups[k]:
                 out.append(groups[k].pop(0))
     return out
+
+
+def sort_accepted_brand_diverse(candidates, theme=None):
+    """Round-robin accepted candidates across sellers for display. Pinned
+    candidates (a refine run's liked carry-overs) come first, in pin order.
+    With a board theme, candidates carrying it come next (round-robin among
+    themselves), then the rest."""
+    theme = theme if isinstance(theme, dict) and theme else None
+    pins = sorted((c for c in candidates if _pinned(c)), key=lambda c: c.pk)
+    rest = [c for c in candidates if not _pinned(c)]
+    if theme:
+        themed = [c for c in rest if carries_board_theme(c, theme)]
+        plain = [c for c in rest if not carries_board_theme(c, theme)]
+        return pins + _round_robin(themed, theme) + _round_robin(plain, theme)
+    return pins + _round_robin(rest, None)
 
 
 def _iso_or_none(dt):
@@ -289,7 +323,7 @@ def run_to_json(run, include_all=False):
         qs = qs.filter(verdict=Verdict.ACCEPTED)
     cands = list(qs)
     accepted = [c for c in cands if c.verdict == Verdict.ACCEPTED]
-    accepted = sort_accepted_brand_diverse(accepted)
+    accepted = sort_accepted_brand_diverse(accepted, theme_from_vibes(run.vibes))
     rest = sorted((c for c in cands if c.verdict != Verdict.ACCEPTED), key=lambda c: c.pk)
 
     result = run.agent_result or {}
