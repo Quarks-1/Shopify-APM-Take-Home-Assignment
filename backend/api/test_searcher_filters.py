@@ -144,7 +144,9 @@ class WallModeTests(SimpleTestCase):
     def test_too_big_poster(self):
         passes, reasons, size, _ = self.ev({'x': 30, 'y': 40})
         self.assertEqual((passes, size), (False, 'too_big'))
-        self.assertEqual(reasons, ['too large: 30 x 40 in face exceeds 24 x 36 in'])
+        self.assertEqual(
+            reasons,
+            ['too large: 30 x 40 in face exceeds 24 x 36 in (rotated sizes do not count)'])
 
     def test_small_poster_and_labeled_wh(self):
         self.assertEqual(self.ev({'x': 11, 'y': 17})[2], 'fits')
