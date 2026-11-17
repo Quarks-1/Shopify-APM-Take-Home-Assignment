@@ -26,11 +26,14 @@ def _import_json(imp):
 
 
 @_json_view
-@require_http_methods(['POST'])
+@require_http_methods(['GET', 'POST'])
 def space_vibe_imports(request, space_id):
     space = Space.objects.filter(pk=space_id).first()
     if space is None:
         return _not_found()
+    if request.method == 'GET':
+        rows = VibeImport.objects.filter(space=space).order_by('-created_at', '-pk')
+        return JsonResponse({'imports': [vibe_import_to_json(i) for i in rows]})
     data, err = _body(request)
     if err:
         return err

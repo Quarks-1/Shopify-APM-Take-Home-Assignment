@@ -524,6 +524,10 @@ export interface ApiVibeImport {
 export const startVibeImport = (spaceId: string, boardUrl: string) =>
   request<{ import: ApiVibeImport }>("POST", `/api/spaces/${seg(spaceId)}/vibe-imports/`, { body: { boardUrl } }).then((r) => r.import);
 
+/** Every import of a space, newest first (all statuses, dismissed included). */
+export const listSpaceVibeImports = (spaceId: string) =>
+  request<{ imports: ApiVibeImport[] }>("GET", `/api/spaces/${seg(spaceId)}/vibe-imports/`).then((r) => r.imports);
+
 export const getVibeImport = (id: string) =>
   request<{ import: ApiVibeImport }>("GET", `/api/vibe-imports/${seg(id)}/`).then((r) => r.import);
 

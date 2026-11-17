@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RiPinterestLine } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/base/modal/modal";
 import { NumberField } from "@/components/base/number-field/number-field";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
+import { listSpaceVibeImports } from "@/lib/api";
+import type { ApiVibeImport } from "@/lib/api";
 import { fromDisplayLength, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
 import { parseBoardUrl } from "@/features/spaces/board-url";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
@@ -84,6 +86,26 @@ function SpaceForm({
 
   const [values, setValues] = useState<FormValues>(() => initialValues(existing));
   const [submitted, setSubmitted] = useState(false);
+  const [savedBoard, setSavedBoard] = useState<ApiVibeImport | null>(null);
+
+  const existingId = existing?.id;
+  useEffect(() => {
+    if (existingId === undefined) return;
+    let cancelled = false;
+    listSpaceVibeImports(existingId)
+      .then((imports) => {
+        if (cancelled) return;
+        const current = imports.find((i) => i.status === "done" || i.status === "running" || i.status === "queued");
+        if (!current) return;
+        setSavedBoard(current);
+        // Only prefill when the user hasn't started typing.
+        setValues((v) => (v.boardUrl === "" ? { ...v, boardUrl: current.boardUrl } : v));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [existingId]);
 
   const patch = (next: Partial<FormValues>) => setValues((v) => ({ ...v, ...next }));
   const isWall = values.type === "wall";
@@ -95,6 +117,10 @@ function SpaceForm({
   const boardResult = parseBoardUrl(values.boardUrl);
   const boardUrlError = "error" in boardResult ? boardResult.error : null;
   const activeImport = existing !== undefined && vibes.isActive(existing.id);
+  const savedBoardResult = savedBoard ? parseBoardUrl(savedBoard.boardUrl) : null;
+  const savedBoardUrl = savedBoardResult && "url" in savedBoardResult ? savedBoardResult.url : "";
+  const currentUrl = "url" in boardResult ? boardResult.url : "";
+  const matchesSaved = savedBoard !== null && currentUrl !== "" && currentUrl === savedBoardUrl;
   const valid = !nameError && !xError && !yError && !boardUrlError;
 
   const changeUnit = (unit: LengthUnit) => {
@@ -128,7 +154,8 @@ function SpaceForm({
     } else {
       id = actions.createSpace(base);
     }
-    if (!activeImport && "url" in boardResult && boardResult.url !== "") vibes.start(id, boardResult.url);
+    const isNewBoard = "url" in boardResult && boardResult.url !== "" && boardResult.url !== savedBoardUrl;
+    if (!activeImport && isNewBoard) vibes.start(id, boardResult.url);
     savedRef.current = true;
     close();
     onSaved?.(id);
@@ -238,9 +265,13 @@ function SpaceForm({
           hint={
             activeImport
               ? "A board is still importing…"
-              : isEdit
-                ? "Adds this board's pins to your space's vibes."
-                : "Paste a public Pinterest board link."
+              : matchesSaved && savedBoard
+                ? savedBoard.boardTitle
+                  ? `Imported from "${savedBoard.boardTitle}" · ${savedBoard.pins.usable} pins in your vibes. Paste another board to add it.`
+                  : `Imported · ${savedBoard.pins.usable} pins in your vibes. Paste another board to add it.`
+                : isEdit
+                  ? "Adds this board's pins to your space's vibes."
+                  : "Paste a public Pinterest board link."
           }
         />
       </ModalBody>

@@ -208,6 +208,25 @@ class PollTests(VibeApiBase):
         self.assertEqual(self.spawn.call_count, 2)
 
 
+class SpaceImportListTests(VibeApiBase):
+    def test_get_lists_the_spaces_imports_newest_first(self):
+        other = make_space('space2')
+        old = VibeImport.objects.create(space=self.space, board_url=BOARD, status=VibeImportStatus.DONE)
+        new = VibeImport.objects.create(
+            space=self.space, board_url=OTHER, status=VibeImportStatus.FAILED, dismissed=True)
+        foreign = VibeImport.objects.create(space=other, board_url=BOARD, status=VibeImportStatus.DONE)
+        res = self.client.get(URL)
+        self.assertEqual(res.status_code, 200)
+        ids = [i['id'] for i in res.json()['imports']]
+        self.assertEqual(ids, [str(new.pk), str(old.pk)])
+        self.assertNotIn(str(foreign.pk), ids)
+
+    def test_get_unknown_space_is_404(self):
+        res = self.client.get('/api/spaces/nope/vibe-imports/')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['error'], 'not_found')
+
+
 class SpaceDeleteAndListTests(VibeApiBase):
     def test_inspirations_list(self):
         imp = VibeImport.objects.create(space=self.space, board_url=BOARD, status=VibeImportStatus.DONE)
