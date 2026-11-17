@@ -8,7 +8,7 @@ import { AlertDialog } from "@/components/base/modal/modal";
 import { NumberField } from "@/components/base/number-field/number-field";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { Tag, TagGroup } from "@/components/base/tag-group/tag-group";
-import { formatPrice, formatRelativeTime, fromDisplayLength, toDisplayLength } from "@/lib/format";
+import { formatPrice, formatRelativeTime, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
 import {
   MATERIAL_OPTIONS,
   OBJECT_TYPE_OPTIONS,
@@ -116,9 +116,9 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
       name: name.trim(),
       type,
       dims: {
-        x: fromDisplayLength(x, unit),
-        y: Number.isNaN(y) ? undefined : fromDisplayLength(y, unit),
-        z: Number.isNaN(z) ? undefined : fromDisplayLength(z, unit),
+        x: fromDisplayLengthKeeping(x, unit, object.dims.x),
+        y: Number.isNaN(y) ? undefined : fromDisplayLengthKeeping(y, unit, object.dims.y),
+        z: Number.isNaN(z) ? undefined : fromDisplayLengthKeeping(z, unit, object.dims.z),
       },
       weight: numberOrUndefined(weight),
       material: parseOption(MATERIAL_OPTIONS, material),

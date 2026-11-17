@@ -33,6 +33,11 @@ export function fromDisplayLength(value: number, unit: LengthUnit): number {
   }
 }
 
+/** Stored inches for a form field: unchanged when the field still shows the stored value, else converted back. */
+export function fromDisplayLengthKeeping(value: number, unit: LengthUnit, stored: number | undefined): number {
+  return stored !== undefined && value === toDisplayLength(stored, unit) ? stored : fromDisplayLength(value, unit);
+}
+
 export function formatLength(inches: number, unit: LengthUnit): string {
   switch (unit) {
     case "cm":

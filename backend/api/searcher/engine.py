@@ -75,10 +75,32 @@ def _default_strategy(run, available):
     return available[0]
 
 
+_STEP_ORDER = {
+    RunStep.PLANNING: 0, RunStep.BUILDING_QUERY: 1,
+    RunStep.QUERYING_CATALOG: 2, RunStep.RANKING: 3,
+}
+
+
 def _set_step(run, step):
-    run.step = step
-    run.save(update_fields=['step'])
-    sync_object_search(run.object_id)
+    """Advance the run's step; never backwards, never on a non-running run."""
+    with transaction.atomic():
+        rows = list(SearchRun.objects.filter(pk=run.pk, status=RunStatus.RUNNING)
+                    .values_list('step', flat=True))
+        if not rows:
+            return False
+        current = rows[0]
+        if current == step or _STEP_ORDER.get(current, -1) >= _STEP_ORDER[step]:
+            run.step = current
+            return False
+        changed = SearchRun.objects.filter(pk=run.pk, status=RunStatus.RUNNING).update(step=step)
+        if changed:
+            run.step = step
+            sync_object_search(run.object_id)
+        return bool(changed)
+
+
+def _wrapping_up(run, available):
+    return run.max_rounds - run.round_count <= 0 or not available
 
 
 def _price(cents):
@@ -153,11 +175,14 @@ def next_round(run, strategy=None):
         return _stop(f'run is not running (status: {run.status})', run)
     accepted = _accepted(run)
     if accepted >= run.target:
+        _set_step(run, RunStep.RANKING)
         return _stop('target reached', run)
     if run.round_count >= run.max_rounds:
+        _set_step(run, RunStep.RANKING)
         return _stop('max rounds reached', run)
     available = available_strategies(run)
     if not available:
+        _set_step(run, RunStep.RANKING)
         return _stop('no strategies left', run)
     if strategy is None:
         strategy = _default_strategy(run, available)
@@ -187,12 +212,14 @@ def next_round(run, strategy=None):
             run=run, round=run.round_count, strategy=strategy, payload=payload,
             response_meta={}, error=error, duration_ms=duration_ms,
         )
-        _set_step(run, RunStep.RANKING)
+        left = available_strategies(run)
+        if _wrapping_up(run, left):
+            _set_step(run, RunStep.RANKING)
         return {
             'error': error, 'round': run.round_count, 'strategy': strategy,
             'query': payload['query'], 'accepted': accepted, 'target': run.target,
             'rounds_left': run.max_rounds - run.round_count,
-            'strategies_left': available_strategies(run),
+            'strategies_left': left,
         }
 
     result = envelope['result']
@@ -230,7 +257,9 @@ def next_round(run, strategy=None):
         cq.new_count = len(rows)
         cq.passing_count = passing
         cq.save(update_fields=['new_count', 'passing_count'])
-    _set_step(run, RunStep.RANKING)
+    left = available_strategies(run)
+    if _wrapping_up(run, left):
+        _set_step(run, RunStep.RANKING)
 
     new_passing = list(
         run.candidates.filter(query=cq, passes_filters=True).order_by('pk')
@@ -246,7 +275,7 @@ def next_round(run, strategy=None):
         'accepted': accepted,
         'target': run.target,
         'rounds_left': run.max_rounds - run.round_count,
-        'strategies_left': available_strategies(run),
+        'strategies_left': left,
         'candidates': [_compact(c) for c in new_passing],
     }
 
@@ -277,10 +306,11 @@ def judge(run, accept_ids=(), rejects=None):
             c.verdict = Verdict.REJECTED
             c.verdict_reason = str(reason or '').strip()[:REASON_LEN]
             c.save(update_fields=['verdict', 'verdict_reason'])
-        run.step = RunStep.RANKING
-        run.save(update_fields=['step'])
-    sync_object_search(run.object_id)
     accepted = _accepted(run)
+    if (accepted >= run.target or run.max_rounds - run.round_count <= 0
+            or not available_strategies(run)):
+        _set_step(run, RunStep.RANKING)
+    sync_object_search(run.object_id)
     return {
         'accepted': accepted, 'target': run.target,
         'done': accepted >= run.target, 'pending': _pending(run),

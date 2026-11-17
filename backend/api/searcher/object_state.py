@@ -7,6 +7,8 @@ Always derived from the newest run of the object (not from whichever run
 happens to call in), so a late write from an older run can never clobber
 the state of a newer one.
 """
+from django.db import transaction
+
 from ..models import RunStatus, RunStep, SearchRun, SpaceObject
 
 ACTIVE = (RunStatus.QUEUED, RunStatus.RUNNING)
@@ -38,16 +40,17 @@ def search_state(run, previous_finished_at=None):
 def sync_object_search(object_id):
     """Rewrite SpaceObject.search from the object's newest run. Returns the
     new state, or None when the object has no runs (left untouched)."""
-    runs = SearchRun.objects.filter(object_id=object_id).order_by('-created_at', '-pk')
-    latest = runs.only('status', 'step', 'created_at', 'started_at', 'finished_at').first()
-    if latest is None:
-        return None
-    previous = None
-    if latest.status in ACTIVE:
-        previous = (
-            runs.exclude(pk=latest.pk).filter(finished_at__isnull=False)
-            .values_list('finished_at', flat=True).first()
-        )
-    state = search_state(latest, previous)
-    SpaceObject.objects.filter(pk=object_id).update(search=state)
-    return state
+    with transaction.atomic():
+        runs = SearchRun.objects.filter(object_id=object_id).order_by('-created_at', '-pk')
+        latest = runs.only('status', 'step', 'created_at', 'started_at', 'finished_at').first()
+        if latest is None:
+            return None
+        previous = None
+        if latest.status in ACTIVE:
+            previous = (
+                runs.exclude(pk=latest.pk).filter(finished_at__isnull=False)
+                .values_list('finished_at', flat=True).first()
+            )
+        state = search_state(latest, previous)
+        SpaceObject.objects.filter(pk=object_id).update(search=state)
+        return state

@@ -113,6 +113,22 @@ class SearchApiTests(TestCase):
         self.assertEqual(r.json()['id'], new['id'])
         self.assertNotEqual(new['id'], str(old.pk))
 
+    def test_polling_queued_run_promotes_it(self):
+        run = engine.create_run(self.obj, status='queued')
+        self.assertEqual(SearchRun.objects.get(pk=run.pk).status, 'queued')
+        r = self.client.get(f'/api/searches/{run.pk}/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['status'], 'running')
+        self.popen.assert_called_once_with(run.pk)
+        self.assertEqual(SpaceObject.objects.get(pk=self.obj.pk).search['status'], 'running')
+
+    def test_polling_queued_run_survives_dispatch_failure(self):
+        run = engine.create_run(self.obj, status='queued')
+        with mock.patch.object(runner, 'dispatch', side_effect=RuntimeError('boom')), \
+                self.assertLogs('api.search_views', 'ERROR'):
+            r = self.client.get(f'/api/searches/{run.pk}/')
+        self.assertEqual((r.status_code, r.json()['status']), (200, 'queued'))
+
     # ----------------------------------------------------------- detail
     def test_detail_shape_and_default_candidates(self):
         run, ids = self.judged_run()

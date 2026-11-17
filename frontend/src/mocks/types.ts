@@ -182,6 +182,9 @@ export const UNIT_OPTIONS: { value: LengthUnit; label: string }[] = [
   { value: "cm", label: "Centimeters" },
 ];
 
+/** Search steps in the order a run goes through them. */
+export const SEARCH_STEPS: readonly SearchStep[] = ["planning", "building-query", "querying-catalog", "ranking"];
+
 export const SEARCH_STEP_LABELS: Record<SearchStep, string> = {
   planning: "Searcher agent planning",
   "building-query": "Building catalog query",

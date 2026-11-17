@@ -74,7 +74,7 @@ class EngineTests(TestCase):
         self.assertNotIn('exact', out['strategies_left'])
 
         self.run.refresh_from_db()
-        self.assertEqual((self.run.round_count, self.run.step), (1, 'ranking'))
+        self.assertEqual((self.run.round_count, self.run.step), (1, 'querying-catalog'))
         q = CatalogQuery.objects.get(run=self.run)
         self.assertEqual((q.round, q.strategy, q.returned_count, q.new_count, q.passing_count),
                          (1, 'exact', 5, 5, out['passing']))
@@ -224,7 +224,7 @@ class EngineTests(TestCase):
         self.assertEqual(res, {'accepted': 2, 'target': 10, 'done': False, 'pending': 0})
         self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, 'x' * 200)
         self.run.refresh_from_db()
-        self.assertEqual(self.run.step, 'ranking')
+        self.assertEqual(self.run.step, 'querying-catalog')
         # Re-judging flips verdicts both ways; re-accepting clears the old reason.
         res = engine.judge(self.run, [], {a: 'changed my mind'})
         self.assertEqual((res['accepted'], res['pending']), (1, 0))
@@ -277,7 +277,7 @@ class EngineTests(TestCase):
         engine.next_round(self.run)
         s = engine.status(self.run)
         self.assertEqual((s['status'], s['step'], s['round'], s['accepted'], s['target'], s['pending']),
-                         ('running', 'ranking', 1, 0, 10, 1))
+                         ('running', 'querying-catalog', 1, 0, 10, 1))
         self.assertIn('relax-style', s['strategies_left'])
         self.assertEqual(s['object']['name'], 'Coffee table')
 
@@ -447,3 +447,109 @@ class CommandTests(TestCase):
         from django.core.management.base import CommandError
         with self.assertRaises(CommandError):
             call_command('searcher', 'next', '--run', 'x', stderr=StringIO())
+
+
+@fake_ucp
+class StepTests(TestCase):
+    def setUp(self):
+        self.obj = make_object()
+        self.run = engine.create_run(self.obj)
+
+    def stored(self):
+        return SearchRun.objects.get(pk=self.run.pk).step
+
+    def obj_step(self):
+        return SpaceObject.objects.get(pk=self.obj.pk).search.get('step')
+
+    def test_step_stays_querying_catalog_after_non_final_round_and_judge(self):
+        out = engine.next_round(self.run)
+        self.assertEqual(self.stored(), 'querying-catalog')
+        self.assertEqual(self.obj_step(), 'querying-catalog')
+        engine.judge(self.run, [out['candidates'][0]['id']])
+        self.assertEqual(self.stored(), 'querying-catalog')
+        self.assertEqual(self.obj_step(), 'querying-catalog')
+        engine.next_round(self.run, 'more')
+        self.assertEqual(self.stored(), 'querying-catalog')
+
+    def test_ranking_when_judge_reaches_target(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(target=1)
+        self.run.refresh_from_db()
+        out = engine.next_round(self.run)
+        self.assertEqual(self.stored(), 'querying-catalog')
+        engine.judge(self.run, [out['candidates'][0]['id']])
+        self.assertEqual(self.stored(), 'ranking')
+        self.assertEqual(self.obj_step(), 'ranking')
+
+    def test_ranking_when_last_round_used(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(max_rounds=1)
+        self.run.refresh_from_db()
+        engine.next_round(self.run)
+        self.assertEqual(self.stored(), 'ranking')
+        self.assertEqual(self.obj_step(), 'ranking')
+
+    def test_ranking_when_last_round_errors(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(max_rounds=1)
+        self.run.refresh_from_db()
+        with override_settings(SEARCHER_UCP_BIN='/nonexistent/ucp'):
+            out = engine.next_round(self.run)
+        self.assertIn('error', out)
+        self.assertEqual(self.stored(), 'ranking')
+
+    def test_ranking_when_judge_uses_last_round(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(max_rounds=1)
+        self.run.refresh_from_db()
+        out = engine.next_round(self.run)
+        SearchRun.objects.filter(pk=self.run.pk).update(step='querying-catalog')
+        engine.judge(self.run, [out['candidates'][0]['id']])
+        self.assertEqual(self.stored(), 'ranking')
+
+    def test_stop_on_running_run_sets_ranking(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(max_rounds=0)
+        out = engine.next_round(self.run)
+        self.assertTrue(out['stop'])
+        self.assertEqual(self.stored(), 'ranking')
+        self.assertEqual(self.obj_step(), 'ranking')
+
+    def test_stop_on_target_reached_sets_ranking(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(target=0)
+        out = engine.next_round(self.run)
+        self.assertEqual(out['reason'], 'target reached')
+        self.assertEqual(self.stored(), 'ranking')
+
+    def test_stop_on_non_running_run_leaves_step(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(status='canceled', step=None)
+        out = engine.next_round(self.run)
+        self.assertTrue(out['stop'])
+        self.assertIsNone(self.stored())
+
+    def test_set_step_never_goes_backwards(self):
+        self.assertTrue(engine._set_step(self.run, 'querying-catalog'))
+        self.assertFalse(engine._set_step(self.run, 'building-query'))
+        self.assertFalse(engine._set_step(self.run, 'planning'))
+        self.assertFalse(engine._set_step(self.run, 'querying-catalog'))
+        self.assertEqual((self.stored(), self.run.step), ('querying-catalog', 'querying-catalog'))
+        self.assertTrue(engine._set_step(self.run, 'ranking'))
+        self.assertFalse(engine._set_step(self.run, 'querying-catalog'))
+        self.assertEqual((self.stored(), self.run.step), ('ranking', 'ranking'))
+
+    def test_set_step_from_null_and_stale_instance(self):
+        SearchRun.objects.filter(pk=self.run.pk).update(step=None)
+        self.assertTrue(engine._set_step(self.run, 'planning'))
+        # A stale in-memory step is corrected from the stored value.
+        SearchRun.objects.filter(pk=self.run.pk).update(step='ranking')
+        self.run.step = 'planning'
+        self.assertFalse(engine._set_step(self.run, 'querying-catalog'))
+        self.assertEqual(self.run.step, 'ranking')
+
+    def test_set_step_skips_unchanged_sync(self):
+        with mock.patch.object(engine, 'sync_object_search') as sync:
+            engine._set_step(self.run, 'querying-catalog')
+            engine._set_step(self.run, 'querying-catalog')
+            engine._set_step(self.run, 'planning')
+        self.assertEqual(sync.call_count, 1)
+
+    def test_set_step_never_writes_on_non_running_run(self):
+        for st in ['queued', 'done', 'empty', 'failed', 'canceled']:
+            SearchRun.objects.filter(pk=self.run.pk).update(status=st, step=None)
+            self.assertFalse(engine._set_step(self.run, 'ranking'))
+            self.assertIsNone(self.stored())

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { toast } from "@/components/base/toast/toast";
 import * as api from "@/lib/api";
 import { ACTIVE_RUN_STATUSES, ApiError, describeError, type ApiSearchRun } from "@/lib/api";
+import { SEARCH_STEPS } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
@@ -22,6 +23,8 @@ const MAX_RETRY_MS = 10_000;
 interface Tracker {
   objectId: string;
   runId?: string;
+  /** Highest step shown for `runId`, so a stale poll never moves the step backwards. */
+  highestStep?: number;
   stopped: boolean;
   /** Cancel was pressed before the start request returned a run id. */
   cancelRequested: boolean;
@@ -100,6 +103,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
 
     const observe = (tracker: Tracker, run: ApiSearchRun) => {
       if (tracker.stopped) return;
+      if (tracker.runId !== run.id) tracker.highestStep = undefined;
       tracker.runId = run.id;
       if (!ACTIVE_RUN_STATUSES.has(run.status)) {
         finish(tracker, run);
@@ -110,7 +114,10 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
         stop(tracker.objectId);
         return;
       }
-      const step = run.step ?? "planning";
+      const reported = SEARCH_STEPS.indexOf(run.step ?? "planning");
+      const highest = Math.max(reported, tracker.highestStep ?? 0);
+      tracker.highestStep = highest;
+      const step = SEARCH_STEPS[highest];
       if (obj.search.status !== "running" || obj.search.step !== step) {
         actions.setSearchState(tracker.objectId, { status: "running", step, lastRunAt: obj.search.lastRunAt });
       }
@@ -157,7 +164,8 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       enqueue(() => api.startSearch(objectId))
         .then((run) => {
           if (tracker.cancelRequested) {
-            if (ACTIVE_RUN_STATUSES.has(run.status)) void enqueue(() => api.cancelSearch(run.id)).catch(() => {});
+            // A newer search for this object gets the same active run back, so cancelling it would kill that one.
+            if (!trackers.current.has(objectId) && ACTIVE_RUN_STATUSES.has(run.status)) void enqueue(() => api.cancelSearch(run.id)).catch(() => {});
             return;
           }
           observe(tracker, run);

@@ -1,5 +1,7 @@
 import json
 
+from unittest import mock
+
 from django.test import TestCase
 
 from .models import Placement, Space, SpaceObject
@@ -237,6 +239,47 @@ class ObjectTests(Base):
         b = self.make_object(name='B')
         SpaceObject.objects.filter(pk=b['id']).update(position=-1)
         self.assertEqual([o['name'] for o in self.call('get', '/api/objects/').json()], ['B', 'A'])
+
+
+class PatchKeepsSearchStateTests(Base):
+    def test_object_patch_does_not_overwrite_search(self):
+        from . import state_views
+        o = self.make_object()
+        real = state_views.validate_object
+
+        def validate_then_race(*a, **kw):
+            out = real(*a, **kw)
+            SpaceObject.objects.filter(pk=o['id']).update(
+                search={'status': 'running', 'step': 'ranking'})
+            return out
+
+        with mock.patch.object(state_views, 'validate_object', side_effect=validate_then_race):
+            r = self.call('patch', f'/api/objects/{o["id"]}/', {'name': 'Renamed'})
+        self.assertEqual(r.status_code, 200, r.content)
+        stored = SpaceObject.objects.get(pk=o['id'])
+        self.assertEqual(stored.name, 'Renamed')
+        self.assertEqual(stored.search, {'status': 'running', 'step': 'ranking'})
+
+    def test_empty_object_patch_is_a_noop(self):
+        o = self.make_object()
+        r = self.call('patch', f'/api/objects/{o["id"]}/', {})
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def test_space_patch_saves_only_given_fields(self):
+        from . import state_views
+        s = self.make_space()
+        real = state_views.validate_space
+
+        def validate_then_race(*a, **kw):
+            out = real(*a, **kw)
+            Space.objects.filter(pk=s['id']).update(unit='in')
+            return out
+
+        with mock.patch.object(state_views, 'validate_space', side_effect=validate_then_race):
+            r = self.call('patch', f'/api/spaces/{s["id"]}/', {'name': 'Den'})
+        self.assertEqual(r.status_code, 200, r.content)
+        stored = Space.objects.get(pk=s['id'])
+        self.assertEqual((stored.name, stored.unit), ('Den', 'in'))
 
 
 class PlacementTests(Base):

@@ -4,7 +4,7 @@ import { Input } from "@/components/base/input/input";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/base/modal/modal";
 import { NumberField } from "@/components/base/number-field/number-field";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
-import { fromDisplayLength, toDisplayLength } from "@/lib/format";
+import { fromDisplayLength, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import type { LengthUnit, Space, SpaceType } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
@@ -98,10 +98,10 @@ function SpaceForm({
   const save = () => {
     setSubmitted(true);
     if (!valid) return;
-    const x = fromDisplayLength(finite(values.x) ?? 0, values.unit);
-    const y = fromDisplayLength(finite(values.y) ?? 0, values.unit);
+    const x = fromDisplayLengthKeeping(finite(values.x) ?? 0, values.unit, existing?.dims.x);
+    const y = fromDisplayLengthKeeping(finite(values.y) ?? 0, values.unit, existing?.dims.y);
     const zRaw = finite(values.z);
-    const z = zRaw !== undefined && zRaw > 0 ? fromDisplayLength(zRaw, values.unit) : undefined;
+    const z = zRaw !== undefined && zRaw > 0 ? fromDisplayLengthKeeping(zRaw, values.unit, existing?.dims.z) : undefined;
     const limit = finite(values.weightLimit);
     const weightLimit = limit !== undefined && limit > 0 ? limit : undefined;
     const base = {

@@ -1,4 +1,6 @@
 """Search-run endpoints: start, inspect, cancel, and select a candidate."""
+import logging
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -6,6 +8,8 @@ from .models import Candidate, RunStatus, SearchRun, SpaceObject, Verdict
 from .searcher import runner
 from .serializers import ValidationFailed, _is_number, object_to_json, run_to_json
 from .state_views import _body, _error, _json_view, _not_found
+
+logger = logging.getLogger(__name__)
 
 
 def _include_all(request):
@@ -17,10 +21,13 @@ def _get_object(object_id):
 
 
 def _fresh(run):
-    """A polled run that claims to be running gets checked for a dead worker
-    first (e.g. after a reboot), so it doesn't read 'running' forever."""
-    if run.status == RunStatus.RUNNING:
-        runner.reap_stale()
+    """A polled active run gets a dispatch pass first: dead workers are reaped
+    (e.g. after a reboot) and queued runs promoted, so nothing stalls."""
+    if run.status in (RunStatus.QUEUED, RunStatus.RUNNING):
+        try:
+            runner.dispatch()
+        except Exception:  # never fail the poll because of housekeeping
+            logger.exception('dispatch failed while polling run %s', run.pk)
         run.refresh_from_db()
     return run
 

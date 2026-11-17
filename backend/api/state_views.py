@@ -161,7 +161,7 @@ def space_detail(request, space_id):
     for k, v in fields.items():
         setattr(space, k, v)
     space.updated_at = now()
-    space.save()
+    space.save(update_fields=[*fields, 'updated_at'])
     return JsonResponse(space_to_json(space))
 
 
@@ -233,7 +233,8 @@ def object_detail(request, object_id):
         current={'price_min': obj.price_min, 'price_limit': obj.price_limit})
     for k, v in fields.items():
         setattr(obj, k, v)
-    obj.save()
+    if fields:
+        obj.save(update_fields=list(fields))
     return JsonResponse(object_to_json(obj))
 
 
