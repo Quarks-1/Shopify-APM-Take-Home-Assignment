@@ -179,15 +179,6 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
               hint={showError(errors.x)}
             />
             <NumberField
-              label={`Height (${unit})`}
-              value={z}
-              onChange={setZ}
-              minValue={0}
-              isRequired={isWall}
-              isInvalid={Boolean(showError(errors.z))}
-              hint={showError(errors.z) ?? (isWall ? undefined : "Optional")}
-            />
-            <NumberField
               label={`Depth (${unit})`}
               value={y}
               onChange={setY}
@@ -195,6 +186,15 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
               isRequired={!isWall}
               isInvalid={Boolean(showError(errors.y))}
               hint={showError(errors.y) ?? (isWall ? "Optional" : undefined)}
+            />
+            <NumberField
+              label={`Height (${unit})`}
+              value={z}
+              onChange={setZ}
+              minValue={0}
+              isRequired={isWall}
+              isInvalid={Boolean(showError(errors.z))}
+              hint={showError(errors.z) ?? (isWall ? undefined : "Optional")}
             />
           </div>
           <NumberField label="Weight (lb)" value={weight} onChange={setWeight} minValue={0} hint="Optional" />
