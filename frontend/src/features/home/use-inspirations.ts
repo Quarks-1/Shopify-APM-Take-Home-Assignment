@@ -9,7 +9,7 @@ export interface InspirationsResult {
   retry(): void;
 }
 
-/** Every imported pin. Refetches when spaces change or a vibe import finishes; keeps old data meanwhile. */
+/** Every imported pin. Refetches when spaces change or a vibe import finishes (done or failed); keeps old data meanwhile. */
 export function useInspirations(): InspirationsResult {
   const { spaces } = useAppState();
   const { viewFor } = useVibeImport();
@@ -24,7 +24,9 @@ export function useInspirations(): InspirationsResult {
   const doneKey = spaces
     .map((s) => {
       const view = viewFor(s.id);
-      return view?.kind === "done" ? view.imp.id : "";
+      // A failed import (e.g. a failed sort) may already have replaced the old pins.
+      if (view?.kind === "done") return view.imp.id;
+      return view?.kind === "failed" && view.imp ? view.imp.id : "";
     })
     .filter(Boolean)
     .sort()

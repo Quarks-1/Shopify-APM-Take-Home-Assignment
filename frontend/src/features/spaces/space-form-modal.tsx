@@ -267,10 +267,10 @@ function SpaceForm({
               ? "A board is still importing…"
               : matchesSaved && savedBoard
                 ? savedBoard.boardTitle
-                  ? `Imported from "${savedBoard.boardTitle}" · ${savedBoard.pins.usable} pins in your vibes. Paste another board to add it.`
-                  : `Imported · ${savedBoard.pins.usable} pins in your vibes. Paste another board to add it.`
+                  ? `Imported from "${savedBoard.boardTitle}" · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
+                  : `Imported · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
                 : isEdit
-                  ? "Adds this board's pins to your space's vibes."
+                  ? "Replaces your space's vibes with this board's pins."
                   : "Paste a public Pinterest board link."
           }
         />

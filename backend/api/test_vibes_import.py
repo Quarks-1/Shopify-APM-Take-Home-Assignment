@@ -164,13 +164,89 @@ class ImportFlowTests(ImportBase):
         self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 20)
         self.assertEqual(imp.pins_usable, 20)
 
-    def test_second_board_adds_rows(self):
-        self.run_import(FakeClient(pins_for('a', 5)))
-        imp = self.run_import(FakeClient(pins_for('b', 4) + pins_for('a', 2)))
+    def test_second_board_replaces_the_first(self):
+        first = self.run_import(FakeClient(pins_for('a', 5)))
+        old_files = [paths.space_dir('space1') / f'a{i:03d}.jpg' for i in range(5)]
+        self.assertTrue(all(f.is_file() for f in old_files))
+        imp = self.run_import(FakeClient(pins_for('b', 4)))
         self.assertEqual(imp.status, VibeImportStatus.DONE)
-        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (6, 2, 4))
-        self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 9)
-        self.assertEqual(imp.pins_usable, 9)
+        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (4, 0, 4))
+        rows = SpaceInspiration.objects.filter(space=self.space)
+        self.assertEqual(sorted(rows.values_list('pin_id', flat=True)),
+                         ['b000', 'b001', 'b002', 'b003'])
+        self.assertEqual({r.vibe_import_id for r in rows}, {imp.pk})
+        self.assertNotEqual(first.pk, imp.pk)
+        self.assertEqual(imp.pins_usable, 4)
+        self.assertFalse(any(f.exists() for f in old_files))
+        self.assertTrue((paths.space_dir('space1') / 'b000.jpg').is_file())
+
+    def test_overlapping_pins_are_kept_and_repointed(self):
+        first = self.run_import(FakeClient(pins_for('a', 5)))
+        kept_before = SpaceInspiration.objects.get(space=self.space, pin_id='a001')
+        # New board: b000, b001, then a001 and a000 (reversed ranks).
+        board = pins_for('b', 2) + [raw_pin('a001', 'sofa 1'), raw_pin('a000', 'sofa 0')]
+        client = FakeClient(board)
+        imp = self.run_import(client)
+        self.assertEqual(imp.status, VibeImportStatus.DONE)
+        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (4, 2, 2))
+        self.assertEqual(len(client.image_requests), 2)  # no re-download of a000 / a001
+        rows = {r.pin_id: r for r in SpaceInspiration.objects.filter(space=self.space)}
+        self.assertEqual(sorted(rows), ['a000', 'a001', 'b000', 'b001'])
+        self.assertEqual({r.vibe_import_id for r in rows.values()}, {imp.pk})
+        self.assertNotEqual(first.pk, imp.pk)
+        self.assertEqual((rows['b000'].board_rank, rows['b001'].board_rank,
+                          rows['a001'].board_rank, rows['a000'].board_rank), (0, 1, 2, 3))
+        self.assertEqual(rows['a001'].pk, kept_before.pk)
+        self.assertIsNotNone(rows['a001'].categorized_at)  # keeps its labels
+        self.assertTrue((paths.space_dir('space1') / 'a001.jpg').is_file())
+        self.assertFalse((paths.space_dir('space1') / 'a002.jpg').exists())
+
+    def test_failed_reads_leave_the_old_pins_intact(self):
+        import urllib.error
+        self.run_import(FakeClient(pins_for('a', 3)))
+        for client in (
+            FakeClient(pins_for('b', 3), privacy='secret'),
+            FakeClient(pins_for('b', 3), load_error=urllib.error.URLError('down')),
+            FakeClient([]),  # empty board
+        ):
+            imp = self.run_import(client)
+            self.assertEqual(imp.status, VibeImportStatus.FAILED)
+            self.assertEqual(sorted(SpaceInspiration.objects.filter(space=self.space)
+                                    .values_list('pin_id', flat=True)),
+                             ['a000', 'a001', 'a002'])
+            for i in range(3):
+                self.assertTrue((paths.space_dir('space1') / f'a{i:03d}.jpg').is_file())
+
+    def test_reimport_after_pins_left_the_board_removes_them(self):
+        self.run_import(FakeClient(pins_for('p', 5)))
+        imp = self.run_import(FakeClient(pins_for('p', 3)))
+        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (3, 3, 0))
+        self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 3)
+        self.assertFalse((paths.space_dir('space1') / 'p004.jpg').exists())
+        self.assertEqual(imp.pins_usable, 3)
+
+    def test_pruning_is_per_space(self):
+        other = make_space('space2')
+        self.run_import(FakeClient(pins_for('a', 3)), space=other)
+        self.run_import(FakeClient(pins_for('a', 3)))
+        self.run_import(FakeClient(pins_for('b', 2)))
+        self.assertEqual(sorted(SpaceInspiration.objects.filter(space=self.space)
+                                .values_list('pin_id', flat=True)), ['b000', 'b001'])
+        theirs = SpaceInspiration.objects.filter(space=other)
+        self.assertEqual(sorted(theirs.values_list('pin_id', flat=True)), ['a000', 'a001', 'a002'])
+        self.assertNotIn(None, theirs.values_list('vibe_import_id', flat=True))
+        for i in range(3):
+            self.assertTrue((paths.space_dir('space2') / f'a{i:03d}.jpg').is_file())
+        self.assertFalse((paths.space_dir('space1') / 'a000.jpg').exists())
+
+    def test_pruning_never_deletes_outside_the_vibes_dir(self):
+        outside = self.var / 'precious.jpg'
+        outside.write_bytes(b'x')
+        self.run_import(FakeClient(pins_for('a', 2)))
+        SpaceInspiration.objects.filter(pin_id='a000').update(image_path='../precious.jpg')
+        self.run_import(FakeClient(pins_for('b', 1)))
+        self.assertTrue(outside.is_file())
+        self.assertFalse(SpaceInspiration.objects.filter(pin_id='a000').exists())
 
     def test_other_spaces_pins_are_independent(self):
         other = make_space('space2')

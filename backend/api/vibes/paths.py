@@ -31,6 +31,19 @@ def import_log_path(import_id) -> Path:
     return import_dir(import_id) / 'worker.log'
 
 
+def inside_vibes_dir(rel) -> Path | None:
+    """A stored relative path as an absolute path strictly inside vibes_dir
+    (no existence or size checks), or None. For deleting files safely."""
+    try:
+        root = vibes_dir()
+        target = (root / str(rel)).resolve()
+        if root not in target.parents:
+            return None
+        return target
+    except (OSError, ValueError):
+        return None
+
+
 def resolve_inside(rel) -> Path | None:
     """A stored relative path as an absolute file inside vibes_dir, or None."""
     try:

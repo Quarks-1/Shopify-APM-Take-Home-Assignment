@@ -13,6 +13,12 @@ execute() runs four steps, each only moving forward:
   reading-board -> downloading -> sorting -> saving
 Pins are kept in `SpaceInspiration` rows (uncategorized after step 2, labeled
 batch by batch in step 3), so a failed sort never loses the downloaded pins.
+
+A space maps 1:1 to a Pinterest board: once a new import has read its board
+successfully, step 2 first prunes every earlier pin of the space that is not on
+that board (rows and image files), so only the most recent board's pins remain.
+Pins on both boards are kept (no re-download) and re-pointed to the new import.
+Nothing is pruned when reading the board fails or the board has no pins.
 """
 import logging
 import os
@@ -246,8 +252,43 @@ def _read_board(imp, client):
     return board, pins
 
 
+def _remove_files(rel_paths):
+    """Best-effort delete of stored image files (relative to vibes_dir)."""
+    for rel in rel_paths:
+        if not rel:
+            continue
+        target = paths.inside_vibes_dir(rel)
+        if target is None:
+            continue
+        try:
+            target.unlink()
+        except OSError:
+            pass
+
+
+def _prune_to_board(imp, pins):
+    """A space maps 1:1 to a board: drop the space's pins that are not on the
+    board just read, and re-point the shared ones to this import. Called only
+    after a successful read, and never for a board without pins."""
+    if not pins:
+        return
+    ranks = {p.id: p.board_rank for p in pins}
+    with transaction.atomic():
+        mine = SpaceInspiration.objects.filter(space_id=imp.space_id)
+        stale = list(mine.exclude(pin_id__in=list(ranks)).values_list('pk', 'image_path'))
+        if stale:
+            SpaceInspiration.objects.filter(pk__in=[pk for pk, _ in stale]).delete()
+        kept = list(mine.filter(pin_id__in=list(ranks)).only('pk', 'pin_id', 'vibe_import_id', 'board_rank'))
+        for row in kept:
+            if row.vibe_import_id != imp.pk or row.board_rank != ranks[row.pin_id]:
+                SpaceInspiration.objects.filter(pk=row.pk).update(
+                    vibe_import=imp, board_rank=ranks[row.pin_id])
+    _remove_files(path for _, path in stale)
+
+
 def _download(imp, board, pins, client):
     space_id = imp.space_id
+    _prune_to_board(imp, pins)
     existing = set(SpaceInspiration.objects.filter(space_id=space_id).values_list('pin_id', flat=True))
     skipped = sum(1 for p in pins if p.id in existing)
     new = len(pins) - skipped
