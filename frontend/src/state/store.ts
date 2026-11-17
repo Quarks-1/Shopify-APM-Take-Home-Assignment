@@ -72,7 +72,7 @@ type Action =
   | { type: "object/update"; id: string; patch: ObjectPatch }
   | { type: "object/delete"; id: string }
   | { type: "search/set-state"; id: string; search: SearchState }
-  | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; selected?: string; lastRunAt: string }
+  | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string }
   | { type: "product/select"; objectId: string; productId: string }
   | { type: "cart/add"; objectIds: string[]; ids: string[] }
   | { type: "cart/set-qty"; lineId: string; qty: number }
@@ -176,20 +176,18 @@ function reducer(state: AppState, action: Action): AppState {
       if (!obj) return state;
       const { products, stores } = mergeCandidates(state.products, state.stores, [obj], action.candidates);
       const ids = action.candidates.map((c) => candidateProductId(c.id));
-      const { selected } = action;
+      // A fresh search never picks for the user: clear the selection and its cart lines.
       const next: AppState = {
         ...mapObject(state, action.id, (o) => ({
           ...o,
-          candidateIds: withSelectionFirst(ids, selected),
-          selectedProductId: selected,
+          candidateIds: ids,
+          selectedProductId: undefined,
           search: { status: ids.length > 0 ? "done" : "empty", lastRunAt: action.lastRunAt },
         })),
         products,
         stores,
       };
-      return selected && selected !== obj.selectedProductId
-        ? { ...next, cart: setCartProduct(next.cart, action.id, selected) }
-        : next;
+      return obj.selectedProductId ? { ...next, cart: next.cart.filter((l) => l.objectId !== action.id) } : next;
     }
 
     case "product/select": {
@@ -522,14 +520,9 @@ export function createAppStore(): AppStore {
       const obj = getObject(state, objectId);
       if (!obj) return;
       const accepted = candidates.filter((c) => c.verdict === "accepted" && c.objectId === objectId);
-      const ids = accepted.map((c) => candidateProductId(c.id));
-      // Keep the pick when the new run still has it, otherwise take the best match (none when empty).
-      const selected = obj.selectedProductId && ids.includes(obj.selectedProductId) ? obj.selectedProductId : ids[0];
-      dispatch({ type: "search/results", id: objectId, candidates: accepted, selected, lastRunAt: finishedAt ?? nowIso() });
-      if (selected !== obj.selectedProductId) {
-        const candidateId = candidateIdOf(selected) ?? null;
-        write(() => api.selectCandidate(objectId, candidateId));
-      }
+      // Results never auto-select: the user picks a card. Clear any previous pick on the backend too.
+      dispatch({ type: "search/results", id: objectId, candidates: accepted, lastRunAt: finishedAt ?? nowIso() });
+      if (obj.selectedProductId) write(() => api.selectCandidate(objectId, null));
     },
     selectProduct(objectId, productId) {
       const obj = getObject(state, objectId);
