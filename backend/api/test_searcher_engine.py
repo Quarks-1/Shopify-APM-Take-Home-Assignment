@@ -185,11 +185,9 @@ class EngineTests(TestCase):
         self.assertStop(engine.next_round(self.run), 'max rounds')
 
     def test_stop_target_reached(self):
-        # The fixture has one verified fit per page: page 1 (exact) and page 2 (more).
         ids = [c['id'] for c in engine.next_round(self.run)['candidates']]
-        ids += [c['id'] for c in engine.next_round(self.run, 'more')['candidates']]
-        self.assertEqual(len(ids), 2)
-        SearchRun.objects.filter(pk=self.run.pk).update(target=2)
+        self.assertEqual(len(ids), 1)
+        SearchRun.objects.filter(pk=self.run.pk).update(target=1)
         engine.judge(self.run, ids)
         self.run.refresh_from_db()
         self.assertStop(engine.next_round(self.run), 'target reached')
@@ -212,33 +210,27 @@ class EngineTests(TestCase):
 
     # ----------------------------------------------------------- judge
     def test_judge_accept_reject_rejudge(self):
-        # One verified fit per fixture page: page 1 (exact) and page 2 (more).
         ids = [x['id'] for x in engine.next_round(self.run)['candidates']]
-        out = engine.next_round(self.run, 'more')
-        ids += [x['id'] for x in out['candidates']]
-        self.assertEqual(len(ids), 2, out)
-        a, b = ids
-        # Filtered-out candidates can still be rejected (never accepted).
+        self.assertEqual(len(ids), 1)
+        a = ids[0]
         c = Candidate.objects.get(run=self.run, title__startswith='Garvee').pk
-        res = engine.judge(self.run, [a, b], {c: 'x' * 500})
-        self.assertEqual(res, {'accepted': 2, 'target': 10, 'done': False, 'pending': 0})
+        res = engine.judge(self.run, [a], {c: 'x' * 500})
+        self.assertEqual(res, {'accepted': 1, 'target': 10, 'done': False, 'pending': 0})
         self.assertEqual(Candidate.objects.get(pk=c).verdict_reason, 'x' * 200)
         self.run.refresh_from_db()
         self.assertEqual(self.run.step, 'querying-catalog')
-        # Re-judging flips verdicts both ways; re-accepting clears the old reason.
         res = engine.judge(self.run, [], {a: 'changed my mind'})
-        self.assertEqual((res['accepted'], res['pending']), (1, 0))
+        self.assertEqual((res['accepted'], res['pending']), (0, 0))
         self.assertEqual(Candidate.objects.get(pk=a).verdict, 'rejected')
         self.assertEqual(Candidate.objects.get(pk=a).verdict_reason, 'changed my mind')
-        res = engine.judge(self.run, [a], {b: 'changed my mind'})
+        res = engine.judge(self.run, [a], {c: 'changed my mind'})
         self.assertEqual((res['accepted'], res['pending']), (1, 0))
-        self.assertEqual(Candidate.objects.get(pk=b).verdict, 'rejected')
+        self.assertEqual(Candidate.objects.get(pk=c).verdict, 'rejected')
         self.assertEqual(Candidate.objects.get(pk=a).verdict, 'accepted')
         self.assertEqual(Candidate.objects.get(pk=a).verdict_reason, '')
 
     def test_judge_done_flag(self):
-        engine.next_round(self.run)
-        out = engine.next_round(self.run, 'more')
+        out = engine.next_round(self.run)
         SearchRun.objects.filter(pk=self.run.pk).update(target=1)
         self.run.refresh_from_db()
         res = engine.judge(self.run, [out['candidates'][0]['id']])
@@ -286,10 +278,9 @@ class EngineTests(TestCase):
         SearchRun.objects.filter(pk=self.run.pk).update(target=2)
         self.run.refresh_from_db()
         res = engine.run_deterministic(self.run)
-        # Page 1 holds one verified fit; rounds 2-5 (relax-style, name, similar:0,
-        # broad) return the same page, then round 6 widens to page 2 ('more')
-        # after SEARCHER_EXPAND_AFTER and finds the second fit.
-        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 2, 6))
+        # Page 1 holds one verified fit; rounds 2-5 repeat page 1; round 6 pages
+        # ahead but nothing else in the fixture passes the hard size cap.
+        self.assertEqual((res['status'], res['accepted'], res['rounds_used']), ('done', 1, 6))
         self.assertEqual(res['unverified'], 0)
         self.run.refresh_from_db()
         self.assertEqual((self.run.status, self.run.step), ('done', None))
@@ -304,7 +295,7 @@ class EngineTests(TestCase):
         res = engine.run_deterministic(self.run)  # target 10, only verified fits in fixture
         self.assertEqual(res['status'], 'done')
         self.assertEqual(res['unverified'], 0)
-        self.assertGreaterEqual(res['accepted'], 2)
+        self.assertGreaterEqual(res['accepted'], 1)
         self.assertLess(res['accepted'], res['target'])
         self.assertEqual(res['stopped'], 'no strategies left')
         self.assertLessEqual(res['rounds_used'], 12)
@@ -423,7 +414,7 @@ class CommandTests(TestCase):
         self.assertEqual(self.run_cmd('next', '--strategy', 'broad', run_id=run_id)['strategy'], 'broad')
         auto = self.run_cmd('auto', run_id=run_id)
         self.assertEqual(auto['status'], 'done')
-        self.assertGreaterEqual(auto['accepted'], 2)
+        self.assertGreaterEqual(auto['accepted'], 1)
 
     def test_errors_are_json_with_exit_1(self):
         for args in (['next'], ['status'], ['auto'], ['judge', '--accept', '1']):

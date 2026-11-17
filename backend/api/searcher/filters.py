@@ -71,45 +71,45 @@ def evaluate(fields, snapshot, tolerance):
         face = sorted(v for v in (px, py, pz) if v is not None)[-2:]
         if len(face) == 2:
             of = sorted([ox, oh])
-            if any(p > o * tolerance for p, o in zip(face, of)):
+            if any(p > o for p, o in zip(face, of)):
                 violations.append(
                     f'too large: {_n(face[0])} x {_n(face[1])} in face exceeds '
-                    f'{_n(of[0])} x {_n(of[1])} in ({tol_txt})'
+                    f'{_n(of[0])} x {_n(of[1])} in'
                 )
-        elif len(face) == 1 and face[0] > max(ox, oh) * tolerance:
+        elif len(face) == 1 and face[0] > max(ox, oh):
             violations.append(
-                f'too large: {_n(face[0])} in face side exceeds {_n(max(ox, oh))} in ({tol_txt})'
+                f'too large: {_n(face[0])} in face side exceeds {_n(max(ox, oh))} in'
             )
-        if longest is not None and longest > max(ox, oh) * tolerance:
+        if longest is not None and longest > max(ox, oh):
             violations.append(
                 f'too large: ~{_n(longest)} in longest side exceeds '
-                f'{_n(max(ox, oh))} in ({tol_txt})'
+                f'{_n(max(ox, oh))} in'
             )
     elif ox is not None and oy is not None:
         if px is not None and py is not None:
             ps, os_ = sorted([px, py]), sorted([ox, oy])
-            if any(p > o * tolerance for p, o in zip(ps, os_)):
+            if any(p > o for p, o in zip(ps, os_)):
                 violations.append(
                     f'too large: {_n(px)} x {_n(py)} in footprint exceeds '
-                    f'{_n(ox)} x {_n(oy)} in ({tol_txt})'
+                    f'{_n(ox)} x {_n(oy)} in'
                 )
         else:
             one = px if px is not None else py
-            if one is not None and one > max(ox, oy) * tolerance:
+            if one is not None and one > max(ox, oy):
                 violations.append(
                     f'too large: {_n(one)} in footprint side exceeds '
-                    f'{_n(max(ox, oy))} in ({tol_txt})'
+                    f'{_n(max(ox, oy))} in'
                 )
         if longest is not None:
             biggest = max(v for v in (ox, oy, oz) if v is not None)
-            if longest > biggest * tolerance:
+            if longest > biggest:
                 violations.append(
                     f'too large: ~{_n(longest)} in longest side exceeds '
-                    f'{_n(biggest)} in ({tol_txt})'
+                    f'{_n(biggest)} in'
                 )
-    if not wall and oz is not None and pz is not None and pz > oz * tolerance:
+    if not wall and oz is not None and pz is not None and pz > oz:
         violations.append(
-            f'too tall: {_n(pz)} in height exceeds {_n(oz)} in ({tol_txt})'
+            f'too tall: {_n(pz)} in height exceeds {_n(oz)} in'
         )
 
     if violations:

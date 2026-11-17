@@ -68,13 +68,13 @@ class FilterTests(SimpleTestCase):
     def test_fits_and_rotation(self):
         passes, reasons, size, _ = self.ev(prod(dims={'x': 24, 'y': 46, 'z': 17}))
         self.assertEqual((passes, reasons, size), (True, [], 'fits'))
-        self.assertEqual(self.ev(prod(dims={'x': 52, 'y': 27, 'z': 19}))[2], 'fits')  # within +15%
+        self.assertEqual(self.ev(prod(dims={'x': 52, 'y': 27, 'z': 19}))[2], 'too_big')
 
     def test_too_wide(self):
         passes, reasons, size, _ = self.ev(prod(dims={'x': 52, 'y': 28, 'z': 10}))
         self.assertEqual((passes, size), (False, 'too_big'))
         self.assertEqual(
-            reasons, ['too large: 52 x 28 in footprint exceeds 46 x 24 in (+15%)'])
+            reasons, ['too large: 52 x 28 in footprint exceeds 46 x 24 in'])
         # a square 31.5 footprint is too deep once sorted
         self.assertEqual(self.ev(prod(dims={'x': 31.5, 'y': 31.5}))[2], 'too_big')
 
@@ -84,17 +84,17 @@ class FilterTests(SimpleTestCase):
         self.assertTrue(reasons[0].startswith('too tall: 25 in height exceeds 17 in'))
 
     def test_single_axis(self):
-        self.assertEqual(self.ev(prod(dims={'x': 47}))[2], 'unverified')
+        self.assertEqual(self.ev(prod(dims={'x': 47}))[2], 'too_big')
         passes, reasons, size, _ = self.ev(prod(dims={'x': 47}))
         self.assertFalse(passes)
-        self.assertIn('size unverified', reasons)
+        self.assertIn('too large', reasons[0])
         passes, _, size, _ = self.ev(prod(dims={'y': 60}))
         self.assertEqual((passes, size), (False, 'too_big'))
 
     def test_longest(self):
         passes, reasons, size, _ = self.ev(prod(dims_longest=48))
-        self.assertEqual((passes, size), (False, 'unverified'))
-        self.assertIn('size unverified', reasons)
+        self.assertEqual((passes, size), (False, 'too_big'))
+        self.assertIn('longest side', reasons[0])
         self.assertTrue(self.ev(prod(dims={'x': 40, 'y': 20, 'z': 15}))[0])
         passes, reasons, size, _ = self.ev(prod(dims_longest=60))
         self.assertEqual((passes, size), (False, 'too_big'))
@@ -144,7 +144,7 @@ class WallModeTests(SimpleTestCase):
     def test_too_big_poster(self):
         passes, reasons, size, _ = self.ev({'x': 30, 'y': 40})
         self.assertEqual((passes, size), (False, 'too_big'))
-        self.assertEqual(reasons, ['too large: 30 x 40 in face exceeds 24 x 36 in (+15%)'])
+        self.assertEqual(reasons, ['too large: 30 x 40 in face exceeds 24 x 36 in'])
 
     def test_small_poster_and_labeled_wh(self):
         self.assertEqual(self.ev({'x': 11, 'y': 17})[2], 'fits')
@@ -162,8 +162,8 @@ class WallModeTests(SimpleTestCase):
         self.assertIn('size unverified', reasons)
         self.assertFalse(self.ev({'x': 50})[0])
         passes, reasons, size, _ = self.ev(None, dims_longest=40)
-        self.assertEqual((passes, size), (False, 'unverified'))
-        self.assertIn('size unverified', reasons)
+        self.assertEqual((passes, size), (False, 'too_big'))
+        self.assertIn('longest side', reasons[0])
         self.assertFalse(self.ev(None, dims_longest=50)[0])
         passes, reasons, size, _ = self.ev(None)
         self.assertEqual((passes, size), (False, 'unverified'))
@@ -181,6 +181,26 @@ class WallModeTests(SimpleTestCase):
     def test_floor_behavior_unchanged(self):
         snap = {'type': 'decor', 'dims': {'x': 24, 'y': 1, 'z': 36}}
         self.assertEqual(self.ev({'x': 24, 'y': 36}, snap)[2], 'too_big')
+
+
+class TvStandHardCapTests(SimpleTestCase):
+    TV = {'type': 'furniture', 'dims': {'x': 25, 'y': 66, 'z': 30}}
+
+    def ev(self, dims):
+        return evaluate(
+            prod(price_cents=15000, dims=dims, currency='USD'),
+            self.TV,
+            TOL,
+        )
+
+    def test_71_in_console_is_too_big(self):
+        passes, reasons, size, _ = self.ev({'x': 71.0, 'y': 15.74, 'z': 20.47})
+        self.assertEqual((passes, size), (False, 'too_big'))
+        self.assertIn('footprint', reasons[0])
+
+    def test_59_in_console_fits(self):
+        passes, _, size, _ = self.ev({'x': 59.0, 'y': 15.5, 'z': 23.75})
+        self.assertEqual((passes, size), (True, 'fits'))
 
 
 class PriceUnknownTests(SimpleTestCase):

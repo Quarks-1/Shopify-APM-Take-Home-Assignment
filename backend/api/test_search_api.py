@@ -170,11 +170,11 @@ class SearchApiTests(TestCase):
         run, ids = self.judged_run()
         body = self.client.get(f'/api/searches/{run.pk}/?include=all').json()
         verdicts = [c['verdict'] for c in body['candidates']]
-        # Both fixture pages (8 products): the 2 verified fits are accepted, one
-        # unverified product is rejected, the other 5 stay pending (filtered out).
+        # Both fixture pages (8 products): one verified fit is accepted, one
+        # unverified product is rejected, the other 6 stay pending (filtered out).
         self.assertEqual(len(verdicts), 8)
-        self.assertEqual(verdicts[:2], ['accepted'] * 2)
-        self.assertEqual(sorted(verdicts[2:]), ['pending'] * 5 + ['rejected'])
+        self.assertEqual(verdicts[0], 'accepted')
+        self.assertEqual(sorted(verdicts[1:]), ['pending'] * 6 + ['rejected'])
         rejected = next(c for c in body['candidates'] if c['verdict'] == 'rejected')
         self.assertEqual(rejected['verdictReason'], 'a book, not a table')
         pending = [c for c in body['candidates'] if c['verdict'] == 'pending']
@@ -182,7 +182,7 @@ class SearchApiTests(TestCase):
         filtered = next(c for c in pending if c['sizeStatus'] == 'too_big')
         self.assertTrue(filtered['filterReasons'][0].startswith('too large'))
         self.assertIn(['size unverified'], [c['filterReasons'] for c in pending])
-        self.assertEqual(body['accepted'], 2)
+        self.assertEqual(body['accepted'], 1)
         latest = self.client.get('/api/objects/obj1/searches/latest/?include=all').json()
         self.assertEqual(len(latest['candidates']), 8)
 
@@ -261,9 +261,10 @@ class SearchApiTests(TestCase):
     def test_selected_candidate_id_is_read_only_in_patch_and_import(self):
         run, ids = self.judged_run()
         self.post('/api/objects/obj1/select/', {'candidateId': ids[0]})
+        other_id = Candidate.objects.filter(run=run).exclude(pk=ids[0]).first().pk
         fetched = self.client.get('/api/objects/obj1/').json()
         fetched['name'] = 'Coffee table 2'
-        fetched['selectedCandidateId'] = ids[1]  # ignored
+        fetched['selectedCandidateId'] = other_id  # ignored
         body = {k: v for k, v in fetched.items() if k not in ('id', 'createdAt')}  # never patchable
         r = self.client.patch('/api/objects/obj1/', data=json.dumps(body),
                               content_type='application/json')
@@ -329,7 +330,7 @@ class SearchApiTests(TestCase):
         self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in state])
 
         # Selecting one of the newest run's candidates is not listed twice.
-        self.post('/api/objects/obj1/select/', {'candidateId': new_cands[1]['id']})
+        self.post('/api/objects/obj1/select/', {'candidateId': new_cands[0]['id']})
         self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in new_cands])
 
     def test_state_candidates_in_object_order(self):
@@ -348,7 +349,7 @@ class SearchApiTests(TestCase):
                                      updated_at=timezone.now())
         Placement.objects.create(space=space, object=self.obj, x=0, y=0)
         _, ids = self.judged_run()
-        accepted = len(ids)  # every verified fit in the fixture (2)
+        accepted = len(ids)  # every verified fit in the fixture (1)
         with self.assertNumQueries(5):
             self.client.get('/api/state/')
         for i in range(3):
@@ -360,7 +361,7 @@ class SearchApiTests(TestCase):
             # obj1's accepted + per extra object: its accepted plus the older selection
             self.assertEqual(len(self.client.get('/api/state/').json()['candidates']),
                              accepted + 3 * (accepted + 1))
-        self.assertEqual(accepted, 2)
+        self.assertEqual(accepted, 1)
 
     def test_detail_query_count_is_constant(self):
         run, _ = self.judged_run()

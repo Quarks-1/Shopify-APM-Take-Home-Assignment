@@ -82,7 +82,7 @@ class OptionalDepthFilterTests(SimpleTestCase):
         self.assertEqual(evaluate(prod(dims={'x': 24, 'y': 24}), snap, TOL)[2], 'fits')
         passes, reasons, size, _ = evaluate(prod(dims={'x': 24, 'y': 30}), snap, TOL)
         self.assertEqual((passes, size), (False, 'too_big'))
-        self.assertEqual(reasons, ['too large: 24 x 30 in footprint exceeds 24 x 24 in (+15%)'])
+        self.assertEqual(reasons, ['too large: 24 x 30 in footprint exceeds 24 x 24 in'])
         # height still checked when the object has z
         snap = {'type': 'furniture', 'dims': {'x': 24, 'z': 30}}
         self.assertEqual(evaluate(prod(dims={'x': 20, 'y': 20, 'z': 30}), snap, TOL)[2], 'fits')
