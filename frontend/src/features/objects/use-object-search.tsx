@@ -78,7 +78,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       switch (run.status) {
         case "done":
         case "empty":
-          // Empty merges nothing, which shows "No matches" and clears the pick, as before.
+          // Results of any kind clear the pick; an empty run shows "No matches". The user chooses a card.
           actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt);
           break;
         case "failed":
