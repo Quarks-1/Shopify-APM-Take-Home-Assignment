@@ -93,15 +93,20 @@ function ProductDetails({ product, variant }: { product: Product; variant: Produ
       </span>
       <span className="flex min-w-0 flex-col gap-1 text-start">
         <span className="line-clamp-2 text-body-medium text-text-primary">{product.title}</span>
-        {store ? <span className="truncate text-body-2-regular text-text-secondary">{store.name}</span> : null}
-        <span className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <bdi className="text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
-          <span className="ms-auto flex flex-col items-end gap-0.5">
+        {store || product.rating ? (
+          <span className="flex items-center justify-between gap-2">
+            <span className="min-w-0 flex-1 truncate text-body-2-regular text-text-secondary">{store?.name}</span>
             {product.rating ? (
-              <ProductRatingText rating={product.rating} className="text-caption-1-medium text-text-secondary" />
+              <ProductRatingText
+                rating={product.rating}
+                className="shrink-0 text-caption-1-medium text-text-secondary"
+              />
             ) : null}
-            <ProductSize product={product} />
           </span>
+        ) : null}
+        <span className="flex items-center justify-between gap-2">
+          <bdi className="shrink-0 text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
+          <ProductSize product={product} className="min-w-0 text-end" />
         </span>
       </span>
     </>
