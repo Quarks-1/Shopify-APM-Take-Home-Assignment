@@ -1,9 +1,12 @@
+import io
 import json
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest import mock
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from PIL import Image
 
 from .imagine import layout, photos, prompt, providers, runner
 from .models import (
@@ -221,6 +224,218 @@ class LayoutTests(Base):
         self.assertIn('front elevation', text)
         self.assertIn('96 in wide by 84 in tall', text)
         self.assertEqual(index, {})
+
+
+def make_item(number, name, x, y, w, h, **extra):
+    item = {
+        'number': number, 'objectId': number, 'name': name, 'type': 'furniture',
+        'material': None, 'style': None, 'x': x, 'y': y, 'w': w, 'h': h,
+        'dims': {'x': w, 'y': h}, 'productTitle': None,
+    }
+    item.update(extra)
+    return item
+
+
+def make_space_stub(width, depth, type='floor', name='Living room'):
+    return SimpleNamespace(type=type, name=name, dims={'x': width, 'y': depth})
+
+
+def example_layout():
+    space = make_space_stub(144, 180)
+    items = [
+        make_item(1, 'Shelving unit', 19, 10, 24, 24, dims={'x': 24, 'y': 24, 'z': 72}),
+        make_item(2, 'Floor lamp', 125, 10, 14, 14),
+        make_item(3, 'Sofa', 19, 96, 35, 78, dims={'x': 35, 'y': 78, 'z': 32}),
+        make_item(4, 'Coffee table', 72, 108, 24, 48),
+        make_item(5, 'TV stand', 118, 100, 25, 66),
+    ]
+    return space, items
+
+
+class SpatialHelperTests(TestCase):
+    def test_item_facts(self):
+        facts = layout.item_facts(make_item(1, 'A', 36, 45, 72, 90), 144, 180)
+        self.assertEqual(facts['left_pct'], 25.0)
+        self.assertEqual(facts['right_pct'], 75.0)
+        self.assertEqual(facts['top_pct'], 25.0)
+        self.assertEqual(facts['bottom_pct'], 75.0)
+        self.assertEqual((facts['center_x_pct'], facts['center_y_pct']), (50.0, 50.0))
+        self.assertEqual((facts['width_pct'], facts['depth_pct']), (50.0, 50.0))
+        self.assertEqual(facts['wall_in'], {'left': 36, 'right': 36, 'top': 45, 'bottom': 45})
+
+    def test_clear_gaps_neighbours_and_walls(self):
+        _space, items = example_layout()
+        sofa = layout.clear_gaps(items[2], items, 144, 180)
+        # The shelving unit overlaps the sofa horizontally: 96 - 34 = 62 in above it.
+        self.assertEqual(sofa['top'], {'inches': 62, 'pct': 34.4, 'to': 1})
+        # Coffee table starts at x 72, sofa ends at x 54.
+        self.assertEqual(sofa['right'], {'inches': 18, 'pct': 12.5, 'to': 4})
+        self.assertEqual(sofa['left'], {'inches': 19, 'pct': 13.2, 'to': 'wall'})
+        self.assertEqual(sofa['bottom'], {'inches': 6, 'pct': 3.3, 'to': 'wall'})
+
+    def test_clear_gaps_ignore_non_overlapping_neighbours(self):
+        a = make_item(1, 'A', 0, 0, 10, 10)
+        b = make_item(2, 'B', 50, 50, 10, 10)
+        gaps = layout.clear_gaps(a, [a, b], 100, 100)
+        self.assertEqual(gaps['right'], {'inches': 90, 'pct': 90.0, 'to': 'wall'})
+        self.assertEqual(gaps['bottom'], {'inches': 90, 'pct': 90.0, 'to': 'wall'})
+
+    def test_clear_gaps_single_item_and_touching_wall(self):
+        a = make_item(1, 'A', 0, 20, 100, 10)
+        gaps = layout.clear_gaps(a, [a], 100, 100)
+        self.assertEqual(gaps['left']['inches'], 0)
+        self.assertEqual(gaps['right']['inches'], 0)
+        self.assertEqual(gaps['top'], {'inches': 20, 'pct': 20.0, 'to': 'wall'})
+        self.assertEqual(gaps['bottom'], {'inches': 70, 'pct': 70.0, 'to': 'wall'})
+
+    def test_clear_gaps_overlapping_items_have_no_negative_gap(self):
+        a = make_item(1, 'A', 10, 10, 30, 30)
+        b = make_item(2, 'B', 30, 10, 30, 30)
+        gaps = layout.clear_gaps(a, [a, b], 100, 100)
+        self.assertEqual(gaps['right'], {'inches': 60, 'pct': 60.0, 'to': 'wall'})
+        self.assertEqual(gaps['left'], {'inches': 10, 'pct': 10.0, 'to': 'wall'})
+
+    def test_empty_bands_example(self):
+        _space, items = example_layout()
+        self.assertEqual(
+            layout.empty_bands(items, 144, 180, 'y'), [(0, 10), (34, 96), (174, 180)])
+        self.assertEqual(
+            layout.empty_bands(items, 144, 180, 'x'),
+            [(0, 19), (54, 72), (96, 118), (143, 144)])
+
+    def test_empty_bands_no_items(self):
+        self.assertEqual(layout.empty_bands([], 100, 80, 'y'), [(0, 80)])
+        self.assertEqual(layout.empty_bands([], 100, 80, 'x'), [(0, 100)])
+
+    def test_empty_bands_one_item_touching_wall(self):
+        a = make_item(1, 'A', 0, 0, 40, 20)
+        self.assertEqual(layout.empty_bands([a], 100, 80, 'y'), [(20, 80)])
+        self.assertEqual(layout.empty_bands([a], 100, 80, 'x'), [(40, 100)])
+
+    def test_empty_bands_overlapping_and_adjacent_items_merge(self):
+        items = [
+            make_item(1, 'A', 0, 10, 10, 30),
+            make_item(2, 'B', 0, 30, 10, 30),
+            make_item(3, 'C', 0, 60, 10, 10),
+        ]
+        self.assertEqual(layout.empty_bands(items, 100, 100, 'y'), [(0, 10), (70, 100)])
+
+    def test_empty_bands_clamp_items_outside_room(self):
+        a = make_item(1, 'A', -20, 90, 40, 40)
+        self.assertEqual(layout.empty_bands([a], 100, 100, 'y'), [(0, 90)])
+
+    def test_covered_pct_counts_overlap_once(self):
+        a = make_item(1, 'A', 0, 0, 50, 50)
+        b = make_item(2, 'B', 25, 0, 50, 50)
+        self.assertEqual(layout.covered_pct([a, b], 100, 100), 37.5)
+        self.assertEqual(layout.covered_pct([], 100, 100), 0.0)
+
+
+class GuideImageTests(TestCase):
+    def open(self, space, items):
+        return Image.open(io.BytesIO(layout.layout_guide_png(space, items))).convert('RGB')
+
+    def test_size_matches_aspect_ratio(self):
+        space, items = example_layout()
+        self.assertEqual(layout.aspect_ratio(space), '4:5')
+        self.assertEqual(self.open(space, items).size, (819, 1024))
+        wide = make_space_stub(160, 90)
+        self.assertEqual(self.open(wide, []).size, (1024, 576))
+
+    def test_room_fills_image_with_no_margin(self):
+        space, items = example_layout()
+        img = self.open(space, items)
+        w, h = img.size
+        # The outline sits on the image edges, no white margin.
+        for point in [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1), (w // 2, 0), (0, h // 2)]:
+            self.assertEqual(img.getpixel(point), (40, 40, 40), point)
+
+    def test_box_bounds_have_no_offset(self):
+        space, items = example_layout()
+        img = self.open(space, items)
+        w, h = img.size
+        sx, sy = w / 144, h / 180
+        sofa = items[2]
+        left, top = round(sofa['x'] * sx), round(sofa['y'] * sy)
+        right = round((sofa['x'] + sofa['w']) * sx)
+        bottom = round((sofa['y'] + sofa['h']) * sy)
+        self.assertEqual(img.getpixel((left, top + 40)), (30, 30, 30))
+        self.assertEqual(img.getpixel((right, bottom - 40)), (30, 30, 30))
+        self.assertNotEqual(img.getpixel((left - 4, top + 40)), (30, 30, 30))
+        # Inside the box is its palette color (box 3), outside is the white/grid ground.
+        self.assertEqual(img.getpixel((left + 6, top + 6)), layout.PALETTE[2])
+
+    def test_no_text_labels_on_wall_guide(self):
+        space = make_space_stub(96, 96, type='wall')
+        img = self.open(space, [])
+        self.assertEqual(img.size, (1024, 1024))
+        self.assertEqual(img.getpixel((500, 6)), (255, 255, 255))
+        self.assertEqual(img.getpixel((500, 1017)), (255, 255, 255))
+
+
+class SpatialPromptTests(TestCase):
+    def test_example_prompt(self):
+        space, items = example_layout()
+        text, index = prompt.build_prompt(space, items, {3})
+        self.assertEqual(index, {3: 2})
+        self.assertIn('Scale and spacing (must be respected):', text)
+        self.assertLess(text.index('Scale and spacing'), text.index('Item 1:'))
+        self.assertIn('IS the frame', text)
+        self.assertIn('do NOT enlarge objects', text)
+        # The large open band between the top objects and the sofa/TV.
+        self.assertIn(
+            'Open floor: no objects between 34 in and 96 in from the top '
+            '(34.4% of the room depth)', text)
+        # Percentage positions, wall distances and gaps for the sofa.
+        self.assertIn('left edge 13.2%, right edge 37.5%, top edge 53.3%, bottom edge 96.7%', text)
+        self.assertIn('left 19 in, right 90 in, top 96 in, bottom 6 in', text)
+        self.assertIn('top 62 in (34.4%) to item 1', text)
+        self.assertIn('covers 24.3% of the image width x 43.3% of the image height', text)
+        # Scale line and footprint dims; heights are not passed to the model.
+        self.assertIn('1 inch = 0.69% of the image width, 0.56% of the image height', text)
+        self.assertIn('a line every 12 in', text)
+        self.assertIn('35 W x 78 D in', text)
+        self.assertNotIn('32 H in', text)
+        self.assertNotIn(' H in', text)
+        self.assertNotIn('Object heights', text)
+        self.assertIn(
+            'Create a photorealistic, perfectly flat, true-orthographic (zero perspective: a '
+            'tall object must look exactly as wide as its footprint, like an architectural '
+            'plan rendering) top-down view of a floor called', text)
+        self.assertTrue(text.endswith(
+            "The image shows ONLY the floor surface, edge to edge: no walls, no baseboards, "
+            "no windows, no ceiling, no wall shadows visible. The frame is a tight crop of the "
+            "floor, so every object's size in the image is exactly its footprint percentage "
+            "given above and no larger."))
+        self.assertGreater(
+            text.index('The image shows ONLY'), text.index('Leave every area outside the boxes'))
+        self.assertIn('product photo is image 2', text)
+        self.assertIn('No photo: render a plausible furniture', text)
+
+    def test_prompt_is_deterministic(self):
+        space, items = example_layout()
+        self.assertEqual(
+            prompt.build_prompt(space, items, set()), prompt.build_prompt(space, items, set()))
+
+    def test_wall_prompt_orientation_and_no_heights_note(self):
+        space = make_space_stub(96, 84, type='wall', name='Wall')
+        items = [make_item(1, 'Art', 10, 20, 40, 30, dims={'x': 40, 'y': 2, 'z': 30})]
+        text, _ = prompt.build_prompt(space, items, set())
+        self.assertIn('top edge of the frame is the ceiling', text)
+        self.assertIn('ceiling 20 in, floor 34 in', text)
+        self.assertIn('40 W x 30 H in, projecting 2 in from the wall', text)
+        self.assertNotIn('Object heights', text)
+        self.assertTrue(text.endswith(
+            "The image shows ONLY the wall surface, edge to edge: no floor, no ceiling, no "
+            "adjoining walls visible. The frame is a tight crop of the wall, so every object's "
+            "size in the image is exactly its footprint percentage given above and no larger."))
+
+    def test_empty_space_prompt(self):
+        space = make_space_stub(100, 80)
+        text, index = prompt.build_prompt(space, [], set())
+        self.assertEqual(index, {})
+        self.assertIn('Open floor: no objects between 0 in and 80 in from the top (100% ', text)
+        self.assertIn('Objects cover 0% of the floor', text)
 
 
 class ProviderParseTests(TestCase):
