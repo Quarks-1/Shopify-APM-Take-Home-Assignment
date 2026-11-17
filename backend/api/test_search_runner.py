@@ -72,7 +72,7 @@ class RunnerIntegrationTests(TempVarDir, TransactionTestCase):
             SEARCHER_UCP_BIN=FAKE_UCP, SEARCHER_CLAUDE_BIN=FAKE_CLAUDE,
             SEARCHER_AGENT='claude', SEARCHER_FALLBACK='deterministic', SEARCHER_RUN_TIMEOUT=60,
             # The coffee-table fixture has exactly 2 verified fits (one per page).
-            SEARCHER_TARGET=2, SEARCHER_MODEL='sonnet',
+            SEARCHER_TARGET=2, SEARCHER_MODEL='haiku',
         )
         cm.enable()
         self.addCleanup(cm.disable)
@@ -101,7 +101,7 @@ class RunnerIntegrationTests(TempVarDir, TransactionTestCase):
         run.refresh_from_db()
         self.assertEqual(run.status, RunStatus.DONE)
         self.assertGreaterEqual(self.accepted(run), run.target)
-        self.assertEqual((run.agent_mode, run.agent_model, run.fallback_reason), ('claude', 'sonnet', ''))
+        self.assertEqual((run.agent_mode, run.agent_model, run.fallback_reason), ('claude', 'haiku', ''))
         self.assertIsNone(run.step)
         self.assertIsNotNone(run.finished_at)
         self.assertIsNone(run.agent_pid)

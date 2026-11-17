@@ -189,14 +189,14 @@ class SearchApiTests(TestCase):
     def test_agent_block(self):
         run, _ = self.judged_run()
         SearchRun.objects.filter(pk=run.pk).update(
-            agent_mode='deterministic', agent_model='sonnet', fallback_reason='agent timed out after 420s',
+            agent_mode='deterministic', agent_model='haiku', fallback_reason='agent timed out after 420s',
             agent_result={'num_turns': 7, 'session_id': 's-1', 'permission_denials': [
                 {'tool_name': 'Bash', 'tool_input': {'command': 'searcher auto'}}, 'odd'],
                 'structured_output': {'outcome': 'gave_up', 'accepted': 3, 'notes': 'n'}},
         )
         agent = self.client.get(f'/api/searches/{run.pk}/').json()['agent']
         self.assertEqual(agent, {
-            'mode': 'deterministic', 'model': 'sonnet', 'turns': 7, 'sessionId': 's-1',
+            'mode': 'deterministic', 'model': 'haiku', 'turns': 7, 'sessionId': 's-1',
             'outcome': 'gave_up', 'notes': 'n', 'fallbackReason': 'agent timed out after 420s',
             'deniedCommands': ['searcher auto', 'odd'],
         })
