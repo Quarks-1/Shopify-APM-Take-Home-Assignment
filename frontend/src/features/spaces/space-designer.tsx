@@ -421,6 +421,65 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
             vectorEffect="non-scaling-stroke"
           />
 
+          <text
+            x={dims.x / 2}
+            y={-pad / 2}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={fontSize}
+            fontWeight={600}
+            fill="var(--color-text-tertiary)"
+            aria-hidden="true"
+            pointerEvents="none"
+            className="select-none"
+          >
+            Top
+          </text>
+          <text
+            x={dims.x / 2}
+            y={dims.y + pad / 2}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={fontSize}
+            fontWeight={600}
+            fill="var(--color-text-tertiary)"
+            aria-hidden="true"
+            pointerEvents="none"
+            className="select-none"
+          >
+            Bottom
+          </text>
+          <text
+            x={-pad / 2}
+            y={dims.y / 2}
+            transform={`rotate(-90 ${-pad / 2} ${dims.y / 2})`}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={fontSize}
+            fontWeight={600}
+            fill="var(--color-text-tertiary)"
+            aria-hidden="true"
+            pointerEvents="none"
+            className="select-none"
+          >
+            Left
+          </text>
+          <text
+            x={dims.x + pad / 2}
+            y={dims.y / 2}
+            transform={`rotate(90 ${dims.x + pad / 2} ${dims.y / 2})`}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={fontSize}
+            fontWeight={600}
+            fill="var(--color-text-tertiary)"
+            aria-hidden="true"
+            pointerEvents="none"
+            className="select-none"
+          >
+            Right
+          </text>
+
           {items.map((item) => {
             const { object, rect } = item;
             const visual = OBJECT_TYPE_SVG[object.type];
