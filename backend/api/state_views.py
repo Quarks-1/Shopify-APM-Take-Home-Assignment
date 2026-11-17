@@ -8,7 +8,10 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from .cart.stores import line_store, touch_stores
+from .cart.sync import cart_payload
 from .models import (
+    CartLine,
     Candidate,
     Placement,
     RunStatus,
@@ -111,6 +114,7 @@ def state_snapshot(_request):
             'spaces': [space_to_json(s) for s in Space.objects.prefetch_related('placements')],
             'objects': [object_to_json(o) for o in objects],
             'candidates': state_candidates(objects),
+            'cart': cart_payload(),
         }
     )
 
@@ -223,7 +227,12 @@ def object_detail(request, object_id):
     if request.method == 'DELETE':
         for run in obj.search_runs.filter(status__in=(RunStatus.QUEUED, RunStatus.RUNNING)):
             cancel_run(run)  # kills its worker and agent before the rows go away
-        obj.delete()
+        with transaction.atomic():
+            line = CartLine.objects.select_related('object__selected_candidate').filter(
+                object=obj).first()
+            if line is not None:
+                touch_stores([line_store(line)])  # its cart line goes with the object
+            obj.delete()
         return HttpResponse(status=204)
     data, err = _body(request)
     if err:

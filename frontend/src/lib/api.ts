@@ -60,13 +60,16 @@ export class ApiError extends Error {
   readonly code: string;
   /** Field path → message, for validation errors. */
   readonly details?: Record<string, string>;
+  /** The parsed JSON body of the error reply, when there was one. */
+  readonly payload?: unknown;
 
-  constructor(status: number, code: string, message: string, details?: Record<string, string>) {
+  constructor(status: number, code: string, message: string, details?: Record<string, string>, payload?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.details = details;
+    this.payload = payload;
   }
 
   /** The backend is down or the dev proxy could not reach it. */
@@ -133,7 +136,7 @@ export async function request<T>(method: string, path: string, { body, signal }:
           response.status >= 500 && !text
           ? "backend_unreachable"
           : `http_${response.status}`;
-    throw new ApiError(response.status, code, `${label} failed with HTTP ${response.status} (${code})`, stringRecord(payload.details));
+    throw new ApiError(response.status, code, `${label} failed with HTTP ${response.status} (${code})`, stringRecord(payload.details), data);
   }
   return data as T;
 }
@@ -246,6 +249,115 @@ export interface ApiStateSnapshot {
   objects: ApiObject[];
   /** Per object: the newest run's accepted candidates, plus its selected one. */
   candidates: ApiCandidate[];
+  /** The cart and its merchant carts. Missing only from backends older than the cart API. */
+  cart?: ApiCart;
+}
+
+// ---------------------------------------------------------------------------
+// Cart shapes
+// ---------------------------------------------------------------------------
+
+/** One cart line per object; its product is always the object's current pick. */
+export interface ApiCartLine {
+  id: string;
+  objectId: string;
+  candidateId: number;
+  /** `cand_<candidateId>`. */
+  productId: string;
+  /** Seller domain. */
+  storeId: string;
+  qty: number;
+  /** Shopify variant gid, when the candidate has one. */
+  variantId: string | null;
+}
+
+export type ApiMerchantStatus = "empty" | "dirty" | "synced" | "error" | "unsupported";
+
+/**
+ * How a store checks out: a UCP cart and checkout, one Shopify cart permalink
+ * for every item, or a link per item.
+ */
+export type ApiCartMode = "checkout" | "permalink" | "links";
+
+export interface ApiMerchantTotal {
+  type: string;
+  displayText: string;
+  /** Minor units of the cart currency. */
+  amount: number;
+}
+
+export interface ApiMerchantMessage {
+  type: "info" | "warning" | "error";
+  code?: string;
+  content: string;
+  /** Disclosures belong next to their item and must always stay visible. */
+  presentation?: "notice" | "disclosure";
+  variantId?: string;
+  url?: string;
+  imageUrl?: string;
+}
+
+/** The backend's copy of a store's merchant cart. */
+export interface ApiMerchantCart {
+  storeId: string;
+  status: ApiMerchantStatus;
+  mode: ApiCartMode;
+  cartId: string | null;
+  currency: string | null;
+  /** In the merchant's order; never re-sort. */
+  totals: ApiMerchantTotal[];
+  messages: ApiMerchantMessage[];
+  lineItems: { variantId: string; quantity: number; title?: string }[];
+  permalink: string | null;
+  /** Per-line buy links for lines the merchant cart can't hold. */
+  fallback: { lineId: string; url: string }[];
+  error: { code: string; message: string } | null;
+  syncedAt: string | null;
+  checkoutOpenedAt: string | null;
+  /** Dirty, failed, or synced too long ago. */
+  stale: boolean;
+}
+
+export interface ApiCart {
+  lines: ApiCartLine[];
+  stores: ApiMerchantCart[];
+}
+
+export interface ApiCartLineInput {
+  id: string;
+  objectId: string;
+  qty?: number;
+}
+
+export interface ApiAddCartLinesResult {
+  /** Every line of the cart, not only the added ones. */
+  lines: ApiCartLine[];
+  skipped: { objectId: string; reason: "no_selection" | "not_found" }[];
+  dirtyStores: string[];
+}
+
+export interface ApiCartLineUpdateResult {
+  /** `null` when the line was deleted (qty 0). */
+  line: ApiCartLine | null;
+  dirtyStores: string[];
+}
+
+export interface ApiDirtyStores {
+  dirtyStores: string[];
+}
+
+export interface ApiCheckoutResult {
+  url: string;
+  kind: "ucp" | "permalink";
+  checkoutId: string | null;
+  store: ApiMerchantCart;
+}
+
+/** Body of the 409 `checkout_unavailable` reply. */
+export interface ApiCheckoutUnavailable {
+  error: "checkout_unavailable";
+  details?: { reason?: string };
+  store?: ApiMerchantCart;
 }
 
 /** Body of `POST /api/state/import/`: upserts by id; keys other than these are ignored. */
@@ -366,3 +478,29 @@ export const cancelSearch = (runId: string) => request<ApiSearchRun>("POST", `/a
 /** Selects an accepted candidate of the object; `null` clears the selection. */
 export const selectCandidate = (objectId: string, candidateId: number | null) =>
   request<ApiObject>("POST", `/api/objects/${seg(objectId)}/select/`, { body: { candidateId } });
+
+// ---------------------------------------------------------------------------
+// Cart
+// ---------------------------------------------------------------------------
+
+export const getCart = (signal?: AbortSignal) => request<ApiCart>("GET", "/api/cart/", { signal });
+
+/** Upserts by object: an existing line keeps its id, and its qty unless `qty` is sent. */
+export const addCartLines = (lines: ApiCartLineInput[]) =>
+  request<ApiAddCartLinesResult>("POST", "/api/cart/lines/", { body: { lines } });
+
+/** `qty` 0..20; 0 deletes the line. */
+export const updateCartLine = (id: string, qty: number) =>
+  request<ApiCartLineUpdateResult>("PATCH", `/api/cart/lines/${seg(id)}/`, { body: { qty } });
+
+export const deleteCartLine = (id: string) => request<ApiDirtyStores>("DELETE", `/api/cart/lines/${seg(id)}/`);
+
+export const clearCart = () => request<ApiDirtyStores>("DELETE", "/api/cart/");
+
+/** Rebuilds the store's merchant cart from the backend's lines. Always 200; the outcome is in `status`. */
+export const syncStore = (domain: string, force = false) =>
+  request<ApiMerchantCart>("POST", `/api/cart/stores/${seg(domain)}/sync/`, { body: { force } });
+
+/** Syncs, then makes a fresh checkout. 409 `checkout_unavailable` when the store can't check out. */
+export const checkoutStore = (domain: string) =>
+  request<ApiCheckoutResult>("POST", `/api/cart/stores/${seg(domain)}/checkout/`);

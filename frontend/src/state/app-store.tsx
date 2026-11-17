@@ -9,7 +9,7 @@ export type { AppActions, ObjectPatch, SpaceInput, SpacePatch } from "@/state/st
 const StateContext = createContext<AppState | null>(null);
 const ActionsContext = createContext<AppActions | null>(null);
 
-/** Loads spaces and objects from the backend and keeps the local cart in localStorage. */
+/** Loads spaces, objects and the cart from the backend and keeps them in sync. */
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [store] = useState(createAppStore);
   const state = useSyncExternalStore(store.subscribe, store.getState);

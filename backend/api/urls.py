@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import search_views, state_views, views
+from . import cart_views, search_views, state_views, views
 
 app_name = 'api'
 
@@ -27,4 +27,13 @@ urlpatterns = [
     path('objects/<str:object_id>/select/', search_views.object_select, name='object-select'),
     path('searches/<uuid:run_id>/', search_views.search_detail, name='search-detail'),
     path('searches/<uuid:run_id>/cancel/', search_views.search_cancel, name='search-cancel'),
+    path('cart/', cart_views.cart_root, name='cart'),
+    path('cart/lines/', cart_views.cart_lines, name='cart-lines'),
+    path('cart/lines/<str:line_id>/', cart_views.cart_line_detail, name='cart-line-detail'),
+    path('cart/stores/<str:domain>/sync/', cart_views.store_sync, name='cart-store-sync'),
+    path(
+        'cart/stores/<str:domain>/checkout/',
+        cart_views.store_checkout,
+        name='cart-store-checkout',
+    ),
 ]

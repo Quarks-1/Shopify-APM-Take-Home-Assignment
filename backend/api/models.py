@@ -268,3 +268,55 @@ class Candidate(models.Model):
                 fields=['run', 'product_gid'], name='unique_run_product'
             )
         ]
+
+
+class CartLine(models.Model):
+    """A cart line follows its object's current pick (selected_candidate)."""
+
+    id = models.CharField(max_length=64, primary_key=True)
+    object = models.OneToOneField(
+        SpaceObject, on_delete=models.CASCADE, related_name='cart_line'
+    )
+    qty = models.PositiveSmallIntegerField(default=1)  # 1..20
+    created_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+    def __str__(self):
+        return f'{self.object_id} x{self.qty} ({self.id})'
+
+
+class MerchantCartStatus(models.TextChoices):
+    SYNCED = 'synced'
+    DIRTY = 'dirty'
+    ERROR = 'error'
+    UNSUPPORTED = 'unsupported'
+
+
+class MerchantCart(models.Model):
+    """The merchant-side UCP cart of one store (keyed by its store id)."""
+
+    domain = models.CharField(max_length=255, primary_key=True)
+    ucp_cart_id = models.CharField(max_length=255, blank=True, default='')
+    status = models.CharField(
+        max_length=16, choices=MerchantCartStatus.choices, default=MerchantCartStatus.DIRTY
+    )
+    # Bumped by every cart edit touching this store; a sync records the
+    # revision it pushed so edits made mid-sync leave the store dirty.
+    revision = models.IntegerField(default=0)
+    synced_revision = models.IntegerField(default=0)
+    synced_signature = models.CharField(max_length=64, blank=True, default='')
+    # Sanitized merchant cart: currency, totals, lineItems, messages.
+    snapshot = models.JSONField(null=True, blank=True)
+    error_code = models.CharField(max_length=64, blank=True, default='')
+    error_message = models.TextField(blank=True, default='')
+    synced_at = models.DateTimeField(null=True, blank=True)
+    unsupported_at = models.DateTimeField(null=True, blank=True)
+    checkout_opened_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['domain']
+
+    def __str__(self):
+        return f'{self.domain} ({self.status})'

@@ -1,3 +1,4 @@
+import type { ApiCartMode, ApiMerchantCart, ApiMerchantMessage } from "@/lib/api";
 import { getMockStoreById, getOwnedProductById } from "@/mocks/catalog";
 import type { AppState, CartLine, Product, Space, SpaceObject, Store } from "@/mocks/types";
 
@@ -170,16 +171,86 @@ export function getCartCount(state: AppState): number {
   return state.cart.reduce((sum, l) => sum + (getProduct(state, l.productId) ? l.qty : 0), 0);
 }
 
-export function getCartTotal(state: AppState): number {
-  return state.cart.reduce((sum, l) => sum + l.qty * (getProduct(state, l.productId)?.price ?? 0), 0);
+export interface CartLineView {
+  line: CartLine;
+  product: Product;
+  object?: SpaceObject;
+  spaces: Space[];
+  /** The merchant's disclosures for this line's variant. Always shown, never hidden. */
+  disclosures: ApiMerchantMessage[];
+  /** Buy this line on the store's site: set when the merchant cart can't hold it. */
+  buyUrl?: string;
 }
 
 export interface CartStoreGroup {
   store: Store;
-  lines: { line: CartLine; product: Product; object?: SpaceObject; spaces: Space[] }[];
+  lines: CartLineView[];
+  /** Local estimate from product prices, in USD. */
   subtotal: number;
   itemCount: number;
   checkoutOpenedAt?: string;
+  /** The backend's merchant cart for the store, once it has synced. */
+  merchant?: ApiMerchantCart;
+  /** Cart edits or a merchant sync for the store are on their way. */
+  syncing: boolean;
+  mode: ApiCartMode;
+  /** Notices to list under the store header, plus disclosures that match no line. */
+  notices: ApiMerchantMessage[];
+}
+
+function isHttpsUrl(value: string | undefined | null): value is string {
+  if (!value) return false;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** True when the group's merchant cart is current and its totals can be shown as the merchant's. */
+export function hasMerchantTotals(group: CartStoreGroup): boolean {
+  const { merchant } = group;
+  return (
+    !group.syncing &&
+    merchant !== undefined &&
+    merchant.status === "synced" &&
+    merchant.mode === "checkout" &&
+    merchant.currency !== null &&
+    merchant.totals.length > 0
+  );
+}
+
+/** The merchant's grand total: the `total` entry, else the last one (merchant order). */
+export function getMerchantTotal(merchant: ApiMerchantCart): ApiMerchantCart["totals"][number] | undefined {
+  return merchant.totals.find((t) => t.type === "total") ?? merchant.totals.at(-1);
+}
+
+export type CartTotal =
+  | { estimated: false; amountMinor: number; currency: string }
+  | { estimated: true; amount: number; currency: "USD" };
+
+/**
+ * The merchants' totals summed when every store has synced in one currency,
+ * else the estimate from local product prices.
+ */
+export function getCartTotal(state: AppState): CartTotal {
+  const groups = getCartByStore(state);
+  const estimate: CartTotal = {
+    estimated: true,
+    amount: state.cart.reduce((sum, l) => sum + l.qty * (getProduct(state, l.productId)?.price ?? 0), 0),
+    currency: "USD",
+  };
+  if (groups.length === 0 || !groups.every(hasMerchantTotals)) return estimate;
+  const currencies = new Set(groups.map((g) => g.merchant?.currency));
+  const [currency] = currencies;
+  if (currencies.size !== 1 || !currency) return estimate;
+  let amountMinor = 0;
+  for (const group of groups) {
+    const total = group.merchant ? getMerchantTotal(group.merchant) : undefined;
+    if (!total || !Number.isFinite(total.amount)) return estimate;
+    amountMinor += total.amount;
+  }
+  return { estimated: false, amountMinor, currency };
 }
 
 export function getCartByStore(state: AppState): CartStoreGroup[] {
@@ -190,17 +261,45 @@ export function getCartByStore(state: AppState): CartStoreGroup[] {
     if (!product || !store) continue;
     let group = groups.get(store.id);
     if (!group) {
-      group = { store, lines: [], subtotal: 0, itemCount: 0, checkoutOpenedAt: state.checkoutOpened[store.id] };
+      const merchant = state.merchantCarts[store.id];
+      group = {
+        store,
+        lines: [],
+        subtotal: 0,
+        itemCount: 0,
+        checkoutOpenedAt: merchant?.checkoutOpenedAt ?? undefined,
+        merchant,
+        syncing: Boolean(state.cartSyncing[store.id]),
+        mode: merchant?.mode ?? "checkout",
+        notices: [],
+      };
       groups.set(store.id, group);
     }
+    const { merchant } = group;
+    const variantId = product.variantId ?? line.variantId ?? undefined;
+    const fallbackUrl = merchant?.fallback.find((f) => f.lineId === line.id)?.url;
+    const buyUrl = isHttpsUrl(fallbackUrl)
+      ? fallbackUrl
+      : group.mode === "links"
+        ? [product.checkoutUrl, product.url].find(isHttpsUrl)
+        : undefined;
     group.lines.push({
       line,
       product,
       object: getObject(state, line.objectId),
       spaces: getParentSpaces(state, line.objectId),
+      disclosures:
+        merchant && variantId
+          ? merchant.messages.filter((m) => m.presentation === "disclosure" && m.variantId === variantId)
+          : [],
+      buyUrl,
     });
     group.subtotal += product.price * line.qty;
     group.itemCount += line.qty;
+  }
+  for (const group of groups.values()) {
+    const shown = new Set(group.lines.flatMap((l) => l.disclosures));
+    group.notices = (group.merchant?.messages ?? []).filter((m) => m.presentation !== "disclosure" || !shown.has(m));
   }
   return [...groups.values()].sort((a, b) => a.store.name.localeCompare(b.store.name));
 }

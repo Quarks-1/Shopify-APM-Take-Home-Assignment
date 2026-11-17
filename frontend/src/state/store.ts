@@ -1,9 +1,14 @@
 // The app's state container. The backend owns spaces, objects, placements,
-// search state, candidates and selection; this store is an in-memory cache of
-// them plus the local part (cart, checkout marks, import time) kept in
-// localStorage. Actions update the cache synchronously, then send the change
-// to the backend through a serial write queue (optimistic updates). A failed
-// write shows a toast and reloads the cache from GET /api/state/.
+// search state, candidates, selection and the cart; this store is an in-memory
+// cache of them plus the local part (import time) kept in localStorage.
+// Actions update the cache synchronously, then send the change to the backend
+// through a serial write queue (optimistic updates). A failed write shows a
+// toast and reloads the cache from GET /api/state/.
+//
+// Cart edits are fast DB writes and go through the queue too. Each answers
+// with the stores whose merchant cart is now out of date (`dirtyStores`); those
+// get a merchant sync through the per-store CartSyncScheduler, outside the
+// queue, because syncs call the merchant over UCP and are slow.
 import { toast } from "@/components/base/toast/toast";
 import * as api from "@/lib/api";
 import { ApiError, describeError } from "@/lib/api";
@@ -11,6 +16,7 @@ import { createImportedObjects, createSeedState, type SeedState } from "@/mocks/
 import type {
   AppState,
   CartLine,
+  LegacyAppState,
   LocalState,
   ObjectDims,
   ObjectType,
@@ -19,11 +25,14 @@ import type {
   Space,
   SpaceObject,
 } from "@/mocks/types";
+import { CartSyncScheduler } from "@/state/cart-sync";
 import {
   EMPTY_LOCAL,
   LOCAL_KEY,
   candidateIdOf,
   candidateProductId,
+  fromApiCartLine,
+  hasLegacyCart,
   legacyImportPayload,
   localOf,
   mergeCandidates,
@@ -31,15 +40,24 @@ import {
   objectPatchBody,
   parseLocal,
   readLegacy,
+  readLegacyCart,
   readLocal,
   removeLegacy,
   snapshotToState,
   spaceCreateBody,
   spacePatchBody,
+  stripLegacyCart,
   withSelectionFirst,
   writeLocal,
 } from "@/state/remote";
-import { findOpenPosition, footprint, getObject, getSpace } from "@/state/selectors";
+import {
+  findOpenPosition,
+  footprint,
+  getCartLineForObject,
+  getObject,
+  getProduct,
+  getSpace,
+} from "@/state/selectors";
 import { WriteQueue } from "@/state/write-queue";
 
 export type SpaceInput = Omit<Space, "id" | "placements" | "createdAt" | "updatedAt">;
@@ -52,6 +70,11 @@ const COALESCE_MS = 400;
 /** Coming back to the tab refreshes from the backend, at most this often. */
 const REFRESH_ON_FOCUS_MS = 2000;
 const SAVE_TOAST_ID = "backend-save-error";
+/** Stores a refresh finds dirty or stale are synced again at most this often. */
+const AUTO_SYNC_MIN_GAP_MS = 30_000;
+const MAX_LINE_QTY = 20;
+
+export type CheckoutKind = api.ApiCheckoutResult["kind"];
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -78,7 +101,10 @@ type Action =
   | { type: "cart/set-qty"; lineId: string; qty: number }
   | { type: "cart/remove"; lineId: string }
   | { type: "cart/clear" }
-  | { type: "checkout/opened"; storeId: string; now: string }
+  | { type: "cart/replace"; lines: CartLine[] }
+  | { type: "merchant/syncing"; storeId: string; syncing: boolean }
+  | { type: "merchant/synced"; storeId: string; cart: api.ApiMerchantCart }
+  | { type: "merchant/error"; storeId: string; error: { code: string; message: string } }
   | { type: "import"; objects: SpaceObject[]; now: string };
 
 function mapSpace(state: AppState, id: string, fn: (space: Space) => Space): AppState {
@@ -89,8 +115,33 @@ function mapObject(state: AppState, id: string, fn: (o: SpaceObject) => SpaceObj
   return { ...state, objects: state.objects.map((o) => (o.id === id ? fn(o) : o)) };
 }
 
+/** Points the object's line at another product; the store and variant then follow the product. */
 function setCartProduct(cart: CartLine[], objectId: string, productId: string): CartLine[] {
-  return cart.map((l) => (l.objectId === objectId ? { ...l, productId } : l));
+  return cart.map((l) =>
+    l.objectId === objectId && l.productId !== productId
+      ? { ...l, productId, storeId: undefined, variantId: undefined }
+      : l,
+  );
+}
+
+/** A merchant cart row for a store the backend has not described yet. */
+function blankMerchantCart(storeId: string): api.ApiMerchantCart {
+  return {
+    storeId,
+    status: "dirty",
+    mode: "checkout",
+    cartId: null,
+    currency: null,
+    totals: [],
+    messages: [],
+    lineItems: [],
+    permalink: null,
+    fallback: [],
+    error: null,
+    syncedAt: null,
+    checkoutOpenedAt: null,
+    stale: true,
+  };
 }
 
 /** Adds or updates a cart line for an object; returns the same cart if nothing applies. */
@@ -114,6 +165,9 @@ function reducer(state: AppState, action: Action): AppState {
         objects: action.seed.objects,
         products: {},
         stores: {},
+        cart: [],
+        merchantCarts: {},
+        cartSyncing: state.cartSyncing,
         ...EMPTY_LOCAL,
       };
     case "local/replace":
@@ -218,8 +272,32 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, cart: state.cart.filter((l) => l.id !== action.lineId) };
     case "cart/clear":
       return { ...state, cart: [] };
-    case "checkout/opened":
-      return { ...state, checkoutOpened: { ...state.checkoutOpened, [action.storeId]: action.now } };
+    case "cart/replace":
+      return { ...state, cart: action.lines };
+
+    case "merchant/syncing": {
+      if (Boolean(state.cartSyncing[action.storeId]) === action.syncing) return state;
+      const { [action.storeId]: _done, ...rest } = state.cartSyncing;
+      return { ...state, cartSyncing: action.syncing ? { ...rest, [action.storeId]: true } : rest };
+    }
+    case "merchant/synced": {
+      if (action.cart.status === "empty") {
+        const { [action.storeId]: _gone, ...rest } = state.merchantCarts;
+        return { ...state, merchantCarts: rest };
+      }
+      return { ...state, merchantCarts: { ...state.merchantCarts, [action.storeId]: action.cart } };
+    }
+    case "merchant/error": {
+      // The sync request itself failed: keep the last snapshot, shown as stale.
+      const current = state.merchantCarts[action.storeId] ?? blankMerchantCart(action.storeId);
+      return {
+        ...state,
+        merchantCarts: {
+          ...state.merchantCarts,
+          [action.storeId]: { ...current, status: "error", error: action.error, stale: true },
+        },
+      };
+    }
 
     case "import":
       if (state.importedAt) return state;
@@ -257,7 +335,14 @@ export interface AppActions {
   setQty(lineId: string, qty: number): void;
   removeLine(lineId: string): void;
   clearCart(): void;
-  markCheckoutOpened(storeId: string): void;
+  /** Syncs the store's merchant cart now, bypassing the backend's freshness and unsupported checks (Retry). */
+  syncStore(storeId: string): void;
+  /**
+   * Makes a fresh checkout for the store (after pending cart writes land) and
+   * returns the https URL to open. Rejects with a readable Error when the
+   * store can't check out.
+   */
+  checkout(storeId: string): Promise<{ url: string; kind: CheckoutKind }>;
 
   importFromShopify(): void;
   resetDemo(): void;
@@ -308,20 +393,63 @@ async function ignoreMissing(task: () => Promise<unknown>): Promise<void> {
   }
 }
 
-function legacyLocal(current: LocalState, legacy: LocalState): LocalState {
-  // The old cart points at mock products, so it stays behind; the rest carries over.
-  const old =
-    parseLocal(JSON.stringify({ cart: [], checkoutOpened: legacy.checkoutOpened, importedAt: legacy.importedAt })) ??
-    EMPTY_LOCAL;
-  return {
-    cart: current.cart,
-    checkoutOpened: { ...old.checkoutOpened, ...current.checkoutOpened },
-    importedAt: current.importedAt ?? old.importedAt,
-  };
+function legacyLocal(current: LocalState, legacy: LegacyAppState): LocalState {
+  // The old cart points at mock products, so it stays behind; the import time carries over.
+  const old = parseLocal(JSON.stringify({ importedAt: legacy.importedAt })) ?? EMPTY_LOCAL;
+  return { importedAt: current.importedAt ?? old.importedAt };
+}
+
+function isHttpsUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isMerchantCart(value: unknown): value is api.ApiMerchantCart {
+  return typeof value === "object" && value !== null && typeof (value as { storeId?: unknown }).storeId === "string";
+}
+
+const clampQty = (qty: number) => Math.min(MAX_LINE_QTY, Math.max(0, Math.round(qty)));
+
+/** The store a line belongs to: its product's store, else what the backend said. */
+function storeOfLine(state: AppState, line: CartLine): string | undefined {
+  return getProduct(state, line.productId)?.storeId ?? line.storeId;
+}
+
+function storesOfLines(state: AppState, lines: CartLine[]): string[] {
+  return [...new Set(lines.flatMap((l) => storeOfLine(state, l) ?? []))];
+}
+
+/** 404 on a line write means another tab removed it already: nothing to sync. */
+async function dirtyOrNone(task: () => Promise<{ dirtyStores?: string[] }>): Promise<string[]> {
+  try {
+    return (await task()).dirtyStores ?? [];
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return [];
+    throw error;
+  }
+}
+
+function checkoutUnavailableMessage(reason: string | undefined): string {
+  const detail = reason ? ` (${reason.replaceAll("_", " ")})` : "";
+  return `This store can't open a checkout right now${detail}.`;
 }
 
 export function createAppStore(): AppStore {
-  let state: AppState = { version: 1, spaces: [], objects: [], products: {}, stores: {}, ...(readLocal() ?? EMPTY_LOCAL) };
+  let state: AppState = {
+    version: 1,
+    spaces: [],
+    objects: [],
+    products: {},
+    stores: {},
+    cart: [],
+    merchantCarts: {},
+    cartSyncing: {},
+    ...(readLocal() ?? EMPTY_LOCAL),
+  };
   let status: AppStatus = { phase: "loading" };
   let lastSyncAt = 0;
   let resyncQueued = false;
@@ -337,9 +465,7 @@ export function createAppStore(): AppStore {
     const next = reducer(prev, action);
     if (next === prev) return;
     state = next;
-    const localChanged =
-      next.cart !== prev.cart || next.checkoutOpened !== prev.checkoutOpened || next.importedAt !== prev.importedAt;
-    if (persist && localChanged) writeLocal(next);
+    if (persist && next.importedAt !== prev.importedAt) writeLocal(next);
     emit();
   }
 
@@ -351,6 +477,121 @@ export function createAppStore(): AppStore {
   function hydrate(snapshot: api.ApiStateSnapshot): void {
     lastSyncAt = Date.now();
     dispatch({ type: "hydrate", snapshot });
+    syncStaleStores();
+  }
+
+  // -------------------------------------------------------------------------
+  // Merchant cart syncs
+  // -------------------------------------------------------------------------
+
+  /** Cart writes queued or running: write key → the stores they touch. */
+  const pendingCartWrites = new Map<string, { stores: string[]; token: object }>();
+  /** When a refresh last synced a store on its own. */
+  const lastAutoSync = new Map<string, number>();
+
+  const scheduler = new CartSyncScheduler({
+    run: (storeId, force) => api.syncStore(storeId, force),
+    onStart: (storeId) => publishSyncing([storeId]),
+    onResult(storeId, cart, settled) {
+      dispatch({ type: "merchant/synced", storeId, cart });
+      if (settled) publishSyncing([storeId]);
+    },
+    onError(storeId, error, settled) {
+      const code = error instanceof ApiError ? error.code : "sync_failed";
+      dispatch({ type: "merchant/error", storeId, error: { code, message: describeError(error) } });
+      if (settled) publishSyncing([storeId]);
+    },
+  });
+
+  function hasPendingCartWrite(storeId: string): boolean {
+    for (const pending of pendingCartWrites.values()) if (pending.stores.includes(storeId)) return true;
+    return false;
+  }
+
+  /** Brings `cartSyncing` up to date for the stores. */
+  function publishSyncing(storeIds: Iterable<string>): void {
+    for (const storeId of storeIds) {
+      const syncing = scheduler.isBusy(storeId) || hasPendingCartWrite(storeId);
+      dispatch({ type: "merchant/syncing", storeId, syncing });
+    }
+  }
+
+  function scheduleSync(storeIds: Iterable<string | undefined>, options?: { force?: boolean; delayMs?: number }): void {
+    const ids = [...new Set(storeIds)].filter((id): id is string => Boolean(id));
+    for (const id of ids) scheduler.schedule(id, options);
+    publishSyncing(ids);
+  }
+
+  /** Syncs stores the backend reports dirty or stale, and stores with lines but no merchant cart yet. */
+  function syncStaleStores(): void {
+    const due = new Set<string>();
+    for (const merchant of Object.values(state.merchantCarts)) {
+      if (merchant.status === "dirty" || merchant.stale) due.add(merchant.storeId);
+    }
+    for (const line of state.cart) {
+      const storeId = storeOfLine(state, line);
+      if (storeId && !state.merchantCarts[storeId]) due.add(storeId);
+    }
+    const now = Date.now();
+    const ids = [...due].filter(
+      (id) => !scheduler.isBusy(id) && now - (lastAutoSync.get(id) ?? Number.NEGATIVE_INFINITY) >= AUTO_SYNC_MIN_GAP_MS,
+    );
+    for (const id of ids) lastAutoSync.set(id, now);
+    scheduleSync(ids, { delayMs: 0 });
+    // Clears marks left behind by writes that failed before this refresh.
+    publishSyncing(Object.keys(state.cartSyncing));
+  }
+
+  /**
+   * Sends a cart write through the queue, marking `stores` as updating until
+   * it lands, then syncs the stores it reports dirty. Writes with the same
+   * `coalesceKey` send only their last value.
+   */
+  function writeCart(stores: (string | undefined)[], task: () => Promise<string[]>, coalesceKey?: string): void {
+    const touched = [...new Set(stores)].filter((id): id is string => Boolean(id));
+    const key = coalesceKey ?? makeId("cart-write");
+    const token = {};
+    pendingCartWrites.set(key, { stores: touched, token });
+    publishSyncing(touched);
+    const run = async () => {
+      try {
+        scheduleSync(await task());
+      } finally {
+        if (pendingCartWrites.get(key)?.token === token) pendingCartWrites.delete(key);
+        publishSyncing(touched);
+      }
+    };
+    if (coalesceKey) writeCoalesced(coalesceKey, run);
+    else write(run);
+  }
+
+  /** Upserts lines; adopts the backend's lines when no other write is waiting to change them. */
+  async function postLines(lines: api.ApiCartLineInput[]): Promise<string[]> {
+    const result = await api.addCartLines(lines);
+    if (!queue.hasOthersPending()) dispatch({ type: "cart/replace", lines: result.lines.map(fromApiCartLine) });
+    return result.dirtyStores ?? [];
+  }
+
+  /**
+   * Posts the cart older builds kept in localStorage, once: only when the
+   * backend's cart is still empty (the POST is idempotent by object anyway).
+   * Returns true when the backend cart changed.
+   */
+  async function migrateLegacyCart(snapshot: api.ApiStateSnapshot, legacyLines: CartLine[]): Promise<boolean> {
+    if (!snapshot.cart) return false; // A backend without the cart API: try again next boot.
+    let posted = false;
+    if (legacyLines.length > 0 && snapshot.cart.lines.length === 0) {
+      const lines = legacyLines.map((l) => ({ id: l.id, objectId: l.objectId, qty: Math.max(1, clampQty(l.qty)) }));
+      try {
+        await api.addCartLines(lines);
+        posted = true;
+      } catch (error) {
+        // The backend refused the old lines: they can't be recovered, so drop them. Other failures retry on the next boot.
+        if (!(error instanceof ApiError && error.status >= 400 && error.status < 500)) throw error;
+      }
+    }
+    stripLegacyCart();
+    return posted;
   }
 
   /** Reloads the cache from the backend once every pending write has landed. */
@@ -398,6 +639,8 @@ export function createAppStore(): AppStore {
 
   async function bootOnce(): Promise<void> {
     setStatus({ phase: "loading" });
+    // Read before anything writes localStorage, which would drop the old cart.
+    const legacyCart = hasLegacyCart() ? readLegacyCart() : null;
     try {
       let snapshot = await api.getState();
       if (snapshot.spaces.length === 0 && snapshot.objects.length === 0) {
@@ -410,6 +653,7 @@ export function createAppStore(): AppStore {
         }
         snapshot = await api.getState();
       }
+      if (legacyCart && (await migrateLegacyCart(snapshot, legacyCart))) snapshot = await api.getState();
       hydrate(snapshot);
       setStatus({ phase: "ready" });
     } catch (error) {
@@ -510,9 +754,18 @@ export function createAppStore(): AppStore {
     },
     deleteObject(id) {
       if (!getObject(state, id)) return;
+      const line = getCartLineForObject(state, id);
+      const store = line ? storeOfLine(state, line) : undefined;
       dispatch({ type: "object/delete", id });
-      // The backend also cancels the object's active search runs.
-      write(() => ignoreMissing(() => api.deleteObject(id)));
+      // The backend also cancels the object's active search runs and deletes its cart line.
+      if (store) {
+        writeCart([store], async () => {
+          await ignoreMissing(() => api.deleteObject(id));
+          return [store];
+        });
+      } else {
+        write(() => ignoreMissing(() => api.deleteObject(id)));
+      }
     },
 
     setSearchState: (id, search) => dispatch({ type: "search/set-state", id, search }),
@@ -521,21 +774,47 @@ export function createAppStore(): AppStore {
       if (!obj) return;
       const accepted = candidates.filter((c) => c.verdict === "accepted" && c.objectId === objectId);
       // Results never auto-select: the user picks a card. Clear any previous pick on the backend too.
+      const line = getCartLineForObject(state, objectId);
+      const oldStore = line ? storeOfLine(state, line) : undefined;
       dispatch({ type: "search/results", id: objectId, candidates: accepted, lastRunAt: finishedAt ?? nowIso() });
-      if (obj.selectedProductId) write(() => api.selectCandidate(objectId, null));
+      if (!obj.selectedProductId) return;
+      if (oldStore) {
+        // Clearing the pick deletes the object's cart line on the backend.
+        writeCart([oldStore], async () => {
+          await api.selectCandidate(objectId, null);
+          return [oldStore];
+        });
+      } else {
+        write(() => api.selectCandidate(objectId, null));
+      }
     },
     selectProduct(objectId, productId) {
       const obj = getObject(state, objectId);
       if (!obj || obj.selectedProductId === productId) return;
+      const line = getCartLineForObject(state, objectId);
+      const oldStore = line ? storeOfLine(state, line) : undefined;
       dispatch({ type: "product/select", objectId, productId });
       const candidateId = candidateIdOf(productId);
-      if (candidateId !== undefined) write(() => api.selectCandidate(objectId, candidateId));
+      if (candidateId === undefined) return;
+      if (line) {
+        // The cart line follows the pick, possibly into another store: sync both.
+        const stores = [oldStore, getProduct(state, productId)?.storeId];
+        writeCart(stores, async () => {
+          await api.selectCandidate(objectId, candidateId);
+          return stores.filter((id): id is string => Boolean(id));
+        });
+      } else {
+        write(() => api.selectCandidate(objectId, candidateId));
+      }
     },
 
     addToCart(objectId) {
       const obj = getObject(state, objectId);
       if (!obj || obj.source !== "search" || !obj.selectedProductId) return false;
-      dispatch({ type: "cart/add", objectIds: [objectId], ids: [makeId("line")] });
+      const id = getCartLineForObject(state, objectId)?.id ?? makeId("line");
+      dispatch({ type: "cart/add", objectIds: [objectId], ids: [id] });
+      const line = getCartLineForObject(state, objectId);
+      if (line) writeCart(storesOfLines(state, [line]), () => postLines([{ id: line.id, objectId }]));
       return true;
     },
     addAllToCart(objectIds) {
@@ -545,12 +824,55 @@ export function createAppStore(): AppStore {
         return obj && obj.source === "search" && obj.selectedProductId && !current.cart.some((l) => l.objectId === id);
       });
       dispatch({ type: "cart/add", objectIds, ids: objectIds.map(() => makeId("line")) });
+      const wanted = new Set(objectIds);
+      const lines = state.cart.filter((l) => wanted.has(l.objectId));
+      if (lines.length > 0) {
+        writeCart(storesOfLines(state, lines), () => postLines(lines.map((l) => ({ id: l.id, objectId: l.objectId }))));
+      }
       return eligible.length;
     },
-    setQty: (lineId, qty) => dispatch({ type: "cart/set-qty", lineId, qty }),
-    removeLine: (lineId) => dispatch({ type: "cart/remove", lineId }),
-    clearCart: () => dispatch({ type: "cart/clear" }),
-    markCheckoutOpened: (storeId) => dispatch({ type: "checkout/opened", storeId, now: nowIso() }),
+    setQty(lineId, qty) {
+      const line = state.cart.find((l) => l.id === lineId);
+      if (!line || !Number.isFinite(qty)) return;
+      const next = clampQty(qty);
+      if (next === line.qty) return;
+      const store = storeOfLine(state, line);
+      dispatch({ type: "cart/set-qty", lineId, qty: next });
+      writeCart([store], () => dirtyOrNone(() => api.updateCartLine(lineId, next)), `cart-qty:${lineId}`);
+    },
+    removeLine(lineId) {
+      const line = state.cart.find((l) => l.id === lineId);
+      if (!line) return;
+      const store = storeOfLine(state, line);
+      dispatch({ type: "cart/remove", lineId });
+      writeCart([store], () => dirtyOrNone(() => api.deleteCartLine(lineId)));
+    },
+    clearCart() {
+      const stores = storesOfLines(state, state.cart);
+      dispatch({ type: "cart/clear" });
+      writeCart(stores, async () => (await api.clearCart()).dirtyStores ?? stores);
+    },
+    syncStore(storeId) {
+      scheduleSync([storeId], { force: true, delayMs: 0 });
+    },
+    async checkout(storeId) {
+      try {
+        // Waits for every pending write, so the checkout holds the cart as shown, but runs outside the
+        // queue: it calls the merchant (the backend syncs first) and shouldn't hold up later edits.
+        await queue.run(async () => {});
+        const result = await api.checkoutStore(storeId);
+        if (isMerchantCart(result.store)) dispatch({ type: "merchant/synced", storeId, cart: result.store });
+        if (!isHttpsUrl(result.url)) throw new Error("The store sent a checkout link that isn't secure.");
+        return { url: result.url, kind: result.kind };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          const body = error.payload as Partial<api.ApiCheckoutUnavailable> | undefined;
+          if (isMerchantCart(body?.store)) dispatch({ type: "merchant/synced", storeId, cart: body.store });
+          throw new Error(checkoutUnavailableMessage(body?.details?.reason ?? error.details?.reason));
+        }
+        throw error;
+      }
+    },
 
     importFromShopify() {
       if (state.importedAt) return;
@@ -562,6 +884,8 @@ export function createAppStore(): AppStore {
     },
     resetDemo() {
       const seed = createSeedState();
+      // Deleting the objects deletes their cart lines; those merchant carts then need emptying.
+      const cartStores = storesOfLines(state, state.cart);
       dispatch({ type: "reset", seed });
       resetListeners.forEach((l) => l());
       write(async () => {
@@ -573,6 +897,7 @@ export function createAppStore(): AppStore {
         const snapshot = await api.getState();
         if (queue.hasOthersPending()) resync();
         else hydrate(snapshot);
+        scheduleSync(cartStores);
       });
     },
   };
@@ -597,7 +922,7 @@ export function createAppStore(): AppStore {
     retry: () => void boot(),
     start() {
       void boot();
-      // Spaces and objects come from the backend; only the local part syncs between tabs directly.
+      // Spaces, objects and the cart come from the backend; only the local part syncs between tabs directly.
       const onStorage = (e: StorageEvent) => {
         if (e.key !== LOCAL_KEY) return;
         dispatch({ type: "local/replace", local: parseLocal(e.newValue) ?? EMPTY_LOCAL }, { persist: false });

@@ -1,3 +1,5 @@
+import type { ApiMerchantCart } from "@/lib/api";
+
 // All lengths are stored in inches, weights in lb, prices in USD.
 // A space's `unit` is only a display preference.
 
@@ -107,24 +109,27 @@ export interface Product {
   /** Product page. */
   url?: string;
   checkoutUrl?: string;
+  /** Shopify variant gid (candidates only), used to match merchant cart messages to the line. */
+  variantId?: string;
   rating?: ProductRating;
 }
 
+/** A cart line; the backend owns the cart. `storeId` and `variantId` are unknown until the backend answers. */
 export interface CartLine {
   id: string;
   productId: string;
   objectId: string;
   qty: number;
+  storeId?: string;
+  variantId?: string | null;
 }
 
 /** The part of the state kept in this browser's localStorage. */
 export interface LocalState {
-  cart: CartLine[];
-  checkoutOpened: Record<string, string>;
   importedAt?: string;
 }
 
-/** In-memory cache of the backend (spaces, objects, candidates) plus the local part. */
+/** In-memory cache of the backend (spaces, objects, candidates, cart) plus the local part. */
 export interface AppState extends LocalState {
   version: 1;
   spaces: Space[];
@@ -133,6 +138,11 @@ export interface AppState extends LocalState {
   products: Record<string, Product>;
   /** Stores of those candidates, keyed by seller domain. */
   stores: Record<string, Store>;
+  cart: CartLine[];
+  /** The backend's merchant carts, keyed by store id (seller domain). */
+  merchantCarts: Record<string, ApiMerchantCart>;
+  /** Stores whose cart edits or merchant sync are still on their way. In memory only. */
+  cartSyncing: Record<string, true>;
 }
 
 /** What the mock-only app kept under localStorage "wireframe-state-v1". */

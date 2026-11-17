@@ -2,7 +2,7 @@ import { RiDeleteBinLine, RiErrorWarningLine } from "@remixicon/react";
 import { AlertDialog, ModalTrigger } from "@/components/base/modal/modal";
 import { Button } from "@/components/base/buttons/button";
 import { toast } from "@/components/base/toast/toast";
-import { formatPrice } from "@/lib/format";
+import { formatMinor, formatPrice } from "@/lib/format";
 import { useAppActions, useAppState } from "@/state/app-store";
 import { getCartByStore, getCartCount, getCartTotal } from "@/state/selectors";
 
@@ -30,7 +30,10 @@ export function CartSummary() {
       <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
         <Stat label="Items" value={itemCount} />
         <Stat label="Stores" value={storeCount} />
-        <Stat label="Total" value={formatPrice(total)} />
+        <Stat
+          label={total.estimated ? "Estimated total" : "Total"}
+          value={total.estimated ? formatPrice(total.amount) : formatMinor(total.amountMinor, total.currency)}
+        />
         <div className="ms-auto">
           <ModalTrigger>
             <Button variant="ghost" leadingIcon={RiDeleteBinLine}>
@@ -50,7 +53,10 @@ export function CartSummary() {
           </ModalTrigger>
         </div>
       </div>
-      <p className="text-caption-1-medium text-text-tertiary">Each store checks out separately.</p>
+      <p className="text-caption-1-medium text-text-tertiary">
+        Each store checks out on its own Shopify checkout.
+        {total.estimated ? " The total is estimated from listed prices until every store has confirmed its cart." : null}
+      </p>
     </section>
   );
 }

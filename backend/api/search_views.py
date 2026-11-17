@@ -1,10 +1,12 @@
 """Search-run endpoints: start, inspect, cancel, and select a candidate."""
 import logging
 
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
-from .models import Candidate, RunStatus, SearchRun, SpaceObject, Verdict
+from .cart.stores import store_key, touch_stores
+from .models import CartLine, Candidate, RunStatus, SearchRun, SpaceObject, Verdict
 from .searcher import runner
 from .serializers import ValidationFailed, _is_number, object_to_json, run_to_json
 from .state_views import _body, _error, _json_view, _not_found
@@ -92,6 +94,7 @@ def object_select(request, object_id):
     if errors:
         raise ValidationFailed(errors)
     cid = data['candidateId']
+    old = obj.selected_candidate
     if cid is None:
         obj.selected_candidate = None
     else:
@@ -103,5 +106,13 @@ def object_select(request, object_id):
         if cand.verdict != Verdict.ACCEPTED:
             raise ValidationFailed({'candidateId': 'candidate was not accepted'})
         obj.selected_candidate = cand
-    obj.save(update_fields=['selected_candidate'])
+    with transaction.atomic():
+        obj.save(update_fields=['selected_candidate'])
+        # A cart line follows the pick; clearing the pick removes the line.
+        line = CartLine.objects.filter(object=obj).first()
+        if line is not None:
+            new = obj.selected_candidate
+            touch_stores([store_key(c) for c in (old, new) if c is not None])
+            if new is None:
+                line.delete()
     return JsonResponse(object_to_json(obj))

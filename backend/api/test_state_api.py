@@ -487,8 +487,9 @@ class QueryCountTests(Base):
                 o = self.make_object()
                 self.call('put', f'/api/spaces/{s["id"]}/placements/{o["id"]}/', {'x': 1, 'y': 1})
             # spaces, placements, objects, runs with accepted candidates
-            # (the candidate query is skipped when there are none)
-            with self.assertNumQueries(4):
+            # (the candidate query is skipped when there are none), cart
+            # lines, merchant carts
+            with self.assertNumQueries(6):
                 r = self.client.get('/api/state/')
                 self.assertEqual(r.status_code, 200)
                 self.assertEqual(r.json()['candidates'], [])

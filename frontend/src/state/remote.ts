@@ -1,7 +1,10 @@
 // Conversions between the backend's JSON and the client state, plus the
-// localStorage part of the state (cart, checkout marks, import time).
+// localStorage part of the state (import time) and the one-time migration of
+// the cart this browser used to keep there.
 import type {
   ApiCandidate,
+  ApiCartLine,
+  ApiMerchantCart,
   ApiImportPayload,
   ApiObject,
   ApiObjectCreate,
@@ -81,6 +84,7 @@ export function candidateToProduct(c: ApiCandidate, type: ObjectType): Product {
     imageUrl: c.imageUrl ?? undefined,
     url: c.url ?? undefined,
     checkoutUrl: c.checkoutUrl ?? undefined,
+    variantId: c.variantId ?? undefined,
     rating: c.rating,
   };
 }
@@ -125,37 +129,55 @@ function fromApiObject(o: ApiObject, candidates: ApiCandidate[]): SpaceObject {
 }
 
 export function localOf(state: LocalState): LocalState {
-  return { cart: state.cart, checkoutOpened: state.checkoutOpened, importedAt: state.importedAt };
+  return { importedAt: state.importedAt };
 }
 
 /** Makes the local part agree with fresh backend data. */
 function reconcileLocal(state: AppState): AppState {
-  const objects = new Map(state.objects.map((o) => [o.id, o]));
-  let changed = false;
-  const cart = state.cart.flatMap((line): CartLine[] => {
-    const object = objects.get(line.objectId);
-    if (!object) {
-      changed = true;
-      return [];
-    }
-    // The cart line follows the selection, which may have changed in another tab.
-    if (object.source === "search" && object.selectedProductId && object.selectedProductId !== line.productId) {
-      changed = true;
-      return [{ ...line, productId: object.selectedProductId }];
-    }
-    return [line];
-  });
-  let importedAt = state.importedAt;
-  if (!importedAt) {
-    // Another browser (or a cleared localStorage) imported already.
-    const times = state.objects.filter((o) => o.source === "imported").map((o) => o.createdAt);
-    importedAt = times.sort()[0];
-  }
-  if (!changed && importedAt === state.importedAt) return state;
-  return { ...state, cart: changed ? cart : state.cart, importedAt };
+  if (state.importedAt) return state;
+  // Another browser (or a cleared localStorage) imported already.
+  const times = state.objects.filter((o) => o.source === "imported").map((o) => o.createdAt);
+  const importedAt = times.sort()[0];
+  return importedAt === undefined ? state : { ...state, importedAt };
 }
 
-export function snapshotToState(snapshot: ApiStateSnapshot, local: LocalState): AppState {
+export function fromApiCartLine(line: ApiCartLine): CartLine {
+  return {
+    id: line.id,
+    productId: line.productId,
+    objectId: line.objectId,
+    qty: line.qty,
+    storeId: line.storeId,
+    variantId: line.variantId,
+  };
+}
+
+/** True when `a` was synced later than `b`. */
+function syncedLater(a: ApiMerchantCart, b: ApiMerchantCart): boolean {
+  if (!a.syncedAt || !b.syncedAt) return false;
+  return Date.parse(a.syncedAt) > Date.parse(b.syncedAt);
+}
+
+/**
+ * The snapshot's merchant carts. A sync that answered after the snapshot was
+ * read is newer, so it is kept for stores the snapshot still lists.
+ */
+function mergeMerchantCarts(
+  incoming: ApiMerchantCart[],
+  current: Record<string, ApiMerchantCart>,
+): Record<string, ApiMerchantCart> {
+  const out: Record<string, ApiMerchantCart> = {};
+  for (const cart of incoming) {
+    const mine = current[cart.storeId];
+    out[cart.storeId] = mine && syncedLater(mine, cart) ? mine : cart;
+  }
+  return out;
+}
+
+/** What the snapshot does not carry: the import time and the in-memory cart state. */
+export type SnapshotBase = LocalState & Partial<Pick<AppState, "merchantCarts" | "cartSyncing">>;
+
+export function snapshotToState(snapshot: ApiStateSnapshot, base: SnapshotBase): AppState {
   const byObject = new Map<string, ApiCandidate[]>();
   for (const c of snapshot.candidates) {
     const list = byObject.get(c.objectId);
@@ -164,7 +186,17 @@ export function snapshotToState(snapshot: ApiStateSnapshot, local: LocalState): 
   }
   const objects = snapshot.objects.map((o) => fromApiObject(o, byObject.get(o.id) ?? []));
   const { products, stores } = mergeCandidates({}, {}, objects, snapshot.candidates);
-  return reconcileLocal({ version: 1, spaces: snapshot.spaces, objects, products, stores, ...localOf(local) });
+  return reconcileLocal({
+    version: 1,
+    spaces: snapshot.spaces,
+    objects,
+    products,
+    stores,
+    cart: (snapshot.cart?.lines ?? []).map(fromApiCartLine),
+    merchantCarts: mergeMerchantCarts(snapshot.cart?.stores ?? [], base.merchantCarts ?? {}),
+    cartSyncing: base.cartSyncing ?? {},
+    ...localOf(base),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -249,12 +281,15 @@ export const objectPatchBody = (prev: SpaceObject, next: SpaceObject) =>
 // localStorage
 // ---------------------------------------------------------------------------
 
-/** Cart, checkout marks and import time; spaces and objects live in the backend. */
+/**
+ * Import time; spaces, objects and the cart live in the backend. Older builds
+ * also kept the cart (`cart`, `checkoutOpened`) here: see readLegacyCart.
+ */
 export const LOCAL_KEY = "app-local-v1";
 /** The mock-only app's whole state, imported into an empty backend once. */
 export const LEGACY_KEY = "wireframe-state-v1";
 
-export const EMPTY_LOCAL: LocalState = { cart: [], checkoutOpened: {} };
+export const EMPTY_LOCAL: LocalState = {};
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -279,15 +314,8 @@ function parseJson(raw: string | null): unknown {
 
 export function parseLocal(raw: string | null): LocalState | null {
   const data = parseJson(raw);
-  if (!isRecord(data) || !Array.isArray(data.cart) || !isRecord(data.checkoutOpened)) return null;
-  const checkoutOpened = Object.fromEntries(
-    Object.entries(data.checkoutOpened).filter((e): e is [string, string] => typeof e[1] === "string"),
-  );
-  return {
-    cart: data.cart.filter(isCartLine),
-    checkoutOpened,
-    importedAt: typeof data.importedAt === "string" ? data.importedAt : undefined,
-  };
+  if (!isRecord(data)) return null;
+  return { importedAt: typeof data.importedAt === "string" ? data.importedAt : undefined };
 }
 
 function storage(): Storage | null {
@@ -306,12 +334,40 @@ export function readLocal(): LocalState | null {
   }
 }
 
+/** Writes only the local part, which also drops a legacy cart still stored under the key. */
 export function writeLocal(local: LocalState): void {
   try {
     storage()?.setItem(LOCAL_KEY, JSON.stringify(localOf(local)));
   } catch {
-    // Storage may be unavailable or full; the cart keeps working in memory.
+    // Storage may be unavailable or full; the import time then lives in memory only.
   }
+}
+
+/** Valid lines of the cart older builds kept in localStorage; empty when there is none. */
+export function readLegacyCart(): CartLine[] {
+  let data: unknown;
+  try {
+    data = parseJson(storage()?.getItem(LOCAL_KEY) ?? null);
+  } catch {
+    return [];
+  }
+  if (!isRecord(data) || !Array.isArray(data.cart)) return [];
+  return data.cart.filter(isCartLine);
+}
+
+/** True while localStorage still holds the old cart or checkout marks. */
+export function hasLegacyCart(): boolean {
+  try {
+    const data = parseJson(storage()?.getItem(LOCAL_KEY) ?? null);
+    return isRecord(data) && ("cart" in data || "checkoutOpened" in data);
+  } catch {
+    return false;
+  }
+}
+
+/** Removes the old cart and checkout marks from localStorage, keeping the import time. */
+export function stripLegacyCart(): void {
+  writeLocal(readLocal() ?? EMPTY_LOCAL);
 }
 
 export function readLegacy(): LegacyAppState | null {
@@ -321,14 +377,7 @@ export function readLegacy(): LegacyAppState | null {
   } catch {
     return null;
   }
-  if (
-    !isRecord(data) ||
-    data.version !== 1 ||
-    !Array.isArray(data.spaces) ||
-    !Array.isArray(data.objects) ||
-    !Array.isArray(data.cart) ||
-    !isRecord(data.checkoutOpened)
-  ) {
+  if (!isRecord(data) || data.version !== 1 || !Array.isArray(data.spaces) || !Array.isArray(data.objects)) {
     return null;
   }
   return data as unknown as LegacyAppState;

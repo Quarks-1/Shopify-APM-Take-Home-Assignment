@@ -152,3 +152,11 @@ SEARCHER_AGENT_CWD = Path(
     os.environ.get('SEARCHER_AGENT_CWD')
     or Path(tempfile.gettempdir()) / 'shopify-searcher' / 'agent-cwd'
 )
+
+# Merchant carts (api.cart): one UCP cart per store, checkout on the
+# merchant's own page. An empty UCP_PROFILE uses the managed profile.
+UCP_PROFILE = os.environ.get('UCP_PROFILE', '').strip()
+CART_UCP_TIMEOUT = float(os.environ.get('CART_UCP_TIMEOUT', '30'))
+CART_COUNTRY = os.environ.get('CART_COUNTRY', 'US').strip().upper()
+CART_UNSUPPORTED_TTL = int(os.environ.get('CART_UNSUPPORTED_TTL', '86400'))  # s before retrying UCP
+CART_REFRESH_AFTER = int(os.environ.get('CART_REFRESH_AFTER', '1800'))  # s until a synced cart is stale

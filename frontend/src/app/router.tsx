@@ -5,7 +5,6 @@ import { CartPage } from "@/pages/cart-page";
 import { BackendStatusPage } from "@/pages/backend-status-page";
 import { FindObjectsPage } from "@/pages/find-objects-page";
 import { HomePage } from "@/pages/home-page";
-import { MockCheckoutPage } from "@/pages/mock-checkout-page";
 import { SpaceEditorPage } from "@/pages/space-editor-page";
 
 export const router = createBrowserRouter([
@@ -24,7 +23,6 @@ export const router = createBrowserRouter([
           { path: "dev/backend", element: <BackendStatusPage /> },
         ],
       },
-      { path: "checkout/mock/:storeId", element: <MockCheckoutPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

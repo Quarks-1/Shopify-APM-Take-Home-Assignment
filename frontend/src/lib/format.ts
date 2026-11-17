@@ -68,3 +68,16 @@ export function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours} hr ago`;
   return new Date(then).toLocaleDateString();
 }
+
+/** An amount in the currency's minor units (cents for USD, yen for JPY) as a price. */
+export function formatMinor(amount: number, currency: string): string {
+  let format: Intl.NumberFormat;
+  try {
+    format = new Intl.NumberFormat("en-US", { style: "currency", currency });
+  } catch {
+    // Not an ISO 4217 code Intl knows: show the raw amount.
+    return `${amount} ${currency}`;
+  }
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  return format.format(amount / 10 ** digits);
+}
