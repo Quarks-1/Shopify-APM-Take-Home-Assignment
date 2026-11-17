@@ -177,6 +177,34 @@ def workspace_overview(_request):
                     'description': 'Cancel a queued or running search (no-op once finished)',
                     'status': 'operational',
                 },
+                {
+                    'id': 'space-renders-create',
+                    'method': 'POST',
+                    'path': '/api/spaces/<id>/renders/',
+                    'description': 'Start an Imagine render of a space (reuses an identical render unless force)',
+                    'status': 'operational',
+                },
+                {
+                    'id': 'space-render-latest',
+                    'method': 'GET',
+                    'path': '/api/spaces/<id>/renders/latest/',
+                    'description': 'Newest render of a space and whether it matches the current layout',
+                    'status': 'operational',
+                },
+                {
+                    'id': 'render-detail',
+                    'method': 'GET',
+                    'path': '/api/renders/<id>/',
+                    'description': 'Render status and item manifest',
+                    'status': 'operational',
+                },
+                {
+                    'id': 'render-image',
+                    'method': 'GET',
+                    'path': '/api/renders/<id>/image/',
+                    'description': 'Rendered image bytes (once the render is done)',
+                    'status': 'operational',
+                },
             ],
         }
     )

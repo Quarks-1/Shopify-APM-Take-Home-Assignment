@@ -17,6 +17,26 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _load_dotenv(path):
+    """Minimal KEY=VALUE loader; never overrides variables already set."""
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding='utf-8').splitlines():
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_dotenv(BASE_DIR.parent / '.env')
+
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
     'django-insecure-dev-only-change-in-production-shopify-apm',
@@ -152,3 +172,17 @@ SEARCHER_AGENT_CWD = Path(
     os.environ.get('SEARCHER_AGENT_CWD')
     or Path(tempfile.gettempdir()) / 'shopify-searcher' / 'agent-cwd'
 )
+
+
+# Imagine view (AI-rendered space previews)
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+IMAGINE_PROVIDER = os.environ.get('IMAGINE_PROVIDER', 'gemini').strip().lower()  # gemini | fake
+IMAGINE_MODEL = os.environ.get('IMAGINE_MODEL', 'gemini-nano-banana-2.1')
+IMAGINE_API_BASE = os.environ.get(
+    'IMAGINE_API_BASE', 'https://generativelanguage.googleapis.com/v1beta'
+)
+IMAGINE_IMAGE_SIZE = os.environ.get('IMAGINE_IMAGE_SIZE', '2K')
+IMAGINE_TIMEOUT = float(os.environ.get('IMAGINE_TIMEOUT', '180'))  # seconds for the model call
+IMAGINE_FAKE_DELAY = float(os.environ.get('IMAGINE_FAKE_DELAY', '2'))
+IMAGINE_RUN_INLINE = False  # tests set True so generation runs synchronously
