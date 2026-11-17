@@ -320,3 +320,30 @@ class MerchantCart(models.Model):
 
     def __str__(self):
         return f'{self.domain} ({self.status})'
+
+
+class RenderStatus(models.TextChoices):
+    RUNNING = 'running'
+    DONE = 'done'
+    FAILED = 'failed'
+
+
+class SpaceRender(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='renders')
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(
+        max_length=16, choices=RenderStatus.choices, default=RenderStatus.RUNNING
+    )
+    error = models.TextField(blank=True, default='')
+    provider = models.CharField(max_length=16, blank=True, default='')
+    model = models.CharField(max_length=64, blank=True, default='')
+    prompt = models.TextField(blank=True, default='')
+    items = models.JSONField(default=list)  # manifest of rendered placements
+    image = models.BinaryField(null=True, blank=True)
+    image_mime = models.CharField(max_length=32, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']

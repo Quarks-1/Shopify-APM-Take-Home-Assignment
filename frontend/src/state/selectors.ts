@@ -51,8 +51,13 @@ export function getParentSpaces(state: AppState, objectId: string): Space[] {
   return state.spaces.filter((s) => s.placements.some((p) => p.objectId === objectId));
 }
 
+/** Searchable objects, newest first. */
 export function getSearchableObjects(state: AppState): SpaceObject[] {
-  return state.objects.filter((o) => o.source === "search");
+  const indexed = state.objects
+    .map((o, index) => ({ o, index, t: Date.parse(o.createdAt) || 0 }))
+    .filter((e) => e.o.source === "search");
+  indexed.sort((a, b) => b.t - a.t || b.index - a.index);
+  return indexed.map((e) => e.o);
 }
 
 export function getImportedObjects(state: AppState): SpaceObject[] {

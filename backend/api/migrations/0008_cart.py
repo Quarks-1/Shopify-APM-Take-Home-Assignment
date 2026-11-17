@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0006_hard_size_cap'),
+        ('api', '0007_space_render'),
     ]
 
     operations = [

@@ -504,3 +504,47 @@ export const syncStore = (domain: string, force = false) =>
 /** Syncs, then makes a fresh checkout. 409 `checkout_unavailable` when the store can't check out. */
 export const checkoutStore = (domain: string) =>
   request<ApiCheckoutResult>("POST", `/api/cart/stores/${seg(domain)}/checkout/`);
+
+// ---------------------------------------------------------------------------
+// Imagine view renders
+// ---------------------------------------------------------------------------
+
+export interface ApiRenderItem {
+  number: number;
+  objectId: string;
+  name: string;
+  productKey: string | null;
+  productTitle: string | null;
+  hasPhoto: boolean;
+}
+
+export interface ApiRender {
+  id: string;
+  spaceId: string;
+  status: "running" | "done" | "failed";
+  error: string | null;
+  fingerprint: string;
+  provider: string;
+  model: string;
+  items: ApiRenderItem[];
+  itemCount: number;
+  photoCount: number;
+  imageUrl: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
+export interface ApiRenderResult {
+  render: ApiRender;
+  /** True when the stored image for the current layout was returned without generating. */
+  reused: boolean;
+}
+
+export const createRender = (spaceId: string, { force }: { force?: boolean } = {}, signal?: AbortSignal) =>
+  request<ApiRenderResult>("POST", `/api/spaces/${seg(spaceId)}/renders/`, { body: force ? { force: true } : {}, signal });
+
+export const fetchRender = (id: string, signal?: AbortSignal) =>
+  request<{ render: ApiRender }>("GET", `/api/renders/${seg(id)}/`, { signal });
+
+export const fetchLatestRender = (spaceId: string, signal?: AbortSignal) =>
+  request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal });

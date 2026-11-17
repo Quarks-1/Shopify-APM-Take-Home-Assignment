@@ -1,12 +1,14 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
-import { RiAddLine, RiCursorLine, RiShape2Line } from "@remixicon/react";
+import { RiAddLine, RiCursorLine, RiShape2Line, RiSparkling2Line } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Kbd } from "@/components/base/kbd/kbd";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
 import { toast } from "@/components/base/toast/toast";
 import { OBJECT_TYPE_SVG } from "@/features/objects/object-type-visuals";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
+import { ImagineViewModal } from "@/features/spaces/imagine-view-modal";
+import { useImagineView } from "@/features/spaces/use-imagine-view";
 import { formatDims, toDisplayLength } from "@/lib/format";
 import type { Dims, ObjectDims, Space } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
@@ -103,6 +105,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   const space = getSpace(state, spaceId);
   const overlapping = useMemo(() => getOverlappingObjectIds(state, spaceId), [state, spaceId]);
+  const imagineView = useImagineView(spaceId);
 
   if (!space) return null;
 
@@ -277,6 +280,8 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+    // React bubbles events from portals (the Imagine view modal) through this tree; ignore anything outside the DOM root.
+    if (!rootRef.current?.contains(target)) return;
     if (target.closest("input, textarea, select, [contenteditable='true']")) return;
     if (e.key === "Escape") {
       cancelDrag();
@@ -374,6 +379,15 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         </SegmentedControl>
         <Button variant="secondary" size="small" leadingIcon={RiAddLine} onClick={addObject}>
           Add object
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          leadingIcon={RiSparkling2Line}
+          onClick={() => void imagineView.imagine()}
+          disabled={count === 0}
+        >
+          Imagine view
         </Button>
       </div>
 
@@ -670,6 +684,16 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
           <Kbd>Del</Kbd> remove
         </span>
       </p>
+
+      <ImagineViewModal
+        spaceName={space.name}
+        isOpen={imagineView.isOpen}
+        onOpenChange={imagineView.setOpen}
+        render={imagineView.render}
+        error={imagineView.error}
+        onRegenerate={() => void imagineView.imagine(true)}
+        onRetry={() => void imagineView.imagine(false)}
+      />
     </div>
   );
 }
