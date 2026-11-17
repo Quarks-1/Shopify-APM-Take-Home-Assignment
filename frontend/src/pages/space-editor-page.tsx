@@ -172,7 +172,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
           <VibeImportStatus spaceId={space.id} />
           {inspirations.length > 0 && (
             <Button variant="secondary" size="small" className="group" leadingIcon={RiSparkling2Line} onClick={() => setVibeOpen(true)}>
-              See the <WavyText text="Vibe" />
+              <WavyText text="See the Vibe" />
             </Button>
           )}
           <Button variant="secondary" size="small" leadingIcon={RiSettings3Line} onClick={() => setSettingsOpen(true)}>
