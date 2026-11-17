@@ -235,7 +235,8 @@ export function DashboardSidebar({
   onNavigate?: (href: string) => void;
 } = {}) {
   const localize = useTemplateCopy();
-  const [collapsedState, setCollapsed] = useState(false);
+  // Desktop loads as the icon rail. The mobile drawer stays expanded.
+  const [collapsedState, setCollapsed] = useState(true);
   const collapsed = mobile ? false : collapsedState;
 
   return localize((

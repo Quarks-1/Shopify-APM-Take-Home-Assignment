@@ -151,6 +151,35 @@ class ObjectTests(Base):
         self.assertEqual(self.call('delete', f'/api/objects/{o["id"]}/').status_code, 204)
         self.assertEqual(self.call('get', f'/api/objects/{o["id"]}/').status_code, 404)
 
+    def test_price_range(self):
+        o = self.make_object(priceMin=100, priceLimit=400)
+        self.assertEqual((o['priceMin'], o['priceLimit']), (100, 400))
+        path = f'/api/objects/{o["id"]}/'
+
+        # A PATCH sending only one end is checked against the stored other end.
+        r = self.call('patch', path, {'priceMin': 500})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('priceMin', r.json()['details'])
+        r = self.call('patch', path, {'priceLimit': 50})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('priceMin', r.json()['details'])
+        self.assertEqual(self.call('get', path).json()['priceLimit'], 400)
+
+        # Moving both ends together is fine; equal ends are allowed.
+        r = self.call('patch', path, {'priceMin': 600, 'priceLimit': 600})
+        self.assertEqual(r.status_code, 200, r.content)
+        p = self.call('patch', path, {'priceLimit': None}).json()
+        self.assertEqual((p['priceMin'], p.get('priceLimit')), (600, None))
+        p = self.call('patch', path, {'priceMin': None}).json()
+        self.assertNotIn('priceMin', p)
+
+        base = {'name': 'a', 'type': 'rug', 'dims': {'x': 1, 'y': 1}}
+        r = self.call('post', '/api/objects/', {**base, 'priceMin': -1})
+        self.assertIn('priceMin', r.json()['details'])
+        r = self.call('post', '/api/objects/', {**base, 'priceMin': 200, 'priceLimit': 100})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('priceMin', r.json()['details'])
+
     def test_min_rating_round_trip(self):
         o = self.make_object(minRating=4.5)
         self.assertEqual(o['minRating'], 4.5)

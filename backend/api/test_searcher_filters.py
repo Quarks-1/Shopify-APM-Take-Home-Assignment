@@ -27,6 +27,19 @@ class FilterTests(SimpleTestCase):
         self.assertTrue(evaluate(prod(price_cents=10**7, dims={'x': 1, 'y': 1}),
                                  {'dims': {'x': 1, 'y': 1}}, TOL)[0])
 
+    def test_price_minimum(self):
+        fits = {'dims': {'x': 40, 'y': 20, 'z': 10}, 'dims_longest': 40}
+        obj = {**OBJ, 'priceMin': 100}
+        self.assertTrue(self.ev(prod(price_cents=10000, **fits), obj)[0])
+        passes, reasons, *_ = self.ev(prod(price_cents=9500, **fits), obj)
+        self.assertFalse(passes)
+        self.assertEqual(reasons, ['under price minimum: $95.00 < $100.00'])
+        # a minimum alone sets no ceiling, and an unknown price is not "under" it
+        only_min = {**OBJ, 'priceMin': 100}
+        del only_min['priceLimit']
+        self.assertTrue(self.ev(prod(price_cents=10**7, **fits), only_min)[0])
+        self.assertNotIn('under price minimum', ' '.join(self.ev(prod(price_cents=0, **fits), obj)[1]))
+
     def test_min_rating(self):
         snap = {**OBJ, 'minRating': 4}
         fit = {'dims': {'x': 40, 'y': 20, 'z': 10}, 'dims_longest': 40, 'weight_lb': 30}

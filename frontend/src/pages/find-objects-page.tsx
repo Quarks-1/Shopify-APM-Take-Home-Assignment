@@ -4,11 +4,11 @@ import { useNavigate, useSearchParams } from "react-router";
 import { Counter } from "@/components/base/badges/counter";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
-import { NumberField } from "@/components/base/number-field/number-field";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { toast } from "@/components/base/toast/toast";
 import { ObjectCarouselList } from "@/features/objects/object-carousel-list";
+import { PriceRangeSlider, type PriceRange } from "@/features/objects/price-range-slider";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
 import { useObjectSearch } from "@/features/objects/use-object-search";
 import { OBJECT_TYPE_OPTIONS, type ObjectType } from "@/mocks/types";
@@ -31,7 +31,7 @@ export function FindObjectsPage() {
 
   const [name, setName] = useState("");
   const [type, setType] = useState<ObjectType>("furniture");
-  const [priceLimit, setPriceLimit] = useState<number>(Number.NaN);
+  const [priceRange, setPriceRange] = useState<PriceRange>({});
   const [filter, setFilter] = useState<Filter>("unassigned");
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
@@ -56,11 +56,12 @@ export function FindObjectsPage() {
     const id = createObject({
       name: trimmed,
       type,
-      priceLimit: Number.isNaN(priceLimit) ? undefined : priceLimit,
+      priceMin: priceRange.min,
+      priceLimit: priceRange.max,
     });
     setName("");
     setType("furniture");
-    setPriceLimit(Number.NaN);
+    setPriceRange({});
     return id;
   };
 
@@ -141,16 +142,7 @@ export function FindObjectsPage() {
             </SelectItem>
           ))}
         </Select>
-        <NumberField
-          label="Price limit (USD)"
-          placeholder="Optional"
-          value={priceLimit}
-          onChange={setPriceLimit}
-          minValue={0}
-          formatOptions={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }}
-          hideSteppers
-          className="min-w-36 flex-[1_1_9rem]"
-        />
+        <PriceRangeSlider value={priceRange} onChange={setPriceRange} className="min-w-56 flex-[2_1_16rem]" />
         <div className="flex items-center gap-2">
           <Button type="submit" leadingIcon={RiSearchLine} disabled={!trimmed}>
             Search

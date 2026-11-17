@@ -51,6 +51,9 @@ export interface SpaceObject {
   type: ObjectType;
   material?: Material;
   style?: Style;
+  /** Lowest acceptable price in USD; undefined means no minimum. */
+  priceMin?: number;
+  /** Highest acceptable price in USD; undefined means no maximum. */
   priceLimit?: number;
   /** Minimum product star rating (0-5) to accept; unset means any. */
   minRating?: number;

@@ -30,7 +30,7 @@ SOURCES = set(ObjectSource.values)
 
 SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
 OBJECT_KEYS = {
-    'name', 'dims', 'weight', 'type', 'material', 'style', 'priceLimit',
+    'name', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
     'minRating',
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
@@ -88,6 +88,8 @@ def object_to_json(obj):
         out['material'] = obj.material
     if obj.style is not None:
         out['style'] = obj.style
+    if obj.price_min is not None:
+        out['priceMin'] = obj.price_min
     if obj.price_limit is not None:
         out['priceLimit'] = obj.price_limit
     if obj.min_rating is not None:
@@ -460,8 +462,12 @@ def _check_unknown(data, allowed, path, errors):
 
 
 def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=False,
-              client_created_at=False, errors):
-    """Returns a dict of model field values (only provided keys when partial)."""
+              client_created_at=False, current=None, errors):
+    """Returns a dict of model field values (only provided keys when partial).
+
+    `current` holds the stored `price_min` / `price_limit` of the object being patched, so a
+    request that sends only one of the two is checked against the other.
+    """
     prefix = f'{path}.' if path else ''
     if not isinstance(data, dict):
         errors[path or '$'] = 'must be an object'
@@ -517,9 +523,17 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
         present, v = _nullable_num(data, 'weight', prefix + 'weight', errors)
         if present:
             out['weight'] = v
+        present, v = _nullable_num(data, 'priceMin', prefix + 'priceMin', errors)
+        if present:
+            out['price_min'] = v
         present, v = _nullable_num(data, 'priceLimit', prefix + 'priceLimit', errors)
         if present:
             out['price_limit'] = v
+        if (prefix + 'priceMin') not in errors and (prefix + 'priceLimit') not in errors:
+            lo = out['price_min'] if 'price_min' in out else (current or {}).get('price_min')
+            hi = out['price_limit'] if 'price_limit' in out else (current or {}).get('price_limit')
+            if lo is not None and hi is not None and lo > hi:
+                errors[prefix + 'priceMin'] = 'must not be greater than priceLimit'
         present, v = _nullable_num(data, 'minRating', prefix + 'minRating', errors)
         if present and v is not None and v > 5:
             errors[prefix + 'minRating'] = 'must be at most 5'
@@ -577,10 +591,10 @@ def validate_space(data, *, partial=False):
     return out
 
 
-def validate_object(data, *, partial=False):
+def validate_object(data, *, partial=False, current=None):
     errors = {}
     out = _validate(data, 'object', partial=partial, allow_id=not partial,
-                    client_created_at=not partial, errors=errors)
+                    client_created_at=not partial, current=current, errors=errors)
     if errors:
         raise ValidationFailed(errors)
     return out

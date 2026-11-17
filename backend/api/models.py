@@ -81,6 +81,7 @@ class SpaceObject(models.Model):
     type = models.CharField(max_length=16, choices=ObjectType.choices)
     material = models.CharField(max_length=16, choices=Material.choices, null=True, blank=True)
     style = models.CharField(max_length=16, choices=Style.choices, null=True, blank=True)
+    price_min = models.FloatField(null=True, blank=True)
     price_limit = models.FloatField(null=True, blank=True)
     min_rating = models.FloatField(null=True, blank=True)
     similar_items = models.JSONField(default=list)

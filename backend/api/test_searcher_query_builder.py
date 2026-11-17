@@ -131,6 +131,12 @@ class PayloadTests(SimpleTestCase):
         self.assertEqual(p['filters']['ships_to'], {'country': 'US'})
         self.assertTrue(p['filters']['available'])
 
+    def test_price_minimum_filter(self):
+        self.assertEqual(qb.build_payload(snap(priceMin=100), 'exact')['filters']['price'],
+                         {'min': 10000, 'max': 40000})
+        self.assertEqual(qb.build_payload(snap(priceMin=99.5, priceLimit=None), 'exact')['filters']['price'],
+                         {'min': 9950})
+
     def test_rating_filter_only_when_set(self):
         self.assertNotIn('rating', qb.build_payload(SNAP, 'exact')['filters'])
         prevs = [prev('exact', 'a', 1, 'c', True)]
@@ -179,6 +185,14 @@ class IntentTests(SimpleTestCase):
         self.assertTrue(text.startswith('Looking for an area rug (rug)'))
         self.assertIn('made of mixed materials', text)
         self.assertIn('priced under $99.50', text)
+
+
+class PriceIntentTests(SimpleTestCase):
+    def test_range_and_minimum_only(self):
+        self.assertIn('priced between $100 and $400', qb.build_intent(snap(priceMin=100)))
+        text = qb.build_intent(snap(priceMin=99.5, priceLimit=None))
+        self.assertIn('priced over $99.50', text)
+        self.assertNotIn('under', text)
 
 
 class WallIntentTests(SimpleTestCase):

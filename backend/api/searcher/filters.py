@@ -38,6 +38,9 @@ def evaluate(fields, snapshot, tolerance):
     cents = fields.get('price_cents')
     if limit is not None and cents is not None and cents > round(limit * 100):
         reasons.append(f'over price limit: {_money(cents)} > ${limit:,.2f}')
+    minimum = snapshot.get('priceMin')
+    if minimum is not None and cents is not None and 0 < cents < round(minimum * 100):
+        reasons.append(f'under price minimum: {_money(cents)} < ${minimum:,.2f}')
 
     # ---- rating (unrated products are excluded when a minimum is set)
     min_rating = snapshot.get('minRating')

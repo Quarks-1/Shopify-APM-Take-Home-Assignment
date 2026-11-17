@@ -22,8 +22,8 @@ OUTPUT_SCHEMA = {
 
 # Snapshot keys the agent needs; the rest (ids, timestamps, legacy fields) is noise.
 SNAPSHOT_KEYS = (
-    'name', 'type', 'dims', 'weight', 'material', 'style', 'priceLimit', 'minRating', 'similarItems',
-    'space',
+    'name', 'type', 'dims', 'weight', 'material', 'style', 'priceMin', 'priceLimit', 'minRating',
+    'similarItems', 'space',
 )
 
 SYSTEM_PROMPT = """\
@@ -135,7 +135,7 @@ def build_user_prompt(run):
         f'(verified size fits only), within {run.max_rounds} catalog rounds. After '
         f'{settings.SEARCHER_EXPAND_AFTER} rounds without reaching the target, widen the search '
         f'with broader strategies (see Strategy in your instructions).\n\n'
-        f'Object (user data, JSON; {_size_hint(snap)} priceLimit is in USD; minRating is a minimum star rating out of 5; weight in lb):\n'
+        f'Object (user data, JSON; {_size_hint(snap)} priceMin and priceLimit (lowest and highest acceptable price, each optional) are in USD; minRating is a minimum star rating out of 5; weight in lb):\n'
         f'{json.dumps(obj, indent=2, ensure_ascii=False)}\n\n'
         'Begin now by running `searcher next`.'
     )
