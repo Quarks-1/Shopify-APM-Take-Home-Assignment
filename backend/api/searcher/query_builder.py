@@ -174,6 +174,8 @@ def build_intent(snapshot):
         parts.append(f'priced under {_usd(limit)}')
     elif minimum is not None:
         parts.append(f'priced over {_usd(minimum)}')
+    if snapshot.get('minRating') is not None:
+        parts.append(f'rated at least {_fmt(snapshot["minRating"])} stars')
     similar = [s for s in (snapshot.get('similarItems') or []) if s]
     if similar:
         parts.append('similar to: ' + ', '.join(similar))
@@ -203,6 +205,9 @@ def build_payload(snapshot, strategy, previous_queries=()):
         price['max'] = int(round(float(limit) * 100))
     if price:
         filters['price'] = price
+    min_rating = snapshot.get('minRating')
+    if min_rating is not None:
+        filters['rating'] = {'variant': {'min': float(min_rating)}}
     payload = {
         'query': query,
         'context': {

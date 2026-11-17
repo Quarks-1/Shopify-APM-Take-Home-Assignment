@@ -137,6 +137,17 @@ class PayloadTests(SimpleTestCase):
         self.assertEqual(qb.build_payload(snap(priceMin=99.5, priceLimit=None), 'exact')['filters']['price'],
                          {'min': 9950})
 
+    def test_rating_filter_only_when_set(self):
+        self.assertNotIn('rating', qb.build_payload(SNAP, 'exact')['filters'])
+        prevs = [prev('exact', 'a', 1, 'c', True)]
+        for s in qb.strategies(SNAP, [], prevs):
+            with self.subTest(strategy=s):
+                self.assertEqual(
+                    qb.build_payload(snap(minRating=4), s, prevs)['filters']['rating'],
+                    {'variant': {'min': 4.0}})
+        self.assertEqual(qb.build_payload(snap(minRating=0), 'exact')['filters']['rating'],
+                         {'variant': {'min': 0.0}})
+
     def test_fractional_price_in_cents(self):
         self.assertEqual(qb.build_payload(snap(priceLimit=399.99), 'exact')['filters']['price'],
                          {'max': 39999})
@@ -162,6 +173,12 @@ class IntentTests(SimpleTestCase):
         self.assertEqual(text, 'Looking for a coffee table (furniture), fitting within 30 W x 20 D inches.')
         for word in ['style', 'made of', 'weighing', 'priced', 'similar', 'space', ' H ']:
             self.assertNotIn(word, text)
+
+    def test_rating_phrase(self):
+        text = qb.build_intent(snap(minRating=4))
+        self.assertIn('priced under $400, rated at least 4 stars', text)
+        self.assertIn('rated at least 4.5 stars', qb.build_intent(snap(minRating=4.5)))
+        self.assertNotIn('rated', qb.build_intent(SNAP))
 
     def test_article_and_mixed_and_decimals(self):
         text = qb.build_intent(snap(name='Area rug', type='rug', material='mixed', priceLimit=99.5))

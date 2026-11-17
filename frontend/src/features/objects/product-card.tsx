@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { RiCheckLine, RiExternalLinkLine } from "@remixicon/react";
+import { RiCheckLine, RiExternalLinkLine, RiStarFill } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { IconLinkButton } from "@/components/base/buttons/icon-button";
-import type { Product } from "@/mocks/types";
+import type { Product, ProductRating } from "@/mocks/types";
 import { formatDims, formatPrice } from "@/lib/format";
 import { useAppState } from "@/state/app-store";
 import { getStore } from "@/state/selectors";
@@ -37,6 +37,18 @@ export function ProductSize({ product, className }: { product: Product; classNam
     >
       {text}
       {unverified ? <span className="text-text-placeholder"> · unverified</span> : null}
+    </span>
+  );
+}
+
+/** Star rating with one decimal, e.g. "★ 4.8". */
+export function ProductRatingText({ rating, className }: { rating: ProductRating; className?: string }) {
+  const value = rating.value.toFixed(1);
+  return (
+    <span className={cx("inline-flex items-center gap-1", className)}>
+      <RiStarFill aria-hidden className="size-3.5 shrink-0 text-chart-8" />
+      <span aria-hidden>{value}</span>
+      <span className="sr-only">Rated {value} out of 5</span>
     </span>
   );
 }
@@ -84,7 +96,12 @@ function ProductDetails({ product, variant }: { product: Product; variant: Produ
         {store ? <span className="truncate text-body-2-regular text-text-secondary">{store.name}</span> : null}
         <span className="flex flex-wrap items-baseline justify-between gap-x-2">
           <bdi className="text-headline-medium text-text-primary">{formatPrice(product.price)}</bdi>
-          <ProductSize product={product} />
+          <span className="ms-auto flex flex-col items-end gap-0.5">
+            {product.rating ? (
+              <ProductRatingText rating={product.rating} className="text-caption-1-medium text-text-secondary" />
+            ) : null}
+            <ProductSize product={product} />
+          </span>
         </span>
       </span>
     </>

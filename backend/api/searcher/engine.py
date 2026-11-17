@@ -306,6 +306,7 @@ def status(run):
             'style': snap.get('style'), 'material': snap.get('material'),
             'dims': d, 'priceMin': snap.get('priceMin'),
             'priceLimit': snap.get('priceLimit'),
+            'minRating': snap.get('minRating'),
         },
     }
 

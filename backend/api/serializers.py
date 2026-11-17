@@ -31,6 +31,7 @@ SOURCES = set(ObjectSource.values)
 SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
 OBJECT_KEYS = {
     'name', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
+    'minRating',
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
     # ignored. Selection changes only via POST /api/objects/<id>/select/.
@@ -91,6 +92,8 @@ def object_to_json(obj):
         out['priceMin'] = obj.price_min
     if obj.price_limit is not None:
         out['priceLimit'] = obj.price_limit
+    if obj.min_rating is not None:
+        out['minRating'] = obj.min_rating
     out['similarItems'] = list(obj.similar_items)
     out['source'] = obj.source
     if obj.owned is not None:
@@ -531,6 +534,12 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
             hi = out['price_limit'] if 'price_limit' in out else (current or {}).get('price_limit')
             if lo is not None and hi is not None and lo > hi:
                 errors[prefix + 'priceMin'] = 'must not be greater than priceLimit'
+        present, v = _nullable_num(data, 'minRating', prefix + 'minRating', errors)
+        if present and v is not None and v > 5:
+            errors[prefix + 'minRating'] = 'must be at most 5'
+            present = False
+        if present:
+            out['min_rating'] = v
         for key, allowed_set in (('material', MATERIALS), ('style', STYLES)):
             if has(key):
                 ok, v = _enum(data[key], allowed_set, prefix + key, errors, nullable=True)

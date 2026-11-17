@@ -281,6 +281,7 @@ export interface ApiObjectCreate {
   style?: Style | null;
   priceMin?: number | null;
   priceLimit?: number | null;
+  minRating?: number | null;
   similarItems?: string[];
   source?: SpaceObject["source"];
   owned?: OwnedInfo | null;

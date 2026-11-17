@@ -19,13 +19,16 @@ import {
 } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import { getObject, getParentSpaces, getProduct, getSelectedProduct, getStore } from "@/state/selectors";
-import { ProductSize } from "./product-card";
+import { ProductRatingText, ProductSize } from "./product-card";
 import { ProductTile } from "./product-tile";
 import { useObjectDrawer } from "./use-object-drawer";
 import { PriceRangeSlider, type PriceRange } from "./price-range-slider";
 import { useObjectSearch } from "./use-object-search";
 
 const ANY = "any";
+
+const MIN_RATING_STEPS = [3, 3.5, 4, 4.5];
+const formatMinRating = (value: number) => `${value}+ stars`;
 
 function parseOption<T extends string>(options: { value: T }[], key: string | number | null): T | undefined {
   return options.find((o) => o.value === key)?.value;
@@ -78,11 +81,17 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
   const [material, setMaterial] = useState<string>(object.material ?? ANY);
   const [style, setStyle] = useState<string>(object.style ?? ANY);
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: object.priceMin, max: object.priceLimit });
+  const [minRating, setMinRating] = useState<string>(object.minRating === undefined ? ANY : String(object.minRating));
   const [similar, setSimilar] = useState(object.similarItems);
   const [similarDraft, setSimilarDraft] = useState("");
   const [spaceIds, setSpaceIds] = useState(initialSpaceIds);
   const [submitted, setSubmitted] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const minRatingOptions =
+    object.minRating === undefined || MIN_RATING_STEPS.includes(object.minRating)
+      ? MIN_RATING_STEPS
+      : [...MIN_RATING_STEPS, object.minRating].sort((a, b) => a - b);
 
   const errors = {
     name: name.trim() ? undefined : "Name is required",
@@ -116,6 +125,7 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
       style: parseOption(STYLE_OPTIONS, style),
       priceMin: priceRange.min,
       priceLimit: priceRange.max,
+      minRating: minRating === ANY ? undefined : Number(minRating),
       similarItems: similar,
     });
     for (const space of state.spaces) {
@@ -212,6 +222,17 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
           <PriceRangeSlider value={priceRange} onChange={setPriceRange} />
         </Section>
 
+        <Section title="Minimum rating">
+          <Select label="Minimum star rating" className="w-full" selectedKey={minRating} onSelectionChange={(k) => setMinRating(String(k))}>
+            <SelectItem id={ANY}>Any</SelectItem>
+            {minRatingOptions.map((value) => (
+              <SelectItem key={value} id={String(value)}>
+                {formatMinRating(value)}
+              </SelectItem>
+            ))}
+          </Select>
+        </Section>
+
         <Section title="Similar items">
           <TagGroup
             aria-label="Similar items"
@@ -275,6 +296,14 @@ function ObjectForm({ object, isNew, onFinish }: ObjectFormProps) {
                 <dd className="text-text-primary">
                   <bdi>{formatPrice(selectedProduct.price)}</bdi>
                 </dd>
+                {selectedProduct.rating ? (
+                  <>
+                    <dt className="text-text-secondary">Rating</dt>
+                    <dd className="text-text-primary">
+                      <ProductRatingText rating={selectedProduct.rating} />
+                    </dd>
+                  </>
+                ) : null}
                 <dt className="text-text-secondary">Size</dt>
                 <dd>
                   <ProductSize product={selectedProduct} className="text-body-regular" />

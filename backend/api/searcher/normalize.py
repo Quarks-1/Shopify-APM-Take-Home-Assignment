@@ -47,7 +47,7 @@ def normalize_product(product):
     variant = variants[0] if variants and isinstance(variants[0], dict) else {}
     seller = variant.get('seller') or {}
     price = variant.get('price') or ((product.get('price_range') or {}).get('min')) or {}
-    rating = product.get('rating') or {}
+    rating = product.get('rating') or variant.get('rating') or {}
     media = product.get('media') or variant.get('media') or []
     image = media[0].get('url') if media and isinstance(media[0], dict) else ''
 

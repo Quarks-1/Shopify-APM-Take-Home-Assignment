@@ -7,7 +7,7 @@ import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmen
 import { toast } from "@/components/base/toast/toast";
 import { OBJECT_TYPE_SVG } from "@/features/objects/object-type-visuals";
 import { useObjectDrawer } from "@/features/objects/use-object-drawer";
-import { formatDims, formatLength, toDisplayLength } from "@/lib/format";
+import { formatDims, toDisplayLength } from "@/lib/format";
 import type { Dims, ObjectDims, Space } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
 import {
@@ -352,9 +352,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         <Button variant="secondary" size="small" leadingIcon={RiAddLine} onClick={addObject}>
           Add object
         </Button>
-        <span className="ms-auto text-body-regular text-text-secondary tabular-nums" dir="ltr">
-          Grid {formatLength(step, unit)} · Snap {formatLength(snapStep, unit)} · {formatDims(dims, unit)}
-        </span>
       </div>
 
       <div

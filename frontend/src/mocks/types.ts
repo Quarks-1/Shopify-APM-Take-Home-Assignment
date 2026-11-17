@@ -55,6 +55,8 @@ export interface SpaceObject {
   priceMin?: number;
   /** Highest acceptable price in USD; undefined means no maximum. */
   priceLimit?: number;
+  /** Minimum product star rating (0-5) to accept; unset means any. */
+  minRating?: number;
   similarItems: string[];
   source: "search" | "imported";
   owned?: OwnedInfo;
