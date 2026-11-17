@@ -18,6 +18,8 @@ const ObjectSearchContext = createContext<ObjectSearchApi | null>(null);
 const POLL_MS = 1500;
 /** Polling backs off to this while the backend keeps failing, and never gives up. */
 const MAX_RETRY_MS = 10_000;
+/** Fast runs would skip "building-query"; a user-started search keeps it on screen at least this long. */
+const STEP_2_MIN_MS = 3000;
 
 /** One object's run being followed. Without `runId` the run is still being started or looked up. */
 interface Tracker {
@@ -25,6 +27,10 @@ interface Tracker {
   runId?: string;
   /** Highest step shown for `runId`, so a stale poll never moves the step backwards. */
   highestStep?: number;
+  /** Show "building-query" for STEP_2_MIN_MS (searches the user started, not resumed ones). */
+  holdStep2: boolean;
+  /** When "building-query" went on screen for `runId`. */
+  step2Since?: number;
   stopped: boolean;
   /** Cancel was pressed before the start request returned a run id. */
   cancelRequested: boolean;
@@ -103,8 +109,32 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
 
     const observe = (tracker: Tracker, run: ApiSearchRun) => {
       if (tracker.stopped) return;
-      if (tracker.runId !== run.id) tracker.highestStep = undefined;
+      if (tracker.runId !== run.id) {
+        tracker.highestStep = undefined;
+        tracker.step2Since = undefined;
+      }
       tracker.runId = run.id;
+      if (tracker.holdStep2 && (tracker.step2Since === undefined || Date.now() - tracker.step2Since < STEP_2_MIN_MS)) {
+        const held = findObject(tracker.objectId);
+        if (!held) {
+          stop(tracker.objectId);
+          return;
+        }
+        if (tracker.step2Since === undefined) {
+          tracker.step2Since = Date.now();
+          tracker.highestStep = Math.max(tracker.highestStep ?? 0, 1);
+          if (held.search.status !== "running" || held.search.step !== "building-query") {
+            actions.setSearchState(tracker.objectId, { status: "running", step: "building-query", lastRunAt: held.search.lastRunAt });
+          }
+        }
+        const remaining = STEP_2_MIN_MS - (Date.now() - tracker.step2Since);
+        const pastStep2 = SEARCH_STEPS.indexOf(run.step ?? "planning") > 1 || !ACTIVE_RUN_STATUSES.has(run.status);
+        if (remaining > 0 && pastStep2) {
+          // Hold the later step or result back; the timer is cleared by stop() on cancel.
+          tracker.timer = setTimeout(() => observe(tracker, run), remaining);
+          return;
+        }
+      }
       if (!ACTIVE_RUN_STATUSES.has(run.status)) {
         finish(tracker, run);
         return;
@@ -147,8 +177,8 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const track = (objectId: string): Tracker => {
-      const tracker: Tracker = { objectId, stopped: false, cancelRequested: false, failures: 0 };
+    const track = (objectId: string, holdStep2 = false): Tracker => {
+      const tracker: Tracker = { objectId, holdStep2, stopped: false, cancelRequested: false, failures: 0 };
       trackers.current.set(objectId, tracker);
       bump();
       return tracker;
@@ -158,7 +188,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       const obj = findObject(objectId);
       // A second press while running is a no-op; the backend would hand back the same run anyway.
       if (!obj || obj.source !== "search" || trackers.current.has(objectId)) return;
-      const tracker = track(objectId);
+      const tracker = track(objectId, true);
       actions.setSearchState(objectId, { status: "running", step: "planning", lastRunAt: obj.search.lastRunAt });
       // Queued behind pending writes, so a just-created object reaches the backend first.
       enqueue(() => api.startSearch(objectId))
