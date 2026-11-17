@@ -18,7 +18,7 @@ from .models import (
     Verdict,
 )
 from .searcher import engine, like_images, prompts, query_builder, runner
-from .serializers import run_to_json, vote_product_snapshot
+from .serializers import object_to_json, run_to_json, vote_product_snapshot
 from .test_like_search import FAKE_CLAUDE, FAKE_UCP, fake_read, make_object
 
 FIXTURE = [  # coffee-table fixture gids, in fixture order
@@ -94,6 +94,45 @@ class RefineBase(TestCase):
 
 
 # --------------------------------------------------------------- endpoint
+
+class ObjectPreferencesTests(RefineBase):
+    PREFS = {'likes': ['walnut'], 'avoids': ['glossy']}
+
+    def run_of(self, mode, status=RunStatus.DONE, prefs=None, obj=None):
+        run = engine.create_run(obj or self.obj, mode=mode)
+        SearchRun.objects.filter(pk=run.pk).update(status=status, preferences=prefs)
+        return run
+
+    def test_latest_finished_refine_run(self):
+        self.run_of(SearchMode.REFINE, prefs={'likes': ['old'], 'avoids': []})
+        self.run_of(SearchMode.REFINE, RunStatus.EMPTY, self.PREFS)
+        self.assertEqual(object_to_json(self.obj)['preferences'], self.PREFS)
+
+    def test_null_when_latest_finished_is_plain_search(self):
+        self.run_of(SearchMode.REFINE, prefs=self.PREFS)
+        self.run_of(SearchMode.SEARCH)
+        self.assertIsNone(object_to_json(self.obj)['preferences'])
+
+    def test_null_when_none_or_empty(self):
+        self.assertIsNone(object_to_json(self.obj)['preferences'])
+        self.run_of(SearchMode.REFINE, prefs={'likes': [], 'avoids': []})
+        self.assertIsNone(object_to_json(self.obj)['preferences'])
+
+    def test_running_runs_are_ignored(self):
+        self.run_of(SearchMode.REFINE, prefs=self.PREFS)
+        self.run_of(SearchMode.REFINE, RunStatus.RUNNING, {'likes': ['x'], 'avoids': []})
+        self.run_of(SearchMode.SEARCH, RunStatus.QUEUED)
+        self.assertEqual(object_to_json(self.obj)['preferences'], self.PREFS)
+
+    def test_state_snapshot_includes_it(self):
+        self.run_of(SearchMode.REFINE, prefs=self.PREFS)
+        other = make_object('obj2', name='Floor lamp')
+        self.run_of(SearchMode.SEARCH, obj=other)
+        objs = {o['id']: o for o in self.client.get('/api/state/').json()['objects']}
+        self.assertEqual(objs[self.obj.pk]['preferences'], self.PREFS)
+        self.assertIsNone(objs['obj2']['preferences'])
+        self.assertNotIn('preferences', SearchRun.objects.filter(object=self.obj).first().object_snapshot)
+
 
 class RefineEndpointTests(RefineBase):
     def setUp(self):

@@ -125,7 +125,7 @@ class ObjectTests(Base):
         self.assertEqual(
             set(o),
             {'id', 'name', 'dims', 'type', 'similarItems', 'source', 'candidateIds', 'search',
-             'votes', 'createdAt'},
+             'votes', 'preferences', 'createdAt'},
         )
         self.assertEqual(o['source'], 'search')
         self.assertEqual(o['search'], {'status': 'idle'})
@@ -489,7 +489,7 @@ class QueryCountTests(Base):
             # spaces, placements, objects, runs with accepted candidates
             # (the candidate query is skipped when there are none), cart
             # lines, merchant carts
-            with self.assertNumQueries(7):
+            with self.assertNumQueries(8):
                 r = self.client.get('/api/state/')
                 self.assertEqual(r.status_code, 200)
                 self.assertEqual(r.json()['candidates'], [])

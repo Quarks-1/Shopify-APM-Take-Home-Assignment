@@ -99,6 +99,7 @@ type Action =
   | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string; keepSelection?: boolean }
   | { type: "product/select"; objectId: string; productId: string }
   | { type: "votes/set"; objectId: string; votes: Record<string, ProductVote> }
+  | { type: "preferences/set"; objectId: string; preferences: SpaceObject["preferences"] }
   | { type: "cart/add"; objectIds: string[]; ids: string[] }
   | { type: "cart/set-qty"; lineId: string; qty: number }
   | { type: "cart/remove"; lineId: string }
@@ -260,6 +261,9 @@ function reducer(state: AppState, action: Action): AppState {
     case "votes/set":
       return mapObject(state, action.objectId, (o) => ({ ...o, votes: action.votes }));
 
+    case "preferences/set":
+      return mapObject(state, action.objectId, (o) => ({ ...o, preferences: action.preferences }));
+
     case "product/select": {
       const next = mapObject(state, action.objectId, (o) => ({
         ...o,
@@ -349,6 +353,8 @@ export interface AppActions {
     finishedAt?: string | null,
     opts?: { keepSelection?: boolean },
   ): void;
+  /** Local only: what the latest finished run's agent learned (`null` clears it). */
+  setPreferences(objectId: string, preferences: SpaceObject["preferences"]): void;
   selectProduct(objectId: string, productId: string): void;
   /** Thumbs up/down on a candidate (`null` clears the vote). */
   voteProduct(objectId: string, productId: string, vote: ProductVote | null): void;
@@ -793,6 +799,7 @@ export function createAppStore(): AppStore {
     },
 
     setSearchState: (id, search) => dispatch({ type: "search/set-state", id, search }),
+    setPreferences: (objectId, preferences) => dispatch({ type: "preferences/set", objectId, preferences }),
     applySearchResults(objectId, candidates, finishedAt, opts) {
       const obj = getObject(state, objectId);
       if (!obj) return;

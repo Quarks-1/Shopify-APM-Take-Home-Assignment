@@ -75,6 +75,8 @@ export interface SpaceObject {
   search: SearchState;
   /** Thumbs votes on candidates, keyed by product gid (`Product.productGid`). Backend-owned. */
   votes: Record<string, ProductVote>;
+  /** What the agent learned in the latest finished run, if it was a refine run. Backend-derived (read-only). */
+  preferences?: { likes: string[]; avoids: string[] } | null;
   createdAt: string;
 }
 

@@ -29,6 +29,7 @@ from .serializers import (
     generate_id,
     now,
     object_to_json,
+    preferences_by_object,
     votes_by_object,
     space_to_json,
     validate_import,
@@ -109,7 +110,8 @@ def state_candidates(objects):
 
 def _objects_json(objects):
     votes = votes_by_object(o.pk for o in objects)
-    return [object_to_json(o, votes.get(o.pk, {})) for o in objects]
+    prefs = preferences_by_object(o.pk for o in objects)
+    return [object_to_json(o, votes.get(o.pk, {}), prefs.get(o.pk)) for o in objects]
 
 
 @require_http_methods(['GET'])

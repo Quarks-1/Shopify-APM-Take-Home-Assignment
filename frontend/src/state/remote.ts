@@ -126,7 +126,7 @@ function fromApiObject(o: ApiObject, candidates: ApiCandidate[]): SpaceObject {
   const ids = candidates.map((c) => candidateProductId(c.id));
   // The newest run found nothing, so the candidates listed are an older run's: show none (keep the pick).
   const visible = rest.search.status === "empty" ? ids.filter((id) => id === selected) : ids;
-  return { ...rest, votes: rest.votes ?? {}, candidateIds: withSelectionFirst(visible, selected), selectedProductId: selected };
+  return { ...rest, votes: rest.votes ?? {}, preferences: rest.preferences ?? null, candidateIds: withSelectionFirst(visible, selected), selectedProductId: selected };
 }
 
 export function localOf(state: LocalState): LocalState {

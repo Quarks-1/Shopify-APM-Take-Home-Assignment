@@ -17,8 +17,6 @@ export interface ObjectSearchApi {
   isRunning(objectId: string): boolean;
   /** Title of the product a running "like" search is matching, once the backend has reported it. */
   likeTitle(objectId: string): string | undefined;
-  /** What the agent learned from the votes in the last finished refine run (this session only). */
-  preferences(objectId: string): { likes: string[]; avoids: string[] } | undefined;
 }
 
 const ObjectSearchContext = createContext<ObjectSearchApi | null>(null);
@@ -61,7 +59,6 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
   const { getState, enqueue, onReset } = useStoreInternals();
 
   const trackers = useRef(new Map<string, Tracker>());
-  const learned = useRef(new Map<string, { likes: string[]; avoids: string[] }>());
   // Bumped whenever a run starts or ends so isRunning consumers re-render.
   const [version, setVersion] = useState(0);
 
@@ -94,8 +91,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       const { objectId } = tracker;
       if (run.status === "done" || run.status === "empty") {
         const prefs = run.mode === "refine" ? run.preferences : undefined;
-        if (prefs && (prefs.likes.length > 0 || prefs.avoids.length > 0)) learned.current.set(objectId, prefs);
-        else learned.current.delete(objectId);
+        actions.setPreferences(objectId, prefs && (prefs.likes.length > 0 || prefs.avoids.length > 0) ? prefs : null);
       }
       stop(objectId);
       const obj = findObject(objectId);
@@ -289,7 +285,6 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       searchAll: (objectIds) => objectIds.forEach(engine.search),
       cancel: engine.cancel,
       isRunning: (objectId) => trackers.current.has(objectId),
-      preferences: (objectId) => learned.current.get(objectId),
       likeTitle: (objectId) => trackers.current.get(objectId)?.likeTitle,
     }),
     // `version` makes isRunning consumers re-render when a run starts or ends.

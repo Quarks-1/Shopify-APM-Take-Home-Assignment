@@ -185,7 +185,8 @@ def _stop(reason, run):
 def create_run(space_object, status=RunStatus.RUNNING, agent_mode='',
                mode=SearchMode.SEARCH, like_source=None, feedback=None, max_rounds=None):
     """A running run (CLI `start`, tests) or a queued one for the runner."""
-    snapshot = object_to_json(space_object)
+    snapshot = object_to_json(space_object, preferences=None)
+    snapshot.pop('preferences')  # derived from past runs, not a search constraint
     placement = space_object.placements.select_related('space').order_by('pk').first()
     if placement is not None:
         snapshot['space'] = {'type': placement.space.type, 'dims': placement.space.dims}

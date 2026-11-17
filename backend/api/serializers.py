@@ -36,8 +36,9 @@ OBJECT_KEYS = {
     'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
     # ignored. Selection changes only via POST /api/objects/<id>/select/;
-    # votes only via PUT /api/objects/<id>/votes/.
-    'selectedCandidateId', 'votes',
+    # votes only via PUT /api/objects/<id>/votes/. `preferences` is derived
+    # from the latest finished run.
+    'selectedCandidateId', 'votes', 'preferences',
 }
 
 
@@ -93,6 +94,28 @@ def votes_by_object(object_ids):
     return out
 
 
+def preferences_by_object(object_ids):
+    """{object_id: {likes, avoids}} in one query: only objects whose latest
+    finished (done/empty) run is a refine run that learned something."""
+    from .models import RunStatus, SearchMode, SearchRun
+
+    ids = list(object_ids)
+    latest = {}
+    for oid, mode, prefs in SearchRun.objects.filter(
+        object_id__in=ids, status__in=[RunStatus.DONE, RunStatus.EMPTY]
+    ).order_by('-created_at', '-pk').values_list('object_id', 'mode', 'preferences'):
+        latest.setdefault(oid, (mode, prefs))  # first row per object is the newest
+    out = {}
+    for oid, (mode, prefs) in latest.items():
+        if mode != SearchMode.REFINE or not isinstance(prefs, dict):
+            continue
+        likes = list(prefs.get('likes') or [])
+        avoids = list(prefs.get('avoids') or [])
+        if likes or avoids:
+            out[oid] = {'likes': likes, 'avoids': avoids}
+    return out
+
+
 def vote_product_snapshot(c):
     """The denormalized candidate snapshot stored on a ProductVote."""
     return {
@@ -110,11 +133,18 @@ def vote_product_snapshot(c):
     }
 
 
-def object_to_json(obj, votes=None):
+_UNSET = object()
+
+
+def object_to_json(obj, votes=None, preferences=_UNSET):
     """`votes` is the object's {productGid: vote} when the caller batched it
-    (see votes_by_object); otherwise it is queried here."""
+    (see votes_by_object); otherwise it is queried here. `preferences` is the
+    object's learned taste (see preferences_by_object, None when it has none),
+    queried here when not passed."""
     if votes is None:
         votes = votes_by_object([obj.pk]).get(obj.pk, {})
+    if preferences is _UNSET:
+        preferences = preferences_by_object([obj.pk]).get(obj.pk)
     out = {'id': obj.id, 'name': obj.name, 'dims': dims_to_json(obj.dims)}
     if obj.weight is not None:
         out['weight'] = obj.weight
@@ -144,6 +174,7 @@ def object_to_json(obj, votes=None):
     if obj.selected_candidate_id is not None:
         out['selectedCandidateId'] = obj.selected_candidate_id
     out['votes'] = votes
+    out['preferences'] = preferences
     out['createdAt'] = iso(obj.created_at)
     return out
 

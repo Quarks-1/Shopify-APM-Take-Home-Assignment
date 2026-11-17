@@ -99,7 +99,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const likedCount = voteValues.filter((v) => v === "up").length;
   const dislikedCount = voteValues.length - likedCount;
   const refineHint = voteValues.length > 0 ? `Using ${likedCount} liked, ${dislikedCount} disliked` : "Re-run using your thumbs votes";
-  const learned = search.preferences(objectId);
+  const learned = object.preferences;
   const learnedText = learned
     ? [
         learned.likes.length > 0 ? `likes ${learned.likes.join(", ")}` : null,
