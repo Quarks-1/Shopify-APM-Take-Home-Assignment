@@ -99,16 +99,6 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const likedCount = voteValues.filter((v) => v === "up").length;
   const dislikedCount = voteValues.length - likedCount;
   const refineHint = voteValues.length > 0 ? `Using ${likedCount} liked, ${dislikedCount} disliked` : "Re-run using your thumbs votes";
-  const learned = object.preferences;
-  const learnedText = learned
-    ? [
-        learned.likes.length > 0 ? `likes ${learned.likes.join(", ")}` : null,
-        learned.avoids.length > 0 ? `avoids ${learned.avoids.join(", ")}` : null,
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    : "";
-
   const voteOf = (product: { productGid?: string }) => (product.productGid ? object.votes?.[product.productGid] : undefined);
 
   const likeCandidateId = candidateIdOf(object.selectedProductId);
@@ -154,11 +144,6 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
           </Chip>
         ) : null}
       </div>
-      {learnedText && !running ? (
-        <p className="min-w-0 max-w-full basis-full truncate text-caption-1-medium text-text-tertiary" title={learnedText}>
-          Learned: {learnedText}
-        </p>
-      ) : null}
     </div>
   );
 
