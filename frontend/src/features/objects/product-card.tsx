@@ -101,7 +101,7 @@ function ProductDetails({
           </Chip>
         ) : null}
       </span>
-      <span className="flex min-w-0 flex-col gap-1 text-start">
+      <span className="mt-auto flex min-w-0 flex-col gap-1 text-start">
         <span className="truncate text-body-medium text-text-primary">{product.title}</span>
         <span className="flex min-h-5 items-center justify-between gap-2">
           <span className="min-w-0 flex-1 truncate text-body-2-regular text-text-secondary">{store?.name}</span>
@@ -112,10 +112,6 @@ function ProductDetails({
         {priceNote ? (
           <Chip color="yellow" variant="caption" className="self-start">
             {priceNote === "over" ? "Slightly over budget" : "Slightly under minimum"}
-          </Chip>
-        ) : variant !== "cart" ? (
-          <Chip color="yellow" variant="caption" aria-hidden className="invisible self-start">
-            Slightly over budget
           </Chip>
         ) : null}
         <span className="flex items-center justify-between gap-2">
