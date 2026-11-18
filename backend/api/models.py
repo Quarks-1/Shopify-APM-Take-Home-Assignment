@@ -61,6 +61,9 @@ class Space(models.Model):
     unit = models.CharField(max_length=4, choices=LengthUnit.choices)
     dims = models.JSONField()
     weight_limit = models.FloatField(null=True, blank=True)
+    vibe_board = models.ForeignKey(
+        'VibeBoard', null=True, blank=True, on_delete=models.SET_NULL, related_name='spaces'
+    )
     position = models.IntegerField(default=0)
     # Set explicitly (not auto_now) so imports keep client timestamps.
     created_at = models.DateTimeField()
@@ -340,10 +343,32 @@ class InspirationSource(models.TextChoices):
     PINTEREST = 'pinterest', 'Pinterest'
 
 
-class VibeImport(models.Model):
-    """One Pinterest board import for a space ("import my vibes")."""
+class VibeBoard(models.Model):
+    """An imported Pinterest board in the shared workspace library."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='vibe_imports')
+    board_url = models.TextField()
+    resolved_url = models.TextField(blank=True, default='', db_index=True)
+    title = models.CharField(max_length=200, blank=True, default='')
+    pins_usable = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+    def __str__(self):
+        return f'vibe board {self.title or self.board_url} ({self.id})'
+
+
+class VibeImport(models.Model):
+    """One Pinterest board import ("import my vibes")."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    space = models.ForeignKey(
+        Space, null=True, blank=True, on_delete=models.SET_NULL, related_name='vibe_imports'
+    )
+    board = models.ForeignKey(
+        VibeBoard, null=True, blank=True, on_delete=models.SET_NULL, related_name='imports'
+    )
     board_url = models.TextField()
     resolved_url = models.TextField(blank=True, default='')
     board_title = models.CharField(max_length=200, blank=True, default='')
@@ -377,8 +402,8 @@ class VibeImport(models.Model):
 
 
 class SpaceInspiration(models.Model):
-    """A pin from a board that steers searches for its space (thumbs up)."""
-    space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name='inspirations')
+    """A pin on an imported board that steers searches for spaces using that board."""
+    board = models.ForeignKey(VibeBoard, on_delete=models.CASCADE, related_name='inspirations')
     vibe_import = models.ForeignKey(
         VibeImport, null=True, blank=True, on_delete=models.SET_NULL, related_name='inspirations'
     )
@@ -389,7 +414,7 @@ class SpaceInspiration(models.Model):
     pin_id = models.CharField(max_length=64)
     pin_url = models.TextField()
     image_url = models.TextField(blank=True, default='')
-    # Relative to the vibes dir, e.g. "<space_id>/<pin_id>.jpg".
+    # Relative to the vibes dir, e.g. "boards/<board_id>/<pin_id>.jpg".
     image_path = models.CharField(max_length=200, blank=True, default='')
     # Untrusted Pinterest text ({title, description, altText}).
     pin_text = models.JSONField(default=dict)
@@ -414,11 +439,11 @@ class SpaceInspiration(models.Model):
     class Meta:
         ordering = ['board_rank', 'pk']
         constraints = [
-            models.UniqueConstraint(fields=['space', 'pin_id'], name='unique_space_pin')
+            models.UniqueConstraint(fields=['board', 'pin_id'], name='unique_board_pin')
         ]
 
     def __str__(self):
-        return f'inspiration {self.pin_id} ({self.space_id})'
+        return f'inspiration {self.pin_id} ({self.board_id})'
 
 
 class CartLine(models.Model):

@@ -87,6 +87,7 @@ type Action =
   | { type: "local/replace"; local: LocalState }
   | { type: "space/create"; id: string; input: SpaceInput; now: string }
   | { type: "space/update"; id: string; patch: SpacePatch; now: string }
+  | { type: "space/set-vibe-board"; id: string; vibeBoardId: string | undefined }
   | { type: "space/delete"; id: string }
   | { type: "placement/place"; spaceId: string; objectId: string; pos: Pos; now: string }
   | { type: "placement/move"; spaceId: string; objectId: string; pos: Pos; now: string }
@@ -186,6 +187,10 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "space/update":
       return mapSpace(state, action.id, (s) => ({ ...s, ...action.patch, updatedAt: action.now }));
+    case "space/set-vibe-board":
+      return mapSpace(state, action.id, (s) =>
+        s.vibeBoardId === action.vibeBoardId ? s : { ...s, vibeBoardId: action.vibeBoardId },
+      );
     case "space/delete":
       return { ...state, spaces: state.spaces.filter((s) => s.id !== action.id) };
 
@@ -332,6 +337,8 @@ function reducer(state: AppState, action: Action): AppState {
 export interface AppActions {
   createSpace(input: SpaceInput): string;
   updateSpace(id: string, patch: SpacePatch): void;
+  /** Local only: mirrors `vibeBoardId` attached by a background vibe import worker. */
+  setSpaceVibeBoard(id: string, vibeBoardId: string | undefined): void;
   deleteSpace(id: string): void;
 
   placeObject(spaceId: string, objectId: string, pos?: Pos): void;
@@ -723,6 +730,7 @@ export function createAppStore(): AppStore {
       const body = next ? spacePatchBody(prev, next) : null;
       if (body) write(() => api.updateSpace(id, body));
     },
+    setSpaceVibeBoard: (id, vibeBoardId) => dispatch({ type: "space/set-vibe-board", id, vibeBoardId }),
     deleteSpace(id) {
       if (!getSpace(state, id)) return;
       dispatch({ type: "space/delete", id });

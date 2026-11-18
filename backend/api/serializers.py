@@ -1,6 +1,7 @@
 import math
 import re
 import secrets
+import uuid
 from datetime import datetime, timezone as dt_timezone
 
 from django.utils import timezone
@@ -16,6 +17,7 @@ from .models import (
     SpaceType,
     Style,
     Verdict,
+    VibeBoard,
 )
 
 ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
@@ -29,7 +31,7 @@ MATERIALS = set(Material.values)
 STYLES = set(Style.values)
 SOURCES = set(ObjectSource.values)
 
-SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
+SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit', 'vibeBoardId'}
 OBJECT_KEYS = {
     'name', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
     'priceMinFuzzy', 'priceLimitFuzzy', 'minRating',
@@ -73,6 +75,8 @@ def space_to_json(space):
     }
     if space.weight_limit is not None:
         out['weightLimit'] = space.weight_limit
+    if space.vibe_board_id is not None:
+        out['vibeBoardId'] = str(space.vibe_board_id)
     out['placements'] = [
         {'objectId': p.object_id, 'x': p.x, 'y': p.y}
         for p in space.placements.all()
@@ -646,6 +650,26 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
         present, v = _nullable_num(data, 'weightLimit', prefix + 'weightLimit', errors)
         if present:
             out['weight_limit'] = v
+        if has('vibeBoardId'):
+            raw_bid = data['vibeBoardId']
+            if raw_bid is None:
+                out['vibe_board'] = None
+            elif not isinstance(raw_bid, str):
+                errors[prefix + 'vibeBoardId'] = 'must be a UUID string or null'
+            else:
+                try:
+                    parsed_bid = uuid.UUID(raw_bid)
+                except ValueError:
+                    errors[prefix + 'vibeBoardId'] = 'must be a valid UUID'
+                else:
+                    board = VibeBoard.objects.filter(pk=parsed_bid).first()
+                    if board is None:
+                        if allow_timestamps:
+                            out['vibe_board'] = None
+                        else:
+                            errors[prefix + 'vibeBoardId'] = 'unknown vibe board'
+                    else:
+                        out['vibe_board'] = board
     else:
         present, v = _nullable_num(data, 'weight', prefix + 'weight', errors)
         if present:
@@ -847,10 +871,27 @@ def now():
 
 # ---------------------------------------------------------------- vibe imports
 
+def vibe_board_to_json(board, *, pin_count=None, inspirations=None):
+    out = {
+        'id': str(board.id),
+        'boardUrl': board.board_url,
+        'resolvedUrl': board.resolved_url,
+        'title': board.title,
+        'pinCount': len(inspirations) if inspirations is not None else (pin_count or 0),
+        'usableCount': board.pins_usable,
+        'createdAt': iso(board.created_at),
+        'updatedAt': iso(board.updated_at),
+    }
+    if inspirations is not None:
+        out['inspirations'] = inspirations
+    return out
+
+
 def vibe_import_to_json(imp):
     return {
         'id': str(imp.id),
         'spaceId': imp.space_id,
+        'boardId': str(imp.board_id) if imp.board_id else None,
         'boardUrl': imp.board_url,
         'boardTitle': imp.board_title,
         'status': imp.status,
@@ -879,7 +920,7 @@ def vibe_import_to_json(imp):
     }
 
 
-def inspiration_to_json(row):
+def inspiration_to_json(row, space_id=None):
     from .vibes.primary_type import primary_type
 
     return {
@@ -896,9 +937,10 @@ def inspiration_to_json(row):
         'vote': row.vote,
         'source': row.source,
         'importId': str(row.vibe_import_id) if row.vibe_import_id else None,
+        'boardId': str(row.board_id),
         'categorized': row.categorized_at is not None,
         'primaryType': primary_type(row.item, row.categories or []),
-        'spaceId': row.space_id,
+        'spaceId': space_id,
     }
 
 

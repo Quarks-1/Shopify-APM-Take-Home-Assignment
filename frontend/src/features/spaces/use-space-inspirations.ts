@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/base/toast/toast";
 import { ApiError, deleteSpaceInspiration, listSpaceInspirations, type ApiInspiration } from "@/lib/api";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
+import { useAppState } from "@/state/app-store";
+import { getSpace } from "@/state/selectors";
 import { useStoreInternals } from "@/state/store-context";
 
 export interface SpaceInspirationsResult {
@@ -12,10 +14,11 @@ export interface SpaceInspirationsResult {
   retry(): void;
 }
 
-/** One space's categorized pins. Refetches when its vibe import finishes (done or failed); keeps old data meanwhile. */
+/** One space's categorized pins (from its chosen board). Refetches when its chosen board or import changes. */
 export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
+  const state = useAppState();
   const { viewFor } = useVibeImport();
-  const { onReset, onResetSettled, isResetting } = useStoreInternals();
+  const { enqueue, onReset, onResetSettled, isResetting } = useStoreInternals();
   const [loaded, setLoaded] = useState<{ spaceId: string; list: ApiInspiration[] } | null>(null);
   // Data from a previous space never shows for this one.
   const data = loaded?.spaceId === spaceId ? loaded.list : null;
@@ -37,6 +40,7 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
     dataRef.current = data;
   }, [data]);
 
+  const vibeBoardId = getSpace(state, spaceId)?.vibeBoardId ?? "";
   const view = viewFor(spaceId);
   const doneKey = view?.kind === "done" ? view.imp.id : view?.kind === "failed" && view.imp ? view.imp.id : "";
 
@@ -44,9 +48,14 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
     // The backend is mid-reset and would answer with the old pins; the settle refetch below covers it.
     if (isResetting()) return;
     const controller = new AbortController();
-    listSpaceInspirations(spaceId, controller.signal)
-      .then((list) => {
+    // Wait for pending space writes (such as selecting a board in Space settings) before reading.
+    enqueue(async () => {})
+      .then(() => {
         if (controller.signal.aborted) return;
+        return listSpaceInspirations(spaceId, controller.signal);
+      })
+      .then((list) => {
+        if (!list || controller.signal.aborted) return;
         setData(list.filter((p) => p.categorized));
         setFailed(false);
       })
@@ -54,7 +63,7 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spaceId, doneKey, attempt, resetEpoch, isResetting, setData]);
+  }, [spaceId, vibeBoardId, doneKey, attempt, resetEpoch, isResetting, enqueue, setData]);
 
   // Reset demo data: the seed has no boards, so show an empty list at once. Any in-flight fetch is aborted
   // (the epoch bump re-runs the effect, which skips fetching while the reset is pending); once the backend

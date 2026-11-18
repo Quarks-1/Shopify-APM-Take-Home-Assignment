@@ -212,6 +212,13 @@ def workspace_overview(_request):
                     'description': 'Rendered image bytes (once the render is done)',
                     'status': 'operational',
                 },
+                {
+                    'id': 'vibe-boards',
+                    'method': 'GET',
+                    'path': '/api/vibe-boards/',
+                    'description': 'List imported Pinterest boards in the shared workspace library',
+                    'status': 'operational',
+                },
             ],
         }
     )

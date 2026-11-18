@@ -2,16 +2,17 @@
 claude: no network, no real Claude."""
 import threading
 import time
-from pathlib import Path
 from unittest import mock
 
 from django.test import TestCase
 
-from .models import Space, SpaceInspiration, VibeImport, VibeImportStatus, VibeImportStep
+from .models import Space, SpaceInspiration, VibeBoard, VibeImport, VibeImportStatus, VibeImportStep
 from .test_fixtures.vibes_helpers import (
     BOARD_URL, FakeClient, TempVibes, jpeg_bytes, make_space, pins_for, raw_pin,
 )
 from .vibes import categorize, importer, paths
+
+OTHER_URL = 'https://www.pinterest.com/someuser/japandi-bedroom/'
 
 
 def make_import(space, url=BOARD_URL):
@@ -24,8 +25,10 @@ class ImportBase(TempVibes, TestCase):
         self.space = make_space()
 
     def run_import(self, client, space=None, url=BOARD_URL):
-        imp = make_import(space or self.space, url)
+        target_space = space or self.space
+        imp = make_import(target_space, url)
         importer.execute(imp.pk, client_factory=lambda: client)
+        target_space.refresh_from_db()
         return VibeImport.objects.filter(pk=imp.pk).first()
 
 
@@ -61,19 +64,21 @@ class ImportFlowTests(ImportBase):
         self.assertEqual((imp.batches_total, imp.batches_done, imp.batches_failed), (3, 3, 0))
         self.assertEqual(imp.pins_usable, 40)
         self.assertEqual((imp.board_title, imp.resolved_url), ('Cozy living', BOARD_URL))
+        self.assertIsNotNone(imp.board_id)
+        self.assertEqual(self.space.vibe_board_id, imp.board_id)
         self.assertIsNotNone(imp.finished_at)
         self.assertEqual(imp.error, '')
         self.assertIsNone(client.on_image)
 
-        rows = list(SpaceInspiration.objects.filter(space=self.space))
+        rows = list(SpaceInspiration.objects.filter(board_id=imp.board_id))
         self.assertEqual(len(rows), 40)
         for row in rows:
             self.assertEqual((row.vote, row.source, row.vibe_import_id), ('up', 'pinterest', imp.pk))
             self.assertIsNotNone(row.categorized_at)
-            self.assertEqual(row.image_path, f'space1/{row.pin_id}.jpg')
+            self.assertEqual(row.image_path, f'boards/{imp.board_id}/{row.pin_id}.jpg')
             self.assertTrue(paths.resolve_inside(row.image_path).is_file())
             self.assertEqual(set(row.pin_text), {'title', 'description', 'altText'})
-        first = SpaceInspiration.objects.get(space=self.space, pin_id='p000')
+        first = SpaceInspiration.objects.get(board_id=imp.board_id, pin_id='p000')
         self.assertEqual((first.categories, first.item, first.board_rank),
                          (['furniture', 'lighting'], 'sofa', 0))
         self.assertEqual(first.model_patterns, ['zebra print'])
@@ -85,8 +90,8 @@ class ImportFlowTests(ImportBase):
         self.assertTrue([n for n in leftovers if n.endswith('.out.json')])
 
     def test_images_are_normalized_jpegs(self):
-        self.run_import(FakeClient(pins_for('p', 2)))
-        data = (paths.space_dir('space1') / 'p000.jpg').read_bytes()
+        imp = self.run_import(FakeClient(pins_for('p', 2)))
+        data = (paths.board_dir(imp.board_id) / 'p000.jpg').read_bytes()
         self.assertEqual(data[:2], b'\xff\xd8')
 
     def test_private_board(self):
@@ -94,12 +99,14 @@ class ImportFlowTests(ImportBase):
         self.assertEqual(imp.status, VibeImportStatus.FAILED)
         self.assertEqual(imp.error_code, 'private_board')
         self.assertEqual(imp.error, 'This board is private. Make it public on Pinterest and try again.')
+        self.assertEqual(VibeBoard.objects.count(), 0)
         self.assertEqual(SpaceInspiration.objects.count(), 0)
 
     def test_empty_board(self):
         imp = self.run_import(FakeClient([]))
         self.assertEqual((imp.status, imp.error_code), (VibeImportStatus.FAILED, 'empty_board'))
         self.assertEqual(imp.error, 'This board has no pins we can use.')
+        self.assertEqual(VibeBoard.objects.count(), 0)
 
     def test_network_error_while_reading(self):
         import urllib.error
@@ -133,7 +140,7 @@ class ImportFlowTests(ImportBase):
         self.assertEqual((imp.status, imp.error_code), (VibeImportStatus.FAILED, 'sort_failed'))
         self.assertEqual(imp.error, "We couldn't sort your pins right now. Try again in a bit.")
         self.assertEqual((imp.batches_total, imp.batches_done, imp.batches_failed), (2, 0, 2))
-        rows = SpaceInspiration.objects.filter(space=self.space)
+        rows = SpaceInspiration.objects.filter(board_id=imp.board_id)
         self.assertEqual(rows.count(), 20)
         self.assertFalse(rows.exclude(categorized_at=None).exists())
 
@@ -156,90 +163,100 @@ class ImportFlowTests(ImportBase):
 
     def test_reimport_same_board_skips_everything(self):
         pins = pins_for('p', 20)
-        self.run_import(FakeClient(pins))
+        first = self.run_import(FakeClient(pins))
         client = FakeClient(pins)
         imp = self.run_import(client)
         self.assertEqual(imp.status, VibeImportStatus.DONE)
+        self.assertEqual(imp.board_id, first.board_id)
         self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (20, 20, 0))
         self.assertEqual((imp.batches_total, imp.pins_categorized), (0, 0))
         self.assertEqual(client.image_requests, [])
-        self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 20)
+        self.assertEqual(SpaceInspiration.objects.filter(board_id=imp.board_id).count(), 20)
         self.assertEqual(imp.pins_usable, 20)
 
-    def test_second_board_replaces_the_first(self):
-        first = self.run_import(FakeClient(pins_for('a', 5)))
-        old_files = [paths.space_dir('space1') / f'a{i:03d}.jpg' for i in range(5)]
+    def test_second_board_switches_space_and_keeps_first_board_in_library(self):
+        first = self.run_import(FakeClient(pins_for('a', 5), title='Board A'), url=BOARD_URL)
+        old_files = [paths.board_dir(first.board_id) / f'a{i:03d}.jpg' for i in range(5)]
         self.assertTrue(all(f.is_file() for f in old_files))
-        imp = self.run_import(FakeClient(pins_for('b', 4)))
-        self.assertEqual(imp.status, VibeImportStatus.DONE)
-        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (4, 0, 4))
-        rows = SpaceInspiration.objects.filter(space=self.space)
-        self.assertEqual(sorted(rows.values_list('pin_id', flat=True)),
-                         ['b000', 'b001', 'b002', 'b003'])
-        self.assertEqual({r.vibe_import_id for r in rows}, {imp.pk})
-        self.assertNotEqual(first.pk, imp.pk)
-        self.assertEqual(imp.pins_usable, 4)
-        self.assertFalse(any(f.exists() for f in old_files))
-        self.assertTrue((paths.space_dir('space1') / 'b000.jpg').is_file())
 
-    def test_overlapping_pins_are_kept_and_repointed(self):
+        imp = self.run_import(FakeClient(pins_for('b', 4), title='Board B'), url=OTHER_URL)
+        self.assertEqual(imp.status, VibeImportStatus.DONE)
+        self.assertNotEqual(first.board_id, imp.board_id)
+        self.assertEqual(self.space.vibe_board_id, imp.board_id)
+        self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (4, 0, 4))
+
+        # The new board has its 4 pins, AND the first board still has all 5 of its pins & files.
+        self.assertEqual(
+            sorted(SpaceInspiration.objects.filter(board_id=imp.board_id).values_list('pin_id', flat=True)),
+            ['b000', 'b001', 'b002', 'b003'],
+        )
+        self.assertEqual(
+            sorted(SpaceInspiration.objects.filter(board_id=first.board_id).values_list('pin_id', flat=True)),
+            ['a000', 'a001', 'a002', 'a003', 'a004'],
+        )
+        self.assertTrue(all(f.is_file() for f in old_files))
+        self.assertTrue((paths.board_dir(imp.board_id) / 'b000.jpg').is_file())
+        self.assertEqual(VibeBoard.objects.count(), 2)
+
+    def test_reimporting_same_board_updates_ranks_and_prunes_removed_pins(self):
         first = self.run_import(FakeClient(pins_for('a', 5)))
-        kept_before = SpaceInspiration.objects.get(space=self.space, pin_id='a001')
-        # New board: b000, b001, then a001 and a000 (reversed ranks).
+        kept_before = SpaceInspiration.objects.get(board_id=first.board_id, pin_id='a001')
+        # Same board URL updated on Pinterest: b000, b001, then a001 and a000 (reversed ranks).
         board = pins_for('b', 2) + [raw_pin('a001', 'sofa 1'), raw_pin('a000', 'sofa 0')]
         client = FakeClient(board)
         imp = self.run_import(client)
         self.assertEqual(imp.status, VibeImportStatus.DONE)
+        self.assertEqual(imp.board_id, first.board_id)
         self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (4, 2, 2))
         self.assertEqual(len(client.image_requests), 2)  # no re-download of a000 / a001
-        rows = {r.pin_id: r for r in SpaceInspiration.objects.filter(space=self.space)}
+        rows = {r.pin_id: r for r in SpaceInspiration.objects.filter(board_id=imp.board_id)}
         self.assertEqual(sorted(rows), ['a000', 'a001', 'b000', 'b001'])
         self.assertEqual({r.vibe_import_id for r in rows.values()}, {imp.pk})
-        self.assertNotEqual(first.pk, imp.pk)
         self.assertEqual((rows['b000'].board_rank, rows['b001'].board_rank,
                           rows['a001'].board_rank, rows['a000'].board_rank), (0, 1, 2, 3))
         self.assertEqual(rows['a001'].pk, kept_before.pk)
-        self.assertIsNotNone(rows['a001'].categorized_at)  # keeps its labels
-        self.assertTrue((paths.space_dir('space1') / 'a001.jpg').is_file())
-        self.assertFalse((paths.space_dir('space1') / 'a002.jpg').exists())
+        self.assertIsNotNone(rows['a001'].categorized_at)
+        self.assertTrue((paths.board_dir(imp.board_id) / 'a001.jpg').is_file())
+        self.assertFalse((paths.board_dir(imp.board_id) / 'a002.jpg').exists())
 
-    def test_failed_reads_leave_the_old_pins_intact(self):
+    def test_failed_reads_leave_the_spaces_selected_board_intact(self):
         import urllib.error
-        self.run_import(FakeClient(pins_for('a', 3)))
+        first = self.run_import(FakeClient(pins_for('a', 3)))
         for client in (
             FakeClient(pins_for('b', 3), privacy='secret'),
             FakeClient(pins_for('b', 3), load_error=urllib.error.URLError('down')),
             FakeClient([]),  # empty board
         ):
-            imp = self.run_import(client)
+            imp = self.run_import(client, url=OTHER_URL)
             self.assertEqual(imp.status, VibeImportStatus.FAILED)
-            self.assertEqual(sorted(SpaceInspiration.objects.filter(space=self.space)
-                                    .values_list('pin_id', flat=True)),
-                             ['a000', 'a001', 'a002'])
+            self.assertEqual(self.space.vibe_board_id, first.board_id)
+            self.assertEqual(VibeBoard.objects.count(), 1)
+            self.assertEqual(
+                sorted(SpaceInspiration.objects.filter(board_id=first.board_id)
+                       .values_list('pin_id', flat=True)),
+                ['a000', 'a001', 'a002'],
+            )
             for i in range(3):
-                self.assertTrue((paths.space_dir('space1') / f'a{i:03d}.jpg').is_file())
+                self.assertTrue((paths.board_dir(first.board_id) / f'a{i:03d}.jpg').is_file())
 
     def test_reimport_after_pins_left_the_board_removes_them(self):
-        self.run_import(FakeClient(pins_for('p', 5)))
+        first = self.run_import(FakeClient(pins_for('p', 5)))
         imp = self.run_import(FakeClient(pins_for('p', 3)))
         self.assertEqual((imp.pins_found, imp.pins_skipped, imp.pins_downloaded), (3, 3, 0))
-        self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 3)
-        self.assertFalse((paths.space_dir('space1') / 'p004.jpg').exists())
+        self.assertEqual(SpaceInspiration.objects.filter(board_id=first.board_id).count(), 3)
+        self.assertFalse((paths.board_dir(first.board_id) / 'p004.jpg').exists())
         self.assertEqual(imp.pins_usable, 3)
 
-    def test_pruning_is_per_space(self):
+    def test_same_board_url_on_another_space_reuses_shared_board_without_redownloading(self):
         other = make_space('space2')
-        self.run_import(FakeClient(pins_for('a', 3)), space=other)
-        self.run_import(FakeClient(pins_for('a', 3)))
-        self.run_import(FakeClient(pins_for('b', 2)))
-        self.assertEqual(sorted(SpaceInspiration.objects.filter(space=self.space)
-                                .values_list('pin_id', flat=True)), ['b000', 'b001'])
-        theirs = SpaceInspiration.objects.filter(space=other)
-        self.assertEqual(sorted(theirs.values_list('pin_id', flat=True)), ['a000', 'a001', 'a002'])
-        self.assertNotIn(None, theirs.values_list('vibe_import_id', flat=True))
-        for i in range(3):
-            self.assertTrue((paths.space_dir('space2') / f'a{i:03d}.jpg').is_file())
-        self.assertFalse((paths.space_dir('space1') / 'a000.jpg').exists())
+        pins = pins_for('p', 3)
+        first = self.run_import(FakeClient(pins))
+        second_client = FakeClient(pins)
+        imp = self.run_import(second_client, space=other)
+        self.assertEqual(imp.board_id, first.board_id)
+        self.assertEqual(other.vibe_board_id, first.board_id)
+        self.assertEqual(imp.pins_skipped, 3)
+        self.assertEqual(second_client.image_requests, [])
 
     def test_pruning_never_deletes_outside_the_vibes_dir(self):
         outside = self.var / 'precious.jpg'
@@ -249,15 +266,6 @@ class ImportFlowTests(ImportBase):
         self.run_import(FakeClient(pins_for('b', 1)))
         self.assertTrue(outside.is_file())
         self.assertFalse(SpaceInspiration.objects.filter(pin_id='a000').exists())
-
-    def test_other_spaces_pins_are_independent(self):
-        other = make_space('space2')
-        pins = pins_for('p', 3)
-        self.run_import(FakeClient(pins))
-        imp = self.run_import(FakeClient(pins), space=other)
-        self.assertEqual(imp.pins_skipped, 0)
-        self.assertEqual(SpaceInspiration.objects.filter(space=other).count(), 3)
-        self.assertTrue((paths.space_dir('space2') / 'p000.jpg').is_file())
 
     def test_queued_import_is_promoted_by_execute(self):
         imp = self.run_import(FakeClient(pins_for('p', 1)))
@@ -281,6 +289,7 @@ class ImportGoneTests(ImportBase):
         imp = make_import(self.space)
         importer.execute(imp.pk, client_factory=lambda: client)  # must not raise
         self.assertFalse(VibeImport.objects.filter(pk=imp.pk).exists())
+        self.assertEqual(VibeBoard.objects.count(), 0)
         self.assertEqual(client.image_requests, [])
 
     def test_space_deleted_while_downloading_exits_quietly_and_cleans_up(self):
@@ -295,8 +304,9 @@ class ImportGoneTests(ImportBase):
         batch.assert_not_called()
         self.assertEqual(len(client.image_requests), 3)
         self.assertFalse(VibeImport.objects.filter(pk=imp.pk).exists())
+        self.assertEqual(VibeBoard.objects.count(), 0)
         self.assertEqual(SpaceInspiration.objects.count(), 0)
-        self.assertFalse(paths.space_dir('space1').exists())
+        self.assertFalse(paths.boards_dir().exists() and any(paths.boards_dir().iterdir()))
 
     def test_sigterm_flag_stops_the_import(self):
         def stop(n):
@@ -313,8 +323,6 @@ class ImportGoneTests(ImportBase):
 
         imp = make_import(self.space)
 
-        # Flip the status on the main thread's connection, from inside the
-        # second poll of the sorting loop (a worker thread can't see this TestCase's data).
         real_wait = importer.wait
         calls = []
 

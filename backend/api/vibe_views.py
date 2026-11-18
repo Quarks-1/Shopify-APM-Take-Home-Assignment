@@ -1,13 +1,20 @@
-"""Pinterest "vibes" endpoints: start/inspect/dismiss board imports and list
-a space's inspiration pins."""
+"""Pinterest "vibes" endpoints: start/inspect/dismiss board imports, list
+imported boards, and list/delete inspiration pins."""
+from collections import defaultdict
 import logging
 
+from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 
-from .models import SpaceInspiration, Space, VibeImport, VibeImportStatus
-from .serializers import inspiration_to_json, validate_vibe_import, vibe_import_to_json
-from .state_views import _body, _error, _json_view, _not_found
+from .models import Space, SpaceInspiration, VibeBoard, VibeImport, VibeImportStatus
+from .serializers import (
+    inspiration_to_json,
+    validate_vibe_import,
+    vibe_board_to_json,
+    vibe_import_to_json,
+)
+from .state_views import _body, _json_view, _not_found
 from .vibes import importer
 
 logger = logging.getLogger(__name__)
@@ -52,7 +59,9 @@ def vibe_imports(request):
     """`?pending=1`: the newest non-dismissed import of each space."""
     _housekeeping()
     newest = {}
-    for imp in VibeImport.objects.filter(dismissed=False).order_by('-created_at', '-pk'):
+    for imp in VibeImport.objects.filter(
+        dismissed=False, space_id__isnull=False
+    ).order_by('-created_at', '-pk'):
         newest.setdefault(imp.space_id, imp)
     imports = sorted(newest.values(), key=lambda i: i.created_at)
     return JsonResponse({'imports': [vibe_import_to_json(i) for i in imports]})
@@ -83,45 +92,89 @@ def vibe_import_dismiss(request, import_id):
 
 @_json_view
 @require_http_methods(['GET'])
-def space_inspirations(request, space_id):
-    if not Space.objects.filter(pk=space_id).exists():
+def vibe_boards(_request):
+    """Every imported board with at least one sorted pin, newest first."""
+    boards = (
+        VibeBoard.objects.annotate(
+            categorized_count=Count(
+                'inspirations', filter=Q(inspirations__categorized_at__isnull=False)
+            )
+        )
+        .filter(categorized_count__gt=0)
+        .order_by('-created_at', '-pk')
+    )
+    return JsonResponse(
+        {'boards': [vibe_board_to_json(b, pin_count=b.categorized_count) for b in boards]}
+    )
+
+
+@_json_view
+@require_http_methods(['GET'])
+def space_inspirations(_request, space_id):
+    space = Space.objects.filter(pk=space_id).only('pk', 'vibe_board_id').first()
+    if space is None:
         return _not_found()
-    rows = SpaceInspiration.objects.filter(space_id=space_id).order_by('board_rank', 'pk')
-    return JsonResponse({'inspirations': [inspiration_to_json(r) for r in rows]})
+    if space.vibe_board_id is None:
+        return JsonResponse({'inspirations': []})
+    rows = SpaceInspiration.objects.filter(board_id=space.vibe_board_id).order_by('board_rank', 'pk')
+    return JsonResponse(
+        {'inspirations': [inspiration_to_json(r, space_id=space.pk) for r in rows]}
+    )
 
 
 @_json_view
 @require_http_methods(['DELETE'])
-def space_inspiration_detail(request, space_id, inspiration_id):
-    """Remove one imported pin (row + image file) from a space."""
+def space_inspiration_detail(_request, space_id, inspiration_id):
+    """Remove one imported pin (row + image file) from the space's chosen board."""
     space = Space.objects.filter(pk=space_id).first()
-    if space is None:
+    if space is None or space.vibe_board_id is None:
         return _not_found()
-    row = SpaceInspiration.objects.filter(pk=inspiration_id, space=space).first()
+    board_id = space.vibe_board_id
+    row = SpaceInspiration.objects.filter(pk=inspiration_id, board_id=board_id).first()
     if row is None:
         return _not_found()
-    if importer.active_import(space) is not None:
+    if (
+        importer.active_import(space) is not None
+        or importer.active_import_for_board(board_id) is not None
+    ):
         return JsonResponse({'error': 'import_in_progress'}, status=409)
     image_path = row.image_path
     import_id = row.vibe_import_id
     row.delete()
-    importer.remove_files([image_path])
+    if image_path and not SpaceInspiration.objects.filter(image_path=image_path).exists():
+        importer.remove_files([image_path])
+    usable = importer.usable_count(board_id)
+    VibeBoard.objects.filter(pk=board_id).update(pins_usable=usable)
     if import_id is not None:
-        VibeImport.objects.filter(pk=import_id).update(
-            pins_usable=importer.usable_count(space.pk))
+        VibeImport.objects.filter(pk=import_id).update(pins_usable=usable)
     return HttpResponse(status=204)
 
 
 @_json_view
 @require_http_methods(['GET'])
-def inspirations(request):
-    """Every sorted pin across spaces, each pin_id once, in board order."""
-    rows = SpaceInspiration.objects.filter(categorized_at__isnull=False).order_by('board_rank', 'pk')
+def inspirations(_request):
+    """Sorted pins organized per imported board (`boards`), plus a flat de-duped
+    `inspirations` list in board order."""
+    boards = list(VibeBoard.objects.order_by('-created_at', '-pk'))
+    rows = list(
+        SpaceInspiration.objects.filter(categorized_at__isnull=False).order_by('board_rank', 'pk')
+    )
+    pins_by_board = defaultdict(list)
+    for row in rows:
+        pins_by_board[row.board_id].append(inspiration_to_json(row))
+
+    boards_out = [
+        vibe_board_to_json(board, inspirations=pins_by_board[board.pk])
+        for board in boards
+        if pins_by_board.get(board.pk)
+    ]
+
     seen = set()
-    out = []
+    flat_out = []
     for row in rows:
         if row.pin_id in seen:
             continue
         seen.add(row.pin_id)
-        out.append(inspiration_to_json(row))
-    return JsonResponse({'inspirations': out})
+        flat_out.append(inspiration_to_json(row))
+
+    return JsonResponse({'boards': boards_out, 'inspirations': flat_out})

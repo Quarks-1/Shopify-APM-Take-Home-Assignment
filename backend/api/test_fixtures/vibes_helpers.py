@@ -10,7 +10,7 @@ from django.test import override_settings
 from django.utils import timezone
 from PIL import Image
 
-from api.models import Space
+from api.models import Space, VibeBoard
 from api.vibes import importer, pinterest
 
 FIXTURES = Path(__file__).parent
@@ -24,6 +24,19 @@ def make_space(sid='space1'):
         id=sid, name='Den', type='room', unit='in', dims={'x': 120, 'y': 96, 'z': 96},
         created_at=now, updated_at=now,
     )
+
+
+def make_board(space=None, *, board_url=BOARD_URL, resolved_url='', title='Cozy living', usable=0):
+    board = VibeBoard.objects.create(
+        board_url=board_url,
+        resolved_url=resolved_url,
+        title=title,
+        pins_usable=usable,
+    )
+    if space is not None:
+        space.vibe_board = board
+        space.save(update_fields=['vibe_board'])
+    return board
 
 
 def jpeg_bytes(color=(200, 60, 60), size=(64, 48)):
@@ -74,7 +87,7 @@ class FakeClient(pinterest.PinterestClient):
     """A PinterestClient serving a synthetic board; `pins` are raw API pins."""
 
     def __init__(self, pins, *, title='Cozy living', privacy='public', pin_count=None,
-                 bad_images=(), on_load=None, on_image=None, load_error=None):
+                 bad_images=(), on_load=None, on_image=None, load_error=None, board_url=None):
         super().__init__()
         self.pins = pins
         self.title = title
@@ -84,11 +97,14 @@ class FakeClient(pinterest.PinterestClient):
         self.on_load = on_load
         self.on_image = on_image
         self.load_error = load_error
+        self.board_url = board_url
         self.image_requests = []
         self._image_opener = FakeImageOpener(self)
 
     def resolve_board_url(self, url):
-        return BOARD_URL
+        if self.board_url:
+            return self.board_url
+        return BOARD_URL if 'pin.it' in url else url
 
     def load_board(self, board_url):
         if self.on_load:

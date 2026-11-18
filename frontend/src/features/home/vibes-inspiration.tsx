@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { RiShapesLine } from "@remixicon/react";
+import { RiPinterestLine, RiShapesLine } from "@remixicon/react";
+import { Counter } from "@/components/base/badges/counter";
 import { Button } from "@/components/base/buttons/button";
 import { Carousel, CarouselItem } from "@/components/base/carousel/carousel";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
@@ -7,6 +8,7 @@ import { PillTab, PillTabList } from "@/components/base/tabs/pill-tab";
 import { SectionTitle } from "@/features/home/section-title";
 import { useInspirations } from "@/features/home/use-inspirations";
 import { OBJECT_TYPE_VISUALS } from "@/features/objects/object-type-visuals";
+import { boardDisplayName } from "@/features/spaces/board-url";
 import type { ApiInspiration } from "@/lib/api";
 import { OBJECT_TYPE_OPTIONS } from "@/mocks/types";
 import { cx } from "@/utils/cx";
@@ -77,19 +79,17 @@ function SkeletonCard() {
   );
 }
 
-
 export function VibesInspirationSection() {
-  const { status, inspirations, retry } = useInspirations();
+  const { status, boards, retry } = useInspirations();
   const [selected, setSelected] = useState<Filter>("all");
 
+  const allPins = boards.flatMap((board) => board.inspirations);
   const counts = new Map<Group, number>();
-  for (const pin of inspirations) counts.set(pin.primaryType, (counts.get(pin.primaryType) ?? 0) + 1);
+  for (const pin of allPins) counts.set(pin.primaryType, (counts.get(pin.primaryType) ?? 0) + 1);
   const groups = GROUP_ORDER.filter((g) => counts.has(g));
   const filter: Filter = selected !== "all" && !counts.has(selected) ? "all" : selected;
 
-  const title = (
-    <SectionTitle id="home-vibes" title="Vibes Inspiration" count={inspirations.length} />
-  );
+  const title = <SectionTitle id="home-vibes" title="Vibes Inspiration" count={allPins.length} />;
 
   if (status === "loading") {
     return (
@@ -111,7 +111,7 @@ export function VibesInspirationSection() {
       <section className="flex flex-col gap-4" aria-labelledby="home-vibes">
         {title}
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-body-regular text-text-secondary">Couldn't load your pins.</p>
+          <p className="text-body-regular text-text-secondary">Couldn&apos;t load your pins.</p>
           <Button variant="ghost" size="small" onClick={retry}>
             Try again
           </Button>
@@ -120,52 +120,68 @@ export function VibesInspirationSection() {
     );
   }
 
-  if (inspirations.length === 0) {
+  if (boards.length === 0 || allPins.length === 0) {
     return (
       <section className="flex flex-col gap-4" aria-labelledby="home-vibes">
         {title}
         <div className="rounded-3xl border border-dashed border-border-button-default p-8 text-center text-body-regular text-text-secondary">
-          Import a Pinterest board from a space's settings and its pins show up here, sorted by type.
+          Import a Pinterest board from a space&apos;s settings and its pins show up here, organized by board.
         </div>
       </section>
     );
   }
 
-  const visible = (filter === "all" ? groups : [filter]).flatMap((g) =>
-    inspirations.filter((pin) => pin.primaryType === g),
-  );
+  const visibleBoards = boards
+    .map((board) => {
+      const pins = (filter === "all" ? GROUP_ORDER : [filter]).flatMap((g) =>
+        board.inspirations.filter((pin) => pin.primaryType === g),
+      );
+      return { board, pins, name: boardDisplayName(board) };
+    })
+    .filter((entry) => entry.pins.length > 0);
 
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="home-vibes">
-      <Carousel
-        aria-label="Vibes Inspiration"
-        showDots={false}
-        gap={16}
-        scrollResetKey={filter}
-        header={
-          <div className="flex min-w-0 flex-col gap-3">
-            {title}
-            <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <PillTabList aria-label="Filter by type">
-                <PillTab variant="gray" isSelected={filter === "all"} onSelect={() => setSelected("all")}>
-                  All <span className="text-text-tertiary">{inspirations.length}</span>
-                </PillTab>
-                {groups.map((g) => (
-                  <PillTab key={g} variant="gray" isSelected={filter === g} onSelect={() => setSelected(g)}>
-                    {groupLabel(g)} <span className="text-text-tertiary">{counts.get(g)}</span>
-                  </PillTab>
-                ))}
-              </PillTabList>
-            </div>
-          </div>
-        }
-      >
-        {visible.map((pin) => (
-          <CarouselItem key={pin.id} className="w-48">
-            <PinCard pin={pin} />
-          </CarouselItem>
+    <section className="flex flex-col gap-6" aria-labelledby="home-vibes">
+      <div className="flex min-w-0 flex-col gap-3">
+        {title}
+        <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <PillTabList aria-label="Filter by type">
+            <PillTab variant="gray" isSelected={filter === "all"} onSelect={() => setSelected("all")}>
+              All <span className="text-text-tertiary">{allPins.length}</span>
+            </PillTab>
+            {groups.map((g) => (
+              <PillTab key={g} variant="gray" isSelected={filter === g} onSelect={() => setSelected(g)}>
+                {groupLabel(g)} <span className="text-text-tertiary">{counts.get(g)}</span>
+              </PillTab>
+            ))}
+          </PillTabList>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-6">
+        {visibleBoards.map(({ board, pins, name }) => (
+          <Carousel
+            key={board.id}
+            aria-label={`${name} inspiration`}
+            showDots={false}
+            gap={16}
+            scrollResetKey={filter}
+            header={
+              <div className="flex min-w-0 items-center gap-2">
+                <RiPinterestLine className="size-4 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                <h3 className="truncate text-headline-medium text-text-primary">{name}</h3>
+                <Counter>{pins.length}</Counter>
+              </div>
+            }
+          >
+            {pins.map((pin) => (
+              <CarouselItem key={pin.id} className="w-48">
+                <PinCard pin={pin} />
+              </CarouselItem>
+            ))}
+          </Carousel>
         ))}
-      </Carousel>
+      </div>
     </section>
   );
 }

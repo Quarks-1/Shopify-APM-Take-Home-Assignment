@@ -3,7 +3,7 @@ import { toast } from "@/components/base/toast/toast";
 import * as api from "@/lib/api";
 import { ApiError, describeError, type ApiVibeImport } from "@/lib/api";
 import { VIBE_IMPORT_STEPS, type VibeImportStep } from "@/mocks/types";
-import { useAppState } from "@/state/app-store";
+import { useAppActions, useAppState } from "@/state/app-store";
 import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
 /** What the status box shows for one space. */
@@ -57,6 +57,7 @@ interface Entry {
  */
 export function VibeImportProvider({ children }: { children: ReactNode }) {
   const state = useAppState();
+  const actions = useAppActions();
   const { status } = useAppStatus();
   const { getState, enqueue, onReset } = useStoreInternals();
 
@@ -85,6 +86,9 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
 
     const observe = (entry: Entry, imp: ApiVibeImport) => {
       if (entry.stopped) return;
+      if (imp.boardId && (imp.status === "running" || imp.status === "done")) {
+        actions.setSpaceVibeBoard(entry.spaceId, imp.boardId);
+      }
       if (imp.dismissed) {
         remove(entry.spaceId);
         return;
@@ -180,7 +184,7 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
         .then((imports) => {
           const spaceIds = new Set(getState().spaces.map((s) => s.id));
           for (const imp of imports) {
-            if (imp.dismissed || !spaceIds.has(imp.spaceId)) continue;
+            if (imp.dismissed || !imp.spaceId || !spaceIds.has(imp.spaceId)) continue;
             const existing = entries.current.get(imp.spaceId);
             // Already followed (or being started right now): the tracker keeps its own pace.
             if (existing && (existing.importId === imp.id || existing.view.kind === "starting")) continue;
@@ -191,7 +195,7 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     };
 
     return { start, dismiss, hide, refresh, remove, removeAll };
-  }, [enqueue, getState]);
+  }, [actions, enqueue, getState]);
 
   // Pick up imports that are going without us once the store is loaded.
   useEffect(() => {
