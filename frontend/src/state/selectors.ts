@@ -70,10 +70,17 @@ export function getUnassignedObjects(state: AppState): SpaceObject[] {
   return getSearchableObjects(state).filter((o) => !placed.has(o.id));
 }
 
+/** Whether an object's plan height lives in dims.z (width x height): on a wall space, or any wall-art object. */
+export function usesVerticalPlane(object: Pick<SpaceObject, "type">, space: Pick<Space, "type">): boolean {
+  return space.type === "wall" || object.type === "wall-art";
+}
+
 /** Size of an object on the plane of a space, in inches (minimum 1). */
 export function footprint(object: SpaceObject, space: Pick<Space, "type">): { w: number; h: number } {
   const w = object.dims.x;
-  const h = space.type === "wall" ? (object.dims.z ?? object.dims.y ?? object.dims.x) : (object.dims.y ?? object.dims.x);
+  const h = usesVerticalPlane(object, space)
+    ? (object.dims.z ?? object.dims.y ?? object.dims.x)
+    : (object.dims.y ?? object.dims.x);
   return { w: Math.max(1, w), h: Math.max(1, h) };
 }
 

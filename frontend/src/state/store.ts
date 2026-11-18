@@ -58,6 +58,7 @@ import {
   getObject,
   getProduct,
   getSpace,
+  usesVerticalPlane,
 } from "@/state/selectors";
 import { WriteQueue } from "@/state/write-queue";
 
@@ -428,9 +429,10 @@ function makeId(prefix: string): string {
 
 const nowIso = () => new Date().toISOString();
 
-/** Object dims after resizing its footprint on a space's plane (wall: x and z, otherwise x and y). */
-function resizedDims(dims: ObjectDims, space: Space, { w, h }: { w: number; h: number }): ObjectDims {
-  return space.type === "wall" ? { ...dims, x: w, z: h } : { ...dims, x: w, y: h };
+/** Object dims after resizing its footprint on a space's plane (vertical plane: x and z, otherwise x and y). */
+function resizedDims(object: SpaceObject, space: Space, { w, h }: { w: number; h: number }): ObjectDims {
+  const { dims } = object;
+  return usesVerticalPlane(object, space) ? { ...dims, x: w, z: h } : { ...dims, x: w, y: h };
 }
 
 /** A delete of something already gone (another tab, a reset) counts as done. */
@@ -803,7 +805,7 @@ export function createAppStore(): AppStore {
       const space = getSpace(state, spaceId);
       const obj = getObject(state, id);
       if (!space || !obj) return;
-      const dims = resizedDims(obj.dims, space, size);
+      const dims = resizedDims(obj, space, size);
       dispatch({ type: "object/update", id, patch: { dims } });
       writeCoalesced(`dims:${id}`, () => api.updateObject(id, { dims }));
     },
