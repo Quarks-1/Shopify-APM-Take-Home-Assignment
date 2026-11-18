@@ -116,6 +116,8 @@ export function HomePage() {
         )}
       </section>
 
+      <VibesInspirationSection />
+
       <section className="flex flex-col gap-4" aria-labelledby="home-objects">
         {objects.length > 0 ? (
           <Carousel
@@ -147,8 +149,6 @@ export function HomePage() {
           </>
         )}
       </section>
-
-      <VibesInspirationSection />
 
       <section className="flex flex-col gap-4" aria-labelledby="home-imported">
         {imported.length > 0 ? (
