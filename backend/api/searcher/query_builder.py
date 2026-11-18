@@ -244,6 +244,10 @@ def build_intent(snapshot):
     if snapshot.get('type'):
         head += f' ({snapshot["type"]})'
     parts.append(head)
+    desc = ''.join(ch if ch.isprintable() else ' ' for ch in str(snapshot.get('description') or ''))
+    desc = re.sub(r'\s+', ' ', desc).strip()[:240]
+    if desc and desc.lower() != name:
+        parts.append(f'described as "{desc}"')
     if snapshot.get('style'):
         parts.append(f'in {snapshot["style"]} style')
     material = snapshot.get('material')

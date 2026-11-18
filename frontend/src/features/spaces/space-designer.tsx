@@ -132,7 +132,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
 
   /* ------------------------------------------------------------- creation */
 
-  const createAt = (w: number, h: number, pos?: { x: number; y: number }) => {
+  const createAt = (w: number, h: number, pos?: { x: number; y: number }, drawn = false) => {
     const id = actions.createObject({
       name: "New object",
       type: "furniture",
@@ -140,7 +140,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     });
     actions.placeObject(spaceId, id, pos);
     onSelectObject(id);
-    drawer.open(id, { isNew: true });
+    drawer.open(id, { isNew: true, drawn });
   };
 
   const addObject = () => {
@@ -247,7 +247,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     if (current.kind === "draw") {
       const r = current.rect;
       if (r.w >= snapStep && r.h >= snapStep) {
-        createAt(r.w, r.h, { x: r.x, y: r.y });
+        createAt(r.w, r.h, { x: r.x, y: r.y }, true);
         setMode("select");
       }
       return;

@@ -35,8 +35,8 @@ OUTPUT_SCHEMA = {
 
 # Snapshot keys the agent needs; the rest (ids, timestamps, legacy fields) is noise.
 SNAPSHOT_KEYS = (
-    'name', 'type', 'dims', 'weight', 'material', 'style', 'priceMin', 'priceLimit', 'priceMinFuzzy',
-    'priceLimitFuzzy', 'minRating', 'similarItems', 'space',
+    'name', 'description', 'type', 'dims', 'weight', 'material', 'style', 'priceMin', 'priceLimit',
+    'priceMinFuzzy', 'priceLimitFuzzy', 'minRating', 'similarItems', 'space',
 )
 
 SYSTEM_PROMPT = """\
@@ -294,14 +294,23 @@ def _run_vibes(run):
     return vibes if isinstance(vibes, dict) and vibes else None
 
 
+EXPLICIT_REFS_NOTE = (
+    '\nThe user EXPLICITLY selected these Pinterest pin(s) as visual image references for this '
+    'specific object. Strongly favor candidates that closely match their silhouette, color, '
+    'material, texture and style while still satisfying hard size and price limits.\n'
+)
+
+
 def vibes_system_section(run, vibe_photos=0):
     if getattr(run, 'mode', 'search') == 'like':
         return VIBES_LIKE_SYSTEM_SECTION
+    vibes = _run_vibes(run) or {}
+    extra = EXPLICIT_REFS_NOTE if vibes.get('explicitReferences') else ''
     if vibe_photos:
         return VIBES_SYSTEM_SECTION.format(
             photo_note=VIBE_PHOTO_NOTE_ATTACHED.format(count=vibe_photos),
-            photo_safety=PHOTO_SAFETY)
-    return VIBES_SYSTEM_SECTION.format(photo_note=VIBE_PHOTO_NOTE_MISSING, photo_safety='')
+            photo_safety=PHOTO_SAFETY) + extra
+    return VIBES_SYSTEM_SECTION.format(photo_note=VIBE_PHOTO_NOTE_MISSING, photo_safety='') + extra
 
 
 VIBE_PROMPT_PINS = 5
@@ -315,11 +324,14 @@ def vibes_user_block(run, vibe_photos=0):
         return ''
     data = {
         'matchedPins': vibes.get('matched'),
+        'explicitReferences': bool(vibes.get('explicitReferences')) or None,
         'theme': vibes.get('theme') or None,
         'summary': vibes.get('summary') or {},
         'pins': [{k: pin[k] for k in VIBE_PIN_KEYS if pin.get(k) not in (None, [], '')}
                  for pin in (vibes.get('pins') or [])[:VIBE_PROMPT_PINS]],
     }
+    if data['explicitReferences'] is None:
+        del data['explicitReferences']
     seen = (f'The {vibe_photos} inspiration photo(s) are attached to this message after the '
             f'line "Space inspiration photos:". ') if vibe_photos else ''
     return (

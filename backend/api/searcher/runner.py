@@ -609,7 +609,8 @@ def vibe_photo_entries(run):
             continue
         out.append({'index': item.get('index'), 'path': path, 'contentType': media_type,
                     'kind': 'vibe'})
-    return out[:settings.VIBES_MAX_PHOTOS]
+    cap = 5 if isinstance(vibes, dict) and vibes.get('explicitReferences') else settings.VIBES_MAX_PHOTOS
+    return out[:cap]
 
 
 def agent_photos(run):

@@ -201,6 +201,11 @@ VIBES_IMAGE_MAX_BYTES = int(os.environ.get('VIBES_IMAGE_MAX_BYTES', str(8 * 1024
 VIBES_MAX_PHOTOS = int(os.environ.get('VIBES_MAX_PHOTOS', '3'))
 VIBES_SNAPSHOT_PINS = int(os.environ.get('VIBES_SNAPSHOT_PINS', '12'))
 
+# Object prompt parser sub-agent (api.object_parser)
+OBJECT_PARSER_MODEL = os.environ.get('OBJECT_PARSER_MODEL') or SEARCHER_MODEL
+OBJECT_PARSER_MAX_TURNS = int(os.environ.get('OBJECT_PARSER_MAX_TURNS', '2'))
+OBJECT_PARSER_TIMEOUT = float(os.environ.get('OBJECT_PARSER_TIMEOUT', '45'))
+
 # Merchant carts (api.cart): one UCP cart per store, checkout on the
 # merchant's own page. An empty UCP_PROFILE uses the managed profile.
 UCP_PROFILE = os.environ.get('UCP_PROFILE', '').strip()

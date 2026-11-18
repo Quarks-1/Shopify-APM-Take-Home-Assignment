@@ -9,6 +9,7 @@ object's name, newest import first, and snapshotted onto the run.
 import io
 import logging
 import re
+import unicodedata
 from collections import Counter
 
 from django.conf import settings
@@ -53,6 +54,16 @@ CROP_MAX_SIDE = 1024
 CROP_QUALITY = 88
 CROP_SUFFIX = paths.CROP_SUFFIX
 PRIMARY_WEIGHT = 2  # summary weight of pins whose own type is the object's
+MAX_EXPLICIT_PHOTOS = 5
+MAX_SUGGESTED_PINS = 8
+
+# Soft style/material expansions so compound terms like "Japandi" or "bouclé"
+# recognize related board labels when scoring pins deterministically.
+ATTR_EXPANSIONS = {
+    'japandi': ('japandi', 'scandinavian', 'minimalist', 'japanese', 'organic'),
+    'boucle': ('boucle', 'textured', 'fabric', 'upholstered'),
+    'mcm': ('mid', 'century', 'modern'),
+}
 
 
 def object_space_ids(obj):
@@ -73,9 +84,14 @@ def _singular(word):
     return word
 
 
+def _ascii_fold(text):
+    norm = unicodedata.normalize('NFKD', str(text or ''))
+    return ''.join(ch for ch in norm if not unicodedata.combining(ch))
+
+
 def normalize_item(text):
-    """Meaningful words of an item phrase: lowercase, singular, aliased."""
-    words = re.findall(r'[a-z0-9]+', str(text or '').lower())
+    """Meaningful words of an item phrase: lowercase, accent-folded, singular, aliased."""
+    words = re.findall(r'[a-z0-9]+', _ascii_fold(text).lower())
     out = []
     for word in words:
         if word in STOPWORDS:
@@ -176,13 +192,14 @@ def _photo(index, inspiration):
     }
 
 
-def _choose_photos(pins):
-    """Up to VIBES_MAX_PHOTOS photos from the ranked pins, pins with an item
-    box first (their photo can be cropped to the item)."""
+def _choose_photos(pins, limit=None):
+    """Up to `limit` (default VIBES_MAX_PHOTOS) photos from the ranked pins,
+    pins with an item box first (their photo can be cropped to the item)."""
+    cap = settings.VIBES_MAX_PHOTOS if limit is None else limit
     photos = []
     ordered = [row for _, row in pins if row.item_box] + [row for _, row in pins if not row.item_box]
     for row in ordered:
-        if len(photos) >= settings.VIBES_MAX_PHOTOS:
+        if len(photos) >= cap:
             break
         photo = _photo(len(photos), row)
         if photo is not None:
@@ -190,10 +207,127 @@ def _choose_photos(pins):
     return photos
 
 
+def _choose_ordered_photos(rows, limit=MAX_EXPLICIT_PHOTOS):
+    """Photos in the user's explicit selection order (up to `limit`)."""
+    photos = []
+    for row in rows:
+        if len(photos) >= limit:
+            break
+        photo = _photo(len(photos), row)
+        if photo is not None:
+            photos.append(photo)
+    return photos
+
+
+def _attr_tokens(*texts):
+    tokens = set()
+    for text in texts:
+        for word in re.findall(r'[a-z0-9]+', _ascii_fold(text).lower()):
+            if len(word) < 3 or word in STOPWORDS:
+                continue
+            s = _singular(word)
+            tokens.add(s)
+            tokens.add(ALIASES.get(s, s))
+            for exp in ATTR_EXPANSIONS.get(s, ()):
+                tokens.add(exp)
+    return tokens
+
+
+def suggest_pins(rows, snapshot, prompt_text=''):
+    """Deterministically split `rows` into (similar_rows, category_rows) for
+    `snapshot`. Only pins whose categories include `snapshot['type']` appear.
+    `similar_rows` holds up to MAX_SUGGESTED_PINS close item/attribute matches;
+    `category_rows` holds the remaining pins in that category."""
+    wanted = (snapshot or {}).get('type')
+    if not wanted:
+        return [], []
+    aug = dict(snapshot or {})
+    if prompt_text:
+        aug['similarItems'] = list(aug.get('similarItems') or []) + [prompt_text]
+    query_tokens = _attr_tokens(
+        aug.get('name'), aug.get('description'), aug.get('style'), aug.get('material'),
+        prompt_text, *(aug.get('similarItems') or []),
+    )
+    scored = []
+    seen = set()
+    for row in rows:
+        if row.pin_id in seen or wanted not in (row.categories or []):
+            continue
+        seen.add(row.pin_id)
+        iscore = item_score(row.item, aug)
+        own = primary_type(row.item, row.categories) == wanted
+        pin_tokens = _attr_tokens(
+            row.item, row.description,
+            *(row.styles or []), *(row.colors or []),
+            *(row.materials or []), *(row.patterns or []),
+        )
+        attr_hits = len(query_tokens & pin_tokens)
+        is_similar = iscore >= 1 or (own and attr_hits >= 2)
+        scored.append((is_similar, iscore, own, attr_hits, row.board_rank, row.pk, row))
+
+    similar_scored = [t for t in scored if t[0]]
+    similar_scored.sort(key=lambda t: (-t[1], not t[2], -t[3], t[4], t[5]))
+    similar_rows = [t[6] for t in similar_scored[:MAX_SUGGESTED_PINS]]
+    similar_ids = {r.pin_id for r in similar_rows}
+
+    rest_scored = [t for t in scored if t[6].pin_id not in similar_ids]
+    rest_scored.sort(key=lambda t: (not t[2], -t[3], t[4], t[5]))
+    category_rows = [t[6] for t in rest_scored]
+    return similar_rows, category_rows
+
+
+def _explicit_vibes(space_ids, ref_ids, snapshot, mode):
+    """Build a `vibes` snapshot solely from the user's explicitly selected
+    `referencePins` (preserving selection order; no board backfill)."""
+    qs = SpaceInspiration.objects.filter(
+        pin_id__in=ref_ids, vote=VoteChoice.UP, categorized_at__isnull=False
+    ).select_related('vibe_import')
+    rows = list(qs)
+    if not rows:
+        return None
+    space_rank = {sid: idx for idx, sid in enumerate(space_ids)}
+    rows.sort(key=lambda r: (space_rank.get(r.space_id, len(space_rank)), r.board_rank, r.pk))
+    by_pin = {}
+    for row in rows:
+        by_pin.setdefault(row.pin_id, row)
+    selected = [by_pin[pid] for pid in ref_ids if pid in by_pin][:MAX_EXPLICIT_PHOTOS]
+    if not selected:
+        return None
+
+    theme = pattern_lib.board_theme(selected)
+    counters = {name: Counter() for name in ('styles', 'colors', 'materials', 'patterns')}
+    for row in selected:
+        for name, counter in counters.items():
+            for label in _labels(getattr(row, name)):
+                counter[label] += 2
+    photos = [] if mode == 'like' else _choose_ordered_photos(selected, limit=MAX_EXPLICIT_PHOTOS)
+    return {
+        'spaceIds': space_ids,
+        'matched': len(selected),
+        'explicitReferences': True,
+        'theme': theme,
+        'pins': [
+            {
+                'pinId': row.pin_id, 'item': row.item, 'categories': list(row.categories or []),
+                'styles': _labels(row.styles), 'colors': _labels(row.colors),
+                'materials': _labels(row.materials), 'patterns': _labels(row.patterns),
+                'description': row.description, 'score': 2,
+            }
+            for row in selected
+        ],
+        'summary': {name: _top(counter) for name, counter in counters.items()},
+        'photos': photos,
+    }
+
+
 def run_vibes(obj, snapshot, mode):
     """The run's `vibes` snapshot, or None when no pin matches (or the object
-    sits in no space)."""
+    sits in no space and has no explicit referencePins)."""
     space_ids = object_space_ids(obj)
+    raw_refs = (snapshot or {}).get('referencePins') or []
+    ref_ids = [p for p in raw_refs if isinstance(p, str) and p]
+    if ref_ids:
+        return _explicit_vibes(space_ids, ref_ids, snapshot, mode)
     if not space_ids:
         return None
     wanted = (snapshot or {}).get('type')

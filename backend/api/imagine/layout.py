@@ -72,6 +72,7 @@ def render_items(space):
         items.append({
             'objectId': obj.id,
             'name': obj.name,
+            'description': obj.description or '',
             'type': obj.type,
             'material': obj.material,
             'style': obj.style,
@@ -94,7 +95,8 @@ def fingerprint(space, items):
         'type': space.type,
         'dims': [space.dims.get('x'), space.dims.get('y')],
         'items': [
-            [i['objectId'], i['name'], i['type'], i['productKey'], i['x'], i['y'], i['w'], i['h']]
+            ([i['objectId'], i['name'], i['type'], i['productKey'], i['x'], i['y'], i['w'], i['h']]
+             + ([i['description']] if i.get('description') else []))
             for i in sorted(items, key=lambda i: i['objectId'])
         ],
     }

@@ -394,6 +394,7 @@ export type ApiSpacePatch = Partial<Omit<ApiSpaceCreate, "id">>;
 export interface ApiObjectCreate {
   id?: string;
   name: string;
+  description?: string | null;
   type: ObjectType;
   dims: ObjectDims;
   weight?: number | null;
@@ -405,6 +406,7 @@ export interface ApiObjectCreate {
   priceLimitFuzzy?: boolean | null;
   minRating?: number | null;
   similarItems?: string[];
+  referencePins?: string[];
   source?: SpaceObject["source"];
   owned?: OwnedInfo | null;
   createdAt?: string;
@@ -463,6 +465,34 @@ export const updateObject = (id: string, patch: ApiObjectPatch) =>
   request<ApiObject>("PATCH", `/api/objects/${seg(id)}/`, { body: patch });
 
 export const deleteObject = (id: string) => request<void>("DELETE", `/api/objects/${seg(id)}/`);
+
+export interface ApiParsedObject {
+  name: string;
+  description: string;
+  type: ObjectType;
+  dims: ObjectDims;
+  weight: number | null;
+  material: Material | null;
+  style: Style | null;
+  priceMin: number | null;
+  priceLimit: number | null;
+  priceMinFuzzy: boolean;
+  priceLimitFuzzy: boolean;
+  minRating: number | null;
+  similarItems: string[];
+}
+
+export interface ApiParsePromptResponse {
+  parsed: ApiParsedObject;
+  similarPins: ApiInspiration[];
+  categoryPins: ApiInspiration[];
+  agentMode: "claude" | "deterministic";
+}
+
+export const parseObjectPrompt = (
+  body: { prompt: string; spaceIds?: string[]; drawnDims?: ObjectDims | null },
+  signal?: AbortSignal,
+) => request<ApiParsePromptResponse>("POST", "/api/objects/parse-prompt/", { body, signal });
 
 // ---------------------------------------------------------------------------
 // Searches

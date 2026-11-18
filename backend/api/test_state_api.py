@@ -124,8 +124,8 @@ class ObjectTests(Base):
         self.assertTrue(o['id'].startswith('obj_'))
         self.assertEqual(
             set(o),
-            {'id', 'name', 'dims', 'type', 'similarItems', 'source', 'candidateIds', 'search',
-             'votes', 'preferences', 'createdAt'},
+            {'id', 'name', 'dims', 'type', 'similarItems', 'referencePins', 'source',
+             'candidateIds', 'search', 'votes', 'preferences', 'createdAt'},
         )
         self.assertEqual(o['source'], 'search')
         self.assertEqual(o['search'], {'status': 'idle'})

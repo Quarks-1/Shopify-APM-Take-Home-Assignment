@@ -76,6 +76,7 @@ class Space(models.Model):
 class SpaceObject(models.Model):
     id = models.CharField(max_length=64, primary_key=True)
     name = models.CharField(max_length=120)
+    description = models.CharField(max_length=500, blank=True, default='')
     dims = models.JSONField()
     weight = models.FloatField(null=True, blank=True)
     type = models.CharField(max_length=16, choices=ObjectType.choices)
@@ -87,6 +88,7 @@ class SpaceObject(models.Model):
     price_limit_fuzzy = models.BooleanField(default=False)
     min_rating = models.FloatField(null=True, blank=True)
     similar_items = models.JSONField(default=list)
+    reference_pins = models.JSONField(default=list)
     source = models.CharField(
         max_length=16, choices=ObjectSource.choices, default=ObjectSource.SEARCH
     )

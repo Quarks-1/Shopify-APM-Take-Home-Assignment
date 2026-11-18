@@ -31,9 +31,9 @@ SOURCES = set(ObjectSource.values)
 
 SPACE_KEYS = {'name', 'type', 'unit', 'dims', 'weightLimit'}
 OBJECT_KEYS = {
-    'name', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
+    'name', 'description', 'dims', 'weight', 'type', 'material', 'style', 'priceMin', 'priceLimit',
     'priceMinFuzzy', 'priceLimitFuzzy', 'minRating',
-    'similarItems', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
+    'similarItems', 'referencePins', 'source', 'owned', 'candidateIds', 'selectedProductId', 'search',
     # Read-only: accepted (so fetched objects and snapshots round-trip) and
     # ignored. Selection changes only via POST /api/objects/<id>/select/;
     # votes only via PUT /api/objects/<id>/votes/. `preferences` is derived
@@ -146,6 +146,8 @@ def object_to_json(obj, votes=None, preferences=_UNSET):
     if preferences is _UNSET:
         preferences = preferences_by_object([obj.pk]).get(obj.pk)
     out = {'id': obj.id, 'name': obj.name, 'dims': dims_to_json(obj.dims)}
+    if obj.description:
+        out['description'] = obj.description
     if obj.weight is not None:
         out['weight'] = obj.weight
     out['type'] = obj.type
@@ -164,6 +166,7 @@ def object_to_json(obj, votes=None, preferences=_UNSET):
     if obj.min_rating is not None:
         out['minRating'] = obj.min_rating
     out['similarItems'] = list(obj.similar_items)
+    out['referencePins'] = list(obj.reference_pins)
     out['source'] = obj.source
     if obj.owned is not None:
         out['owned'] = obj.owned
@@ -478,6 +481,50 @@ def _str_list(v, path, errors):
     return out if ok else None
 
 
+MAX_REFERENCE_PINS = 5
+
+
+def _description(v, path, errors):
+    if v is None:
+        return True, ''
+    if not isinstance(v, str):
+        errors[path] = 'must be a string or null'
+        return False, None
+    v = v.strip()
+    if len(v) > 500:
+        errors[path] = 'must be at most 500 characters'
+        return False, None
+    return True, v
+
+
+def _reference_pins(v, path, errors):
+    if not isinstance(v, list):
+        errors[path] = 'must be a list of strings'
+        return None
+    ok = True
+    pins = []
+    seen = set()
+    for i, s in enumerate(v):
+        if not isinstance(s, str):
+            errors[f'{path}[{i}]'] = 'must be a string'
+            ok = False
+            continue
+        s = s.strip()
+        if not s:
+            continue
+        if not ID_RE.match(s):
+            errors[f'{path}[{i}]'] = 'must match ^[A-Za-z0-9_-]{1,64}$'
+            ok = False
+            continue
+        if s not in seen:
+            seen.add(s)
+            pins.append(s)
+    if ok and len(pins) > MAX_REFERENCE_PINS:
+        errors[path] = f'must have at most {MAX_REFERENCE_PINS} items'
+        ok = False
+    return pins if ok else None
+
+
 def _similar(v, path, errors):
     if not isinstance(v, list):
         errors[path] = 'must be a list of strings'
@@ -685,10 +732,18 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
                 ok, v = _enum(data[key], allowed_set, prefix + key, errors, nullable=True)
                 if ok:
                     out[key] = v
+        if has('description'):
+            ok, v = _description(data['description'], prefix + 'description', errors)
+            if ok:
+                out['description'] = v
         if has('similarItems'):
             v = _similar(data['similarItems'], prefix + 'similarItems', errors)
             if v is not None:
                 out['similar_items'] = v
+        if has('referencePins'):
+            v = _reference_pins(data['referencePins'], prefix + 'referencePins', errors)
+            if v is not None:
+                out['reference_pins'] = v
         if has('source'):
             ok, v = _enum(data['source'], SOURCES, prefix + 'source', errors)
             if ok:

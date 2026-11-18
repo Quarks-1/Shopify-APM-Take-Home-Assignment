@@ -323,11 +323,12 @@ def state_import(request):
             oid = fields.pop('id')
             # Import is a full snapshot: absent optional fields reset to defaults.
             defaults = {
-                'weight': None, 'material': None, 'style': None, 'price_min': None,
-                'price_limit': None, 'price_min_fuzzy': False,
+                'description': '', 'weight': None, 'material': None, 'style': None,
+                'price_min': None, 'price_limit': None, 'price_min_fuzzy': False,
                 'price_limit_fuzzy': False, 'min_rating': None,
                 'owned': None, 'selected_product_id': None, 'similar_items': [],
-                'candidate_ids': [], 'search': default_search(), 'source': 'search',
+                'reference_pins': [], 'candidate_ids': [], 'search': default_search(),
+                'source': 'search',
             }
             defaults.update(fields)
             SpaceObject.objects.update_or_create(

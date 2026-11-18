@@ -759,6 +759,7 @@ export function createAppStore(): AppStore {
       const object: SpaceObject = {
         dims: { x: 24, y: 24 },
         similarItems: [],
+        referencePins: [],
         source: "search",
         createdAt: nowIso(),
         ...input,
