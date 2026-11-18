@@ -7,8 +7,8 @@ const STORAGE_KEY = "spaces.editor.split";
 const DEFAULT_SPLIT = 1.2 / 2.2;
 /** Width of the handle column (1.5rem), in rem. */
 const HANDLE_REM = 1.5;
-const START_MIN_REM = 20;
-const END_MIN_REM = 22;
+const START_MIN_REM = 18;
+const END_MIN_REM = 20;
 const STEP = 0.02;
 const STEP_LARGE = 0.1;
 

@@ -98,6 +98,11 @@ def active_import(space):
     return VibeImport.objects.filter(space=space, status__in=ACTIVE).order_by('created_at').first()
 
 
+def has_active_for_space(space_id):
+    """True when the space has a queued or running vibe import."""
+    return VibeImport.objects.filter(space_id=space_id, status__in=ACTIVE).exists()
+
+
 def start_import(space, board_url):
     """(import, created). Raises pinterest.PinterestError for a bad link and
     ImportInProgress when a different board is already importing."""

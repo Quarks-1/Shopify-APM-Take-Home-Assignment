@@ -17,6 +17,8 @@ import { getSearchableObjects, getUnassignedObjects } from "@/state/selectors";
 
 type Filter = "unassigned" | "all";
 
+const MAX_NAME_LENGTH = 120;
+
 function parseType(key: string | number | null): ObjectType | undefined {
   return OBJECT_TYPE_OPTIONS.find((o) => o.value === key)?.value;
 }
@@ -50,11 +52,16 @@ export function FindObjectsPage() {
 
   const visible = filter === "unassigned" ? getUnassignedObjects(state) : getSearchableObjects(state);
   const visibleIds = visible.map((o) => o.id);
+  const canBuyAll = visible.some(
+    (o) => o.source === "search" && Boolean(o.selectedProductId) && !state.cart.some((l) => l.objectId === o.id),
+  );
   const trimmed = name.trim();
+  const nameTooLong = trimmed.length > MAX_NAME_LENGTH;
+  const nameError = nameTooLong ? `Name must be ${MAX_NAME_LENGTH} characters or fewer` : undefined;
 
-  const create = (): string => {
+  const create = (initialName: string): string => {
     const id = createObject({
-      name: trimmed,
+      name: initialName,
       type,
       priceMin: priceRange.min,
       priceLimit: priceRange.max,
@@ -69,19 +76,16 @@ export function FindObjectsPage() {
 
   const handleSearch = (event?: FormEvent) => {
     event?.preventDefault();
-    if (!trimmed) return;
-    const id = create();
+    if (!trimmed || nameTooLong) return;
+    const id = create(trimmed);
     search(id);
     setHighlightedId(id);
   };
 
   const handleMoreDetails = () => {
-    if (!trimmed) {
-      const id = createObject({ name: "New object", type });
-      drawer.open(id, { isNew: true });
-      return;
-    }
-    drawer.open(create(), { isNew: true });
+    if (nameTooLong) return;
+    const id = create(trimmed || "New object");
+    drawer.open(id, { isNew: true });
   };
 
   const handleNewObject = () => {
@@ -112,10 +116,15 @@ export function FindObjectsPage() {
           <Button variant="secondary" leadingIcon={RiAddLine} onClick={handleNewObject}>
             New object
           </Button>
-          <Button variant="secondary" leadingIcon={RiSearchLine} onClick={() => searchAll(visibleIds)}>
+          <Button
+            variant="secondary"
+            leadingIcon={RiSearchLine}
+            disabled={visibleIds.length === 0}
+            onClick={() => searchAll(visibleIds)}
+          >
             Search all
           </Button>
-          <Button leadingIcon={RiShoppingCart2Line} onClick={handleBuyAll}>
+          <Button leadingIcon={RiShoppingCart2Line} disabled={!canBuyAll} onClick={handleBuyAll}>
             Buy all
           </Button>
         </div>
@@ -130,6 +139,8 @@ export function FindObjectsPage() {
           placeholder="e.g. Walnut side table"
           value={name}
           onChange={setName}
+          isInvalid={nameTooLong}
+          errorMessage={nameError}
           className="min-w-48 flex-[2_1_14rem]"
         />
         <Select
@@ -146,10 +157,10 @@ export function FindObjectsPage() {
         </Select>
         <PriceRangeSlider value={priceRange} onChange={setPriceRange} className="min-w-56 flex-[2_1_16rem]" />
         <div className="flex items-center gap-2">
-          <Button type="submit" leadingIcon={RiSearchLine} disabled={!trimmed}>
+          <Button type="submit" leadingIcon={RiSearchLine} disabled={!trimmed || nameTooLong}>
             Search
           </Button>
-          <Button type="button" variant="ghost" onClick={handleMoreDetails}>
+          <Button type="button" variant="ghost" disabled={nameTooLong} onClick={handleMoreDetails}>
             More details
           </Button>
         </div>

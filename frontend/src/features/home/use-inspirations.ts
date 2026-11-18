@@ -23,7 +23,7 @@ export function useInspirations(): InspirationsResult {
     .map((s) => s.id)
     .sort()
     .join(",");
-  const doneKey = spaces
+  const doneIds = spaces
     .map((s) => {
       const view = viewFor(s.id);
       // A failed import (e.g. a failed sort) may already have replaced the old pins.
@@ -31,8 +31,13 @@ export function useInspirations(): InspirationsResult {
       return view?.kind === "failed" && view.imp ? view.imp.id : "";
     })
     .filter(Boolean)
-    .sort()
-    .join(",");
+    .sort();
+  // Accumulate seen finished import ids so auto-dismissing a pill never triggers a redundant refetch.
+  const [seenDoneKey, setSeenDoneKey] = useState<string>(() => doneIds.join(","));
+  const knownIds = seenDoneKey === "" ? [] : seenDoneKey.split(",");
+  if (doneIds.some((id) => !knownIds.includes(id))) {
+    setSeenDoneKey([...new Set([...knownIds, ...doneIds])].sort().join(","));
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,12 +50,13 @@ export function useInspirations(): InspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spacesKey, doneKey, attempt]);
+  }, [spacesKey, seenDoneKey, attempt]);
 
   // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
   useEffect(
     () =>
       onReset(() => {
+        setSeenDoneKey("");
         setData([]);
         setFailed(false);
       }),

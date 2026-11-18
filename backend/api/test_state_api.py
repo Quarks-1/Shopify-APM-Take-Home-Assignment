@@ -511,9 +511,31 @@ class FuzzyPriceTests(Base):
 
     def test_non_bool_rejected(self):
         o = self.make_object(priceLimit=400)
-        r = self.call('patch', f'/api/objects/{o["id"]}/', {'priceLimitFuzzy': 'yes'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('priceLimitFuzzy', r.json()['details'])
+        for bad in ('yes', 1, 0, [], {}):
+            r = self.call('patch', f'/api/objects/{o["id"]}/', {'priceLimitFuzzy': bad})
+            self.assertEqual(r.status_code, 400, bad)
+            self.assertIn('priceLimitFuzzy', r.json()['details'])
+
+    def test_null_fuzzy_flags_treated_as_false(self):
+        o = self.make_object(
+            priceMin=100, priceLimit=400, priceMinFuzzy=None, priceLimitFuzzy=None
+        )
+        self.assertNotIn('priceMinFuzzy', o)
+        self.assertNotIn('priceLimitFuzzy', o)
+
+        path = f'/api/objects/{o["id"]}/'
+        p = self.call('patch', path, {'priceMinFuzzy': True, 'priceLimitFuzzy': True}).json()
+        self.assertTrue(p['priceMinFuzzy'] and p['priceLimitFuzzy'])
+
+        p = self.call('patch', path, {'priceMinFuzzy': None, 'priceLimitFuzzy': None}).json()
+        self.assertNotIn('priceMinFuzzy', p)
+        self.assertNotIn('priceLimitFuzzy', p)
+
+        payload = app_state()
+        payload['objects'][0]['priceMinFuzzy'] = None
+        payload['objects'][0]['priceLimitFuzzy'] = None
+        r = self.call('post', '/api/state/import/', payload)
+        self.assertEqual(r.status_code, 200, r.content)
 
     def test_coerced_when_price_cleared(self):
         o = self.make_object(priceLimit=400, priceLimitFuzzy=True)

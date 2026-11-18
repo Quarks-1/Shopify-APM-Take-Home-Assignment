@@ -67,6 +67,7 @@ function NavItem({
   icon: Icon,
   label,
   badge,
+  badgeValue,
   isSelected = false,
   collapsed = false,
   href = "#",
@@ -76,6 +77,7 @@ function NavItem({
   icon: IconComponent;
   label: string;
   badge?: ReactNode;
+  badgeValue?: string | number;
   isSelected?: boolean;
   collapsed?: boolean;
   href?: string;
@@ -85,6 +87,14 @@ function NavItem({
   onNavigate?: (href: string) => void;
 }) {
   const localize = useTemplateCopy();
+  const hasBadge = badgeValue !== undefined || Boolean(badge);
+  const collapsedBadgeText =
+    badgeValue !== undefined
+      ? typeof badgeValue === "number" && badgeValue > 99
+        ? "99+"
+        : String(badgeValue)
+      : null;
+
   return localize((
     <a
       href={href}
@@ -113,9 +123,10 @@ function NavItem({
       }
       aria-current={isSelected ? "page" : undefined}
       aria-label={label}
-      title={collapsed ? label : undefined}
+      title={collapsed ? (badgeValue !== undefined ? `${label} (${badgeValue})` : label) : undefined}
       className={cx(
-        "flex items-center justify-between overflow-hidden rounded-2lg p-2",
+        "relative flex items-center justify-between rounded-2lg p-2",
+        "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
         "transition-[width,background-color] duration-300 ease-in-out",
         collapsed ? "w-9" : "w-full",
         isSelected
@@ -123,23 +134,42 @@ function NavItem({
           : "hover:bg-background-secondary-hover",
       )}
     >
-      <span className="flex min-w-0 items-center gap-2">
-        <Icon
-          className={cx("size-5 shrink-0", isSelected ? "text-white" : "text-foreground-icon-secondary")}
-          aria-hidden
-        />
-        <Collapsible collapsed={collapsed}>
-          <span
-            className={cx(
-              "text-body-medium whitespace-nowrap",
-              isSelected ? "text-white" : "text-text-secondary",
-            )}
-          >
-            {label}
-          </span>
-        </Collapsible>
+      <span className="flex min-w-0 flex-1 items-center justify-between overflow-hidden">
+        <span className="flex min-w-0 items-center gap-2">
+          <Icon
+            className={cx("size-5 shrink-0", isSelected ? "text-text-white" : "text-foreground-icon-secondary")}
+            aria-hidden
+          />
+          <Collapsible collapsed={collapsed}>
+            <span
+              className={cx(
+                "text-body-medium whitespace-nowrap",
+                isSelected ? "text-text-white" : "text-text-secondary",
+              )}
+            >
+              {label}
+            </span>
+          </Collapsible>
+        </span>
+        {badge && <Collapsible collapsed={collapsed}>{badge}</Collapsible>}
       </span>
-      {badge && <Collapsible collapsed={collapsed}>{badge}</Collapsible>}
+      {hasBadge && (
+        <span
+          aria-hidden
+          className={cx(
+            "pointer-events-none absolute -end-1 -top-1 inline-flex items-center justify-center rounded-full shadow-2xs transition-[opacity,transform] duration-200 ease-out",
+            collapsedBadgeText !== null
+              ? "h-4 min-w-4 px-1 text-caption-2-semibold tabular-nums"
+              : "size-2.5",
+            isSelected
+              ? "bg-background-primary-default text-accent-600"
+              : "bg-accent-500 text-text-white",
+            collapsed ? "scale-100 opacity-100" : "scale-75 opacity-0",
+          )}
+        >
+          {collapsedBadgeText}
+        </span>
+      )}
     </a>
   ));
 }
@@ -195,6 +225,7 @@ function NavRows({
           onNavigate={onNavigate}
           isSelected={isSelected}
           collapsed={collapsed}
+          badgeValue={item.badge}
           badge={
             item.badge !== undefined ? (
               <Counter color={isSelected ? "primary" : "neutral"}>{item.badge}</Counter>
@@ -280,7 +311,7 @@ export function DashboardSidebar({
               type="button"
               aria-label="Close sidebar"
               onClick={onClose}
-              className="cursor-pointer text-foreground-icon-secondary"
+              className="flex size-9 cursor-pointer items-center justify-center rounded-2lg text-foreground-icon-secondary outline-none transition-colors duration-150 hover:bg-background-secondary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring"
             >
               <RiCloseLine className="size-5" aria-hidden />
             </button>
@@ -291,8 +322,9 @@ export function DashboardSidebar({
               aria-expanded={!collapsed}
               onClick={() => setCollapsed(!collapsedState)}
               className={cx(
-                "cursor-pointer text-foreground-icon-secondary transition-transform duration-300 ease-in-out",
-                collapsed && "flex w-9 items-center justify-center",
+                "flex size-9 cursor-pointer items-center justify-center rounded-2lg text-foreground-icon-secondary outline-none",
+                "transition-[background-color,transform] duration-300 ease-in-out hover:bg-background-secondary-hover",
+                "focus-visible:ring-2 focus-visible:ring-border-focus-ring",
               )}
             >
               <RiSideBarFill

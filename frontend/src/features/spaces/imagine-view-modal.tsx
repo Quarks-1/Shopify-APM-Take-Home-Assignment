@@ -4,12 +4,15 @@ import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/base/mo
 import { Spinner } from "@/components/base/spinner/spinner";
 import type { ApiRender } from "@/lib/api";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+
 export interface ImagineViewModalProps {
   spaceName: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   render: ApiRender | null;
   error: string | null;
+  isSubmitting?: boolean;
   onRegenerate: () => void;
   onRetry: () => void;
 }
@@ -37,12 +40,22 @@ export function ImagineViewModal({
   onOpenChange,
   render,
   error,
+  isSubmitting = false,
   onRegenerate,
   onRetry,
 }: ImagineViewModalProps) {
   const code = errorCode(render, error);
-  const status = code !== null ? "failed" : render?.status === "done" ? "done" : "running";
+  const status =
+    code !== null
+      ? "failed"
+      : isSubmitting && !render
+        ? "running"
+        : render?.status === "done"
+          ? "done"
+          : "running";
   const missingPhotos = render?.items.filter((item) => !item.hasPhoto).map((item) => item.name) ?? [];
+  const imageUrl =
+    render?.imageUrl && render.imageUrl.startsWith("/") ? `${API_BASE}${render.imageUrl}` : (render?.imageUrl ?? undefined);
 
   return (
     <Modal size="xl" isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -58,12 +71,12 @@ export function ImagineViewModal({
               </div>
             ) : null}
 
-            {status === "done" && render?.imageUrl ? (
+            {status === "done" && imageUrl && render ? (
               <>
                 <img
-                  src={render.imageUrl}
+                  src={imageUrl}
                   alt={`Imagined top-down view of ${spaceName}`}
-                  className="max-h-[55vh] mx-auto w-full rounded-2xl border border-separator-border object-contain bg-background-secondary-default"
+                  className="mx-auto max-h-[55vh] w-full rounded-2xl border border-separator-border bg-background-secondary-default object-contain"
                 />
                 <p className="text-caption-1-medium text-text-tertiary">
                   Generated {formatTime(render.createdAt)} · {render.itemCount} items · {render.photoCount} with product photos
@@ -91,18 +104,20 @@ export function ImagineViewModal({
                 <ButtonLink
                   variant="secondary"
                   leadingIcon={RiDownload2Line}
-                  href={render?.imageUrl ?? undefined}
+                  href={imageUrl}
                   download
                 >
                   Download
                 </ButtonLink>
-                <Button leadingIcon={RiRefreshLine} onClick={onRegenerate}>
+                <Button leadingIcon={RiRefreshLine} onClick={onRegenerate} disabled={isSubmitting}>
                   Regenerate
                 </Button>
               </>
             ) : null}
             {status === "failed" ? (
-              <Button onClick={onRetry}>Try again</Button>
+              <Button onClick={onRetry} disabled={isSubmitting}>
+                Try again
+              </Button>
             ) : null}
             {status === "running" ? (
               <Button variant="secondary" onClick={close}>

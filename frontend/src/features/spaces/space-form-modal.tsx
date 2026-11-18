@@ -9,16 +9,19 @@ import { listSpaceVibeImports } from "@/lib/api";
 import type { ApiVibeImport } from "@/lib/api";
 import { fromDisplayLength, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
 import { parseBoardUrl } from "@/features/spaces/board-url";
+import { clearedVibeSpaces } from "@/features/spaces/use-space-inspirations";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import type { LengthUnit, Space, SpaceType } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
-import { getSpace } from "@/state/selectors";
+import { footprint, getObject, getSpace } from "@/state/selectors";
 
 export interface SpaceFormModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   spaceId?: string;
+  pinCount?: number;
+  onClearVibes?: () => void;
   onSaved?: (id: string) => void;
   onCancel?: () => void;
 }
@@ -74,6 +77,8 @@ export function SpaceFormModal(props: SpaceFormModalProps) {
 
 function SpaceForm({
   spaceId,
+  pinCount,
+  onClearVibes,
   onSaved,
   close,
   savedRef,
@@ -90,11 +95,11 @@ function SpaceForm({
 
   const existingId = existing?.id;
   useEffect(() => {
-    if (existingId === undefined) return;
+    if (existingId === undefined || clearedVibeSpaces.has(existingId)) return;
     let cancelled = false;
     listSpaceVibeImports(existingId)
       .then((imports) => {
-        if (cancelled) return;
+        if (cancelled || clearedVibeSpaces.has(existingId)) return;
         const current = imports.find((i) => i.status === "done" || i.status === "running" || i.status === "queued");
         if (!current) return;
         setSavedBoard(current);
@@ -111,7 +116,13 @@ function SpaceForm({
   const isWall = values.type === "wall";
   const unitSuffix = values.unit;
 
-  const nameError = values.name.trim() === "" ? "Enter a name." : null;
+  const trimmedName = values.name.trim();
+  const nameError =
+    trimmedName === ""
+      ? "Enter a name."
+      : trimmedName.length > 120
+        ? "Name must be 120 characters or fewer."
+        : null;
   const xError = (finite(values.x) ?? 0) > 0 ? null : "Must be greater than 0.";
   const yError = (finite(values.y) ?? 0) > 0 ? null : "Must be greater than 0.";
   const boardResult = parseBoardUrl(values.boardUrl);
@@ -121,6 +132,7 @@ function SpaceForm({
   const savedBoardUrl = savedBoardResult && "url" in savedBoardResult ? savedBoardResult.url : "";
   const currentUrl = "url" in boardResult ? boardResult.url : "";
   const matchesSaved = savedBoard !== null && currentUrl !== "" && currentUrl === savedBoardUrl;
+  const displayPinCount = pinCount ?? savedBoard?.pins.usable ?? 0;
   const valid = !nameError && !xError && !yError && !boardUrlError;
 
   const changeUnit = (unit: LengthUnit) => {
@@ -141,7 +153,7 @@ function SpaceForm({
     const limit = finite(values.weightLimit);
     const weightLimit = limit !== undefined && limit > 0 ? limit : undefined;
     const base = {
-      name: values.name.trim(),
+      name: trimmedName,
       type: values.type,
       unit: values.unit,
       dims: z === undefined ? { x, y } : { x, y, z },
@@ -150,12 +162,35 @@ function SpaceForm({
     let id: string;
     if (existing) {
       actions.updateSpace(existing.id, base);
+      if (x < existing.dims.x || y < existing.dims.y || values.type !== existing.type) {
+        for (const p of existing.placements) {
+          const obj = getObject(state, p.objectId);
+          if (!obj) continue;
+          const size = footprint(obj, { type: values.type });
+          const maxX = Math.max(0, x - size.w);
+          const maxY = Math.max(0, y - size.h);
+          const clampedX = Math.min(Math.max(0, p.x), maxX);
+          const clampedY = Math.min(Math.max(0, p.y), maxY);
+          if (clampedX !== p.x || clampedY !== p.y) {
+            actions.moveObject(existing.id, p.objectId, { x: clampedX, y: clampedY });
+          }
+        }
+      }
       id = existing.id;
     } else {
       id = actions.createSpace(base);
     }
-    const isNewBoard = "url" in boardResult && boardResult.url !== "" && boardResult.url !== savedBoardUrl;
-    if (!activeImport && isNewBoard) vibes.start(id, boardResult.url);
+    const shouldStartImport =
+      "url" in boardResult &&
+      boardResult.url !== "" &&
+      (boardResult.url !== savedBoardUrl || (matchesSaved && pinCount === 0));
+    if (!activeImport && shouldStartImport) {
+      clearedVibeSpaces.delete(id);
+      vibes.start(id, boardResult.url);
+    } else if (!activeImport && savedBoard !== null && "url" in boardResult && boardResult.url === "") {
+      vibes.dismiss(id);
+      onClearVibes?.();
+    }
     savedRef.current = true;
     close();
     onSaved?.(id);
@@ -181,7 +216,7 @@ function SpaceForm({
           autoFocus
           value={values.name}
           onChange={(name) => patch({ name })}
-          isInvalid={submitted && nameError !== null}
+          isInvalid={(submitted || trimmedName.length > 120) && nameError !== null}
           errorMessage={nameError ?? undefined}
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -266,12 +301,18 @@ function SpaceForm({
             activeImport
               ? "A board is still importing…"
               : matchesSaved && savedBoard
-                ? savedBoard.boardTitle
-                  ? `Imported from "${savedBoard.boardTitle}" · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
-                  : `Imported · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
-                : isEdit
-                  ? "Replaces your space's vibes with this board's pins."
-                  : "Paste a public Pinterest board link."
+                ? displayPinCount === 0
+                  ? savedBoard.boardTitle
+                    ? `No pins left from "${savedBoard.boardTitle}". Save changes to re-import this board, or paste another.`
+                    : "No pins left from this board. Save changes to re-import it, or paste another."
+                  : savedBoard.boardTitle
+                    ? `Imported from "${savedBoard.boardTitle}" · ${displayPinCount} ${displayPinCount === 1 ? "pin" : "pins"} in your vibes. Paste another board to replace it, or clear to remove.`
+                    : `Imported · ${displayPinCount} ${displayPinCount === 1 ? "pin" : "pins"} in your vibes. Paste another board to replace it, or clear to remove.`
+                : savedBoard && currentUrl === ""
+                  ? "Save changes to clear your space's imported vibes."
+                  : isEdit
+                    ? "Replaces your space's vibes with this board's pins."
+                    : "Paste a public Pinterest board link."
           }
         />
       </ModalBody>

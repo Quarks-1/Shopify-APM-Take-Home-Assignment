@@ -1,14 +1,16 @@
 """Pinterest "vibes" endpoints: start/inspect/dismiss board imports and list
 a space's inspiration pins."""
 import logging
+import shutil
 
+from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 
 from .models import SpaceInspiration, Space, VibeImport, VibeImportStatus
 from .serializers import inspiration_to_json, validate_vibe_import, vibe_import_to_json
 from .state_views import _body, _error, _json_view, _not_found
-from .vibes import importer
+from .vibes import importer, paths
 
 logger = logging.getLogger(__name__)
 
@@ -82,12 +84,25 @@ def vibe_import_dismiss(request, import_id):
 
 
 @_json_view
-@require_http_methods(['GET'])
+@require_http_methods(['GET', 'DELETE'])
 def space_inspirations(request, space_id):
-    if not Space.objects.filter(pk=space_id).exists():
+    space = Space.objects.filter(pk=space_id).first()
+    if space is None:
         return _not_found()
-    rows = SpaceInspiration.objects.filter(space_id=space_id).order_by('board_rank', 'pk')
-    return JsonResponse({'inspirations': [inspiration_to_json(r) for r in rows]})
+    if request.method == 'GET':
+        rows = SpaceInspiration.objects.filter(space=space).order_by('board_rank', 'pk')
+        return JsonResponse({'inspirations': [inspiration_to_json(r) for r in rows]})
+    with transaction.atomic():
+        if importer.active_import(space) is not None:
+            return JsonResponse({'error': 'import_in_progress'}, status=409)
+        image_paths = list(
+            SpaceInspiration.objects.filter(space=space).values_list('image_path', flat=True)
+        )
+        SpaceInspiration.objects.filter(space=space).delete()
+        VibeImport.objects.filter(space=space).update(dismissed=True, pins_usable=0)
+    importer.remove_files(image_paths)
+    shutil.rmtree(paths.space_dir(space.pk), ignore_errors=True)
+    return HttpResponse(status=204)
 
 
 @_json_view

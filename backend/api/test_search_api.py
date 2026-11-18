@@ -11,7 +11,17 @@ from unittest import mock
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import Candidate, Placement, SearchRun, Space, SpaceObject, Verdict
+from .models import (
+    Candidate,
+    CatalogQuery,
+    Placement,
+    RunStatus,
+    SearchMode,
+    SearchRun,
+    Space,
+    SpaceObject,
+    Verdict,
+)
 from .searcher import engine, runner
 
 FAKE_UCP = str(Path(__file__).parent / 'test_fixtures' / 'fake_ucp.py')
@@ -101,6 +111,47 @@ class SearchApiTests(TestCase):
         self.assertEqual(self.post('/api/objects/nope/searches/').status_code, 404)
         self.assertEqual(self.client.get('/api/objects/obj1/searches/').status_code, 405)
         self.assertEqual(SearchRun.objects.count(), 0)
+
+    def test_force_cancels_active_and_uses_fresh_snapshot(self):
+        first = self.post('/api/objects/obj1/searches/').json()
+        SearchRun.objects.filter(pk=first['id']).update(agent_pid=333)
+
+        # Without force (or force=False), active run is reused with 200.
+        reused = self.post('/api/objects/obj1/searches/', {'force': False})
+        self.assertEqual((reused.status_code, reused.json()['id']), (200, first['id']))
+        self.assertEqual(self.popen.call_count, 1)
+
+        # Update object constraints, then force a fresh search.
+        patch_res = self.client.patch(
+            '/api/objects/obj1/',
+            data=json.dumps({'name': 'Updated table', 'priceLimit': 250}),
+            content_type='application/json',
+        )
+        self.assertEqual(patch_res.status_code, 200)
+
+        forced = self.post('/api/objects/obj1/searches/', {'force': True})
+        self.assertEqual(forced.status_code, 202, forced.content)
+        second = forced.json()
+        self.assertNotEqual(second['id'], first['id'])
+        self.assertEqual(SearchRun.objects.get(pk=first['id']).status, 'canceled')
+        self.assertIn(mock.call(333, 15), self.killpg.call_args_list)
+        self.assertEqual(self.popen.call_count, 2)
+
+        fresh_run = SearchRun.objects.get(pk=second['id'])
+        self.assertEqual(fresh_run.object_snapshot['name'], 'Updated table')
+        self.assertEqual(fresh_run.object_snapshot['priceLimit'], 250)
+
+    def test_force_validation(self):
+        run, ids = self.judged_run()
+        for bad in (
+            {'force': 'yes'},
+            {'force': 1},
+            {'force': None},
+            {'mode': 'refine', 'force': True},
+            {'mode': 'like', 'candidateId': ids[0], 'force': True},
+        ):
+            r = self.post('/api/objects/obj1/searches/', bad)
+            self.assertEqual((r.status_code, r.json()['error']), (400, 'validation_failed'), bad)
 
     # ----------------------------------------------------------- theme order
     def themed_run(self):
@@ -343,23 +394,78 @@ class SearchApiTests(TestCase):
         self.assertEqual(self.state_candidates(), run_cands)
         self.assertEqual({(c['objectId'], c['runId']) for c in run_cands}, {('obj1', str(old.pk))})
 
-        # Selection from the old run survives a newer run and comes last.
+        # A plain search run clears any prior selection when it finishes.
         self.post('/api/objects/obj1/select/', {'candidateId': old_ids[0]})
         new, _ = self.judged_run()
+        self.assertIsNone(SpaceObject.objects.get(pk='obj1').selected_candidate_id)
+
+        # Selection from an older run comes last after the newest DONE run's candidates.
+        self.post('/api/objects/obj1/select/', {'candidateId': old_ids[0]})
         new_cands = self.client.get(f'/api/searches/{new.pk}/').json()['candidates']
         state = self.state_candidates()
         self.assertEqual([c['id'] for c in state], [c['id'] for c in new_cands] + [old_ids[0]])
         self.assertEqual(state[-1]['runId'], str(old.pk))
 
-        # A newer run without accepted candidates does not hide them.
-        empty = engine.create_run(self.obj)
+        # A newer like/refine run without accepted candidates keeps both candidates and 'done'.
+        empty = engine.create_run(self.obj, mode=SearchMode.LIKE, like_source={})
         runner.finalize(empty)
         self.assertEqual(SearchRun.objects.get(pk=empty.pk).status, 'empty')
+        self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'done')
         self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in state])
 
         # Selecting one of the newest run's candidates is not listed twice.
         self.post('/api/objects/obj1/select/', {'candidateId': new_cands[0]['id']})
         self.assertEqual([c['id'] for c in self.state_candidates()], [c['id'] for c in new_cands])
+
+    def test_state_candidates_ignore_partial_non_done_runs(self):
+        # Partial accepted candidates on running, canceled, or failed runs never leak into /api/state/.
+        for status in (RunStatus.RUNNING, RunStatus.CANCELED, RunStatus.FAILED):
+            run = engine.create_run(self.obj)
+            cq = CatalogQuery.objects.create(run=run, round=1, strategy='exact', payload={'query': 'x'})
+            Candidate.objects.create(
+                run=run, query=cq, product_gid=f'gid://shopify/p/{status}',
+                title=f'Partial {status}', verdict=Verdict.ACCEPTED,
+            )
+            SearchRun.objects.filter(pk=run.pk).update(status=status)
+        self.assertEqual(self.state_candidates(), [])
+
+        done_run, done_ids = self.judged_run()
+        # A subsequent running or canceled run with partial accepted candidates still keeps done_run.
+        for status in (RunStatus.RUNNING, RunStatus.CANCELED, RunStatus.FAILED):
+            later = engine.create_run(self.obj)
+            cq = CatalogQuery.objects.create(run=later, round=1, strategy='exact', payload={'query': 'x'})
+            Candidate.objects.create(
+                run=later, query=cq, product_gid=f'gid://shopify/p/later-{status}',
+                title=f'Later {status}', verdict=Verdict.ACCEPTED,
+            )
+            SearchRun.objects.filter(pk=later.pk).update(status=status)
+            self.assertEqual([c['id'] for c in self.state_candidates()], done_ids[:1])
+
+    def test_empty_like_and_refine_keep_done_only_when_prior_matches_exist(self):
+        # Without prior DONE matches, an empty refine after an empty search stays 'empty'.
+        first_empty = engine.create_run(self.obj)
+        runner.finalize(first_empty)
+        self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'empty')
+
+        refine_empty = engine.create_run(self.obj, mode=SearchMode.REFINE, feedback={})
+        runner.finalize(refine_empty)
+        self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'empty')
+
+        # Once a DONE run has accepted candidates, empty like and refine runs preserve 'done'.
+        self.judged_run()
+        self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'done')
+
+        for mode in (SearchMode.LIKE, SearchMode.REFINE):
+            extra = {'like_source': {}} if mode == SearchMode.LIKE else {'feedback': {}}
+            empty_followup = engine.create_run(self.obj, mode=mode, **extra)
+            runner.finalize(empty_followup)
+            self.assertEqual(SearchRun.objects.get(pk=empty_followup.pk).status, 'empty')
+            self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'done')
+
+        # A plain search run that finishes empty still flips search.status to 'empty'.
+        plain_empty = engine.create_run(self.obj)
+        runner.finalize(plain_empty)
+        self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'empty')
 
     def test_state_candidates_in_object_order(self):
         second = make_object('obj0', position=5)
@@ -383,8 +489,8 @@ class SearchApiTests(TestCase):
         for i in range(3):
             obj = make_object(f'more{i}')
             run, ids = self.judged_run(obj)
-            self.post(f'/api/objects/{obj.pk}/select/', {'candidateId': ids[0]})
-            self.judged_run(obj)  # the selection is now from an older run
+            self.judged_run(obj)
+            self.post(f'/api/objects/{obj.pk}/select/', {'candidateId': ids[0]})  # selection from older run
         with self.assertNumQueries(9):
             # obj1's accepted + per extra object: its accepted plus the older selection
             self.assertEqual(len(self.client.get('/api/state/').json()['candidates']),

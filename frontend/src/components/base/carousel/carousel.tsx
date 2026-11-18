@@ -80,7 +80,7 @@ export function CarouselItem({ children, className, ref, ...props }: CarouselIte
       ref={ref}
       role="group"
       aria-roledescription="slide"
-      className={cx("w-full shrink-0 snap-start", className)}
+      className={cx("w-full shrink-0 snap-start", props.onClick ? "cursor-pointer" : "cursor-default", className)}
       {...props}
     >
       {children}
@@ -238,7 +238,7 @@ export function Carousel({
         ref={trackRef}
         tabIndex={0}
         className={cx(
-          "relative -m-1 flex overflow-x-auto overscroll-x-contain p-1 scroll-px-1 outline-none",
+          "relative -m-1 flex cursor-default overflow-x-auto overscroll-x-contain p-1 scroll-px-1 outline-none",
           "snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           "focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2",
           align === "center" && "[&>*]:snap-center",
@@ -264,7 +264,8 @@ export function Carousel({
               aria-current={index === active}
               onClick={() => scrollToIndex(index)}
               className={cx(
-                "h-1.5 cursor-pointer rounded-full transition-all duration-200 ease-out",
+                "h-1.5 cursor-pointer rounded-full outline-none transition-all duration-200 ease-out",
+                "focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-1",
                 index === active
                   ? "w-4 bg-text-primary"
                   : "w-1.5 bg-background-tertiary-default hover:bg-border-button-active",

@@ -26,16 +26,29 @@ export function GroupIcon({ group, className }: { group: Group; className?: stri
   return <Icon className={cx(iconColor, className)} aria-hidden />;
 }
 
-export function PinCard({ pin }: { pin: ApiInspiration }) {
+function safeHttpsUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).protocol === "https:" ? raw : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function PinCard({ pin, linkToPin = false }: { pin: ApiInspiration; linkToPin?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = pin.imageUrl.startsWith(TRUSTED_IMAGE_PREFIX) && !imageFailed;
   const label = groupLabel(pin.primaryType);
   const name = pin.item ? pin.item.charAt(0).toUpperCase() + pin.item.slice(1) : label;
+  const href = linkToPin ? safeHttpsUrl(pin.pinUrl) : undefined;
 
-  return (
+  const card = (
     <div
       title={pin.description || undefined}
-      className="flex flex-col gap-2 rounded-3xl border border-border-button-default bg-background-primary-default p-2"
+      className={cx(
+        "flex flex-col gap-2 rounded-3xl border border-border-button-default bg-background-primary-default p-2",
+        href && "transition-colors hover:border-border-button-hover",
+      )}
     >
       <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-background-secondary-default">
         {showImage ? (
@@ -62,6 +75,18 @@ export function PinCard({ pin }: { pin: ApiInspiration }) {
         </div>
       </div>
     </div>
+  );
+
+  if (!href) return card;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+    >
+      {card}
+    </a>
   );
 }
 
@@ -162,7 +187,7 @@ export function VibesInspirationSection() {
       >
         {visible.map((pin) => (
           <CarouselItem key={pin.id} className="w-48">
-            <PinCard pin={pin} />
+            <PinCard pin={pin} linkToPin />
           </CarouselItem>
         ))}
       </Carousel>

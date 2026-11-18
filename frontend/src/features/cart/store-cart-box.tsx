@@ -189,7 +189,7 @@ export function StoreCartBox({ group }: { group: CartStoreGroup }) {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Chip variant="subtle" color="soft">
-                {itemCount} items
+                {itemCount} {itemCount === 1 ? "item" : "items"}
               </Chip>
               <StatusChips group={group} onRetry={() => syncStore(store.id)} />
               {checkoutOpenedAt ? (

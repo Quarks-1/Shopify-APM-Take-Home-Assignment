@@ -10,10 +10,222 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import codecs
 import os
 import shutil
 import tempfile
+import unicodedata
 from pathlib import Path
+
+
+def _py_unicode_escape_encode(text, errors='strict'):
+    if not isinstance(text, str):
+        raise TypeError(f'unicode_escape_encode() argument 1 must be str, not {type(text).__name__}')
+    codecs.lookup_error(errors)
+    parts = []
+    for ch in text:
+        cp = ord(ch)
+        if ch == '\t':
+            parts.append(b'\\t')
+        elif ch == '\n':
+            parts.append(b'\\n')
+        elif ch == '\r':
+            parts.append(b'\\r')
+        elif ch == '\\':
+            parts.append(b'\\\\')
+        elif 0x20 <= cp <= 0x7E:
+            parts.append(bytes([cp]))
+        elif cp <= 0xFF:
+            parts.append(f'\\x{cp:02x}'.encode('ascii'))
+        elif cp <= 0xFFFF:
+            parts.append(f'\\u{cp:04x}'.encode('ascii'))
+        else:
+            parts.append(f'\\U{cp:08x}'.encode('ascii'))
+    return b''.join(parts), len(text)
+
+
+_SIMPLE_ESCAPES = {
+    ord('\\'): '\\',
+    ord("'"): "'",
+    ord('"'): '"',
+    ord('a'): '\a',
+    ord('b'): '\b',
+    ord('f'): '\f',
+    ord('n'): '\n',
+    ord('r'): '\r',
+    ord('t'): '\t',
+    ord('v'): '\v',
+}
+
+
+def _py_unicode_escape_decode(data, errors='strict', final=True):
+    raw = data.encode('utf-8') if isinstance(data, str) else memoryview(data).tobytes()
+    err_handler = codecs.lookup_error(errors)
+    out = []
+    n = len(raw)
+    i = 0
+
+    def handle_error(start, end, reason):
+        exc = UnicodeDecodeError('unicodeescape', raw, start, end, reason)
+        replacement, new_pos = err_handler(exc)
+        if isinstance(replacement, bytes):
+            replacement = replacement.decode('latin-1')
+        out.append(replacement)
+        return new_pos
+
+    while i < n:
+        b = raw[i]
+        if b != 0x5C:  # '\\'
+            out.append(chr(b))
+            i += 1
+            continue
+        if i + 1 >= n:
+            if not final:
+                break
+            i = handle_error(i, n, '\\ at end of string')
+            continue
+        esc = raw[i + 1]
+        if esc == 0x0A:  # line continuation \\\n
+            i += 2
+        elif esc == 0x0D:  # \\\r or \\\r\n
+            if i + 2 >= n and not final:
+                break
+            i += 3 if (i + 2 < n and raw[i + 2] == 0x0A) else 2
+        elif esc in _SIMPLE_ESCAPES:
+            out.append(_SIMPLE_ESCAPES[esc])
+            i += 2
+        elif 0x30 <= esc <= 0x37:  # 1-3 octal digits
+            end = min(n, i + 4)
+            j = i + 2
+            while j < end and 0x30 <= raw[j] <= 0x37:
+                j += 1
+            if j < i + 4 and j == n and not final:
+                break
+            val = int(raw[i + 1:j].decode('ascii'), 8)
+            out.append(chr(val & 0xFF))
+            i = j
+        elif esc in (ord('x'), ord('u'), ord('U')):
+            digits = {ord('x'): 2, ord('u'): 4, ord('U'): 8}[esc]
+            end = i + 2 + digits
+            if end > n:
+                if not final:
+                    break
+                j = i + 2
+                while j < n and chr(raw[j]) in '0123456789abcdefABCDEF':
+                    j += 1
+                i = handle_error(i, j, f'truncated \\{chr(esc)} escape')
+                continue
+            hex_part = raw[i + 2:end]
+            try:
+                cp = int(hex_part.decode('ascii'), 16)
+            except ValueError:
+                j = i + 2
+                while j < end and chr(raw[j]) in '0123456789abcdefABCDEF':
+                    j += 1
+                i = handle_error(i, j, f'truncated \\{chr(esc)} escape')
+                continue
+            if cp > 0x10FFFF:
+                i = handle_error(i, end, 'illegal Unicode character')
+                continue
+            out.append(chr(cp))
+            i = end
+        elif esc == ord('N'):
+            if i + 2 >= n:
+                if not final:
+                    break
+                i = handle_error(i, n, 'malformed \\N character escape')
+                continue
+            if raw[i + 2] != ord('{'):
+                i = handle_error(i, i + 2, 'malformed \\N character escape')
+                continue
+            close = raw.find(b'}', i + 3)
+            if close == -1:
+                if not final:
+                    break
+                i = handle_error(i, n, 'malformed \\N character escape')
+                continue
+            name = raw[i + 3:close].decode('ascii', errors='replace')
+            if not name:
+                i = handle_error(i, close + 1, 'malformed \\N character escape')
+                continue
+            try:
+                out.append(unicodedata.lookup(name))
+            except KeyError:
+                i = handle_error(i, close + 1, 'unknown Unicode character name')
+                continue
+            i = close + 1
+        else:
+            out.append('\\')
+            out.append(chr(esc))
+            i += 2
+    return ''.join(out), i
+
+
+def _build_unicode_escape_codec_info(*, use_c=True):
+    c_enc = getattr(codecs, 'unicode_escape_encode', None) if use_c else None
+    c_dec = getattr(codecs, 'unicode_escape_decode', None) if use_c else None
+    enc_fn = c_enc if callable(c_enc) else _py_unicode_escape_encode
+    dec_fn = c_dec if callable(c_dec) else _py_unicode_escape_decode
+
+    class Codec(codecs.Codec):
+        def encode(self, input, errors='strict'):
+            return enc_fn(input, errors)
+
+        def decode(self, input, errors='strict'):
+            return dec_fn(input, errors, True)
+
+    class IncrementalEncoder(codecs.IncrementalEncoder):
+        def encode(self, input, final=False):
+            return enc_fn(input, self.errors)[0]
+
+    class IncrementalDecoder(codecs.BufferedIncrementalDecoder):
+        def _buffer_decode(self, input, errors, final):
+            return dec_fn(input, errors, final)
+
+    class StreamWriter(Codec, codecs.StreamWriter):
+        pass
+
+    class StreamReader(Codec, codecs.StreamReader):
+        def decode(self, input, errors='strict'):
+            return dec_fn(input, errors, False)
+
+    return codecs.CodecInfo(
+        name='unicode-escape',
+        encode=Codec().encode,
+        decode=Codec().decode,
+        incrementalencoder=IncrementalEncoder,
+        incrementaldecoder=IncrementalDecoder,
+        streamwriter=StreamWriter,
+        streamreader=StreamReader,
+    )
+
+
+_UNICODE_ESCAPE_CODEC_INFO = _build_unicode_escape_codec_info()
+
+
+def _unicode_escape_search(encoding):
+    norm = encoding.strip().lower().replace('-', '_').replace(' ', '_')
+    if norm == 'unicode_escape':
+        return _UNICODE_ESCAPE_CODEC_INFO
+    return None
+
+
+def _ensure_unicode_escape_codec():
+    """Ensure `"unicode_escape"` / `"unicode-escape"` codecs are available.
+
+    Django 5.2's `django.utils.log.log_response` encodes >=400 log args with
+    `"unicode_escape"`. Under Python 3.15 (or when `encodings.unicode_escape` is
+    absent/unavailable), `codecs.lookup("unicode_escape")` can raise
+    `LookupError`, turning every 4xx/5xx JSON response into a 500 error.
+    """
+    try:
+        codecs.lookup('unicode_escape')
+        codecs.lookup('unicode-escape')
+    except LookupError:
+        codecs.register(_unicode_escape_search)
+
+
+_ensure_unicode_escape_codec()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

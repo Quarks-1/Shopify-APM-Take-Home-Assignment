@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router";
 import {
   RiDeleteBinLine,
   RiFolderOpenLine,
+  RiRefreshLine,
   RiSearchLine,
   RiSettings3Line,
   RiShoppingCart2Line,
@@ -70,10 +71,10 @@ function CreateSpace() {
         </div>
       </header>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
-        <div className={`${CARD} p-4`}>
+        <div className={cx(CARD, "p-4")}>
           <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
         </div>
-        <div className={`${CARD} min-h-64 p-5`} aria-hidden />
+        <div className={cx(CARD, "min-h-64 p-5")} aria-hidden />
       </div>
       <SpaceFormModal
         isOpen={isOpen}
@@ -103,7 +104,13 @@ function EditSpace({ spaceId }: { spaceId: string }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [vibeOpen, setVibeOpen] = useState(false);
-  const { inspirations, remove: removeInspiration } = useSpaceInspirations(spaceId);
+  const {
+    status: inspirationsStatus,
+    inspirations,
+    remove: removeInspiration,
+    clear: clearInspirations,
+    retry: retryInspirations,
+  } = useSpaceInspirations(spaceId);
   const panelSplit = usePanelSplit();
 
   // Pick up an import that is running or just finished (e.g. started in another tab).
@@ -125,7 +132,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
 
   if (!space) {
     return (
-      <div className={`${CARD} flex flex-col items-center gap-4 px-6 py-16 text-center`}>
+      <div className={cx(CARD, "flex flex-col items-center gap-4 px-6 py-16 text-center")}>
         <RiFolderOpenLine className="size-8 text-foreground-icon-tertiary" aria-hidden />
         <div className="flex flex-col gap-1">
           <h1 className="text-title-2-medium text-text-primary">Space not found</h1>
@@ -140,6 +147,10 @@ function EditSpace({ spaceId }: { spaceId: string }) {
 
   const typeLabel = SPACE_TYPE_OPTIONS.find((o) => o.value === space.type)?.label ?? space.type;
   const estimated = getSpaceEstimatedTotal(state, space.id);
+  const canSearchAll = objects.some((o) => o.source === "search");
+  const canBuyAll = objects.some(
+    (o) => o.source === "search" && Boolean(o.selectedProductId) && !state.cart.some((l) => l.objectId === o.id),
+  );
 
   const buyAll = () => {
     const added = addAllToCart(objectIds);
@@ -155,23 +166,36 @@ function EditSpace({ spaceId }: { spaceId: string }) {
     const name = space.name;
     deleteSpace(space.id);
     toast.success(`Deleted "${name}"`);
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   return (
   <>
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-3rem)] lg:overflow-hidden">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h1 className="truncate text-title-3-medium text-text-primary">{space.name}</h1>
-          <p className="hidden text-body-regular text-text-secondary sm:inline">
-            {typeLabel} · {formatDims(space.dims, space.unit)} · Est. {formatPrice(estimated)}
+          <p className="text-body-regular text-text-secondary">
+            {typeLabel} · <bdi dir="ltr">{formatDims(space.dims, space.unit)}</bdi> · Est.{" "}
+            <bdi dir="ltr">{formatPrice(estimated)}</bdi>
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           <VibeImportStatus spaceId={space.id} />
+          {inspirationsStatus === "error" && (
+            <Button variant="ghost" size="small" leadingIcon={RiRefreshLine} onClick={retryInspirations}>
+              Retry vibes
+            </Button>
+          )}
           {inspirations.length > 0 && (
-            <Button variant="secondary" size="small" className="group" leadingIcon={RiSparkling2Line} onClick={() => setVibeOpen(true)}>
+            <Button
+              variant="secondary"
+              size="small"
+              aria-label="See the Vibe"
+              className="group"
+              leadingIcon={RiSparkling2Line}
+              onClick={() => setVibeOpen(true)}
+            >
               <WavyText text="See the Vibe" />
             </Button>
           )}
@@ -185,12 +209,18 @@ function EditSpace({ spaceId }: { spaceId: string }) {
             variant="secondary"
             size="small"
             leadingIcon={RiSearchLine}
-            disabled={objectIds.length === 0}
+            disabled={!canSearchAll}
             onClick={() => searchAll(objectIds)}
           >
             Search all
           </Button>
-          <Button variant="primary" size="small" leadingIcon={RiShoppingCart2Line} onClick={buyAll}>
+          <Button
+            variant="primary"
+            size="small"
+            leadingIcon={RiShoppingCart2Line}
+            disabled={!canBuyAll}
+            onClick={buyAll}
+          >
             Buy all
           </Button>
         </div>
@@ -206,7 +236,7 @@ function EditSpace({ spaceId }: { spaceId: string }) {
         }
         className={cx(
           "grid min-h-0 flex-1 grid-cols-1 gap-6 lg:items-stretch lg:gap-x-0",
-          "lg:grid-cols-[minmax(20rem,var(--split-start))_1.5rem_minmax(22rem,var(--split-end))]",
+          "lg:grid-cols-[minmax(18rem,var(--split-start))_1.5rem_minmax(20rem,var(--split-end))]",
         )}
       >
         <div id={DESIGNER_ID} className="flex min-h-0 min-w-0 flex-col">
@@ -234,7 +264,13 @@ function EditSpace({ spaceId }: { spaceId: string }) {
       </div>
     </div>
 
-    <SpaceFormModal isOpen={settingsOpen} onOpenChange={setSettingsOpen} spaceId={space.id} />
+    <SpaceFormModal
+      isOpen={settingsOpen}
+      onOpenChange={setSettingsOpen}
+      spaceId={space.id}
+      pinCount={inspirationsStatus === "ready" ? inspirations.length : undefined}
+      onClearVibes={clearInspirations}
+    />
     <SeeTheVibeModal
       isOpen={vibeOpen}
       onOpenChange={setVibeOpen}

@@ -1,14 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, createRender, describeError, fetchRender, isAbortError } from "@/lib/api";
 import type { ApiRender } from "@/lib/api";
+import { useAppState } from "@/state/app-store";
+import { getObject, getSpace } from "@/state/selectors";
 import { useStoreInternals } from "@/state/store-context";
 
 const POLL_INTERVAL_MS = 1500;
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+
+function normalizeRender(render: ApiRender): ApiRender {
+  if (!render.imageUrl || !render.imageUrl.startsWith("/") || !API_BASE) return render;
+  return { ...render, imageUrl: `${API_BASE}${render.imageUrl}` };
+}
 
 interface ViewState {
   spaceId: string;
   render: ApiRender | null;
   error: string | null;
+  layoutKey: string;
 }
 
 /**
@@ -20,15 +29,40 @@ interface ViewState {
  * different space starts empty.
  */
 export function useImagineView(spaceId: string) {
+  const state = useAppState();
   const { enqueue } = useStoreInternals();
   const [isOpen, setOpen] = useState(false);
-  const [view, setView] = useState<ViewState>({ spaceId, render: null, error: null });
+  const [submittingSpaceId, setSubmittingSpaceId] = useState<string | null>(null);
+  const [view, setView] = useState<ViewState>({ spaceId, render: null, error: null, layoutKey: "" });
   // Bumped by every imagine() call and on space change; responses from older calls are ignored.
   const requestRef = useRef(0);
 
-  const current = view.spaceId === spaceId ? view : { spaceId, render: null, error: null };
+  const space = getSpace(state, spaceId);
+  const layoutKey = useMemo(() => {
+    if (!space) return "";
+    return JSON.stringify({
+      type: space.type,
+      unit: space.unit,
+      dims: space.dims,
+      placements: space.placements.map((p) => {
+        const obj = getObject(state, p.objectId);
+        return {
+          id: p.objectId,
+          x: p.x,
+          y: p.y,
+          name: obj?.name,
+          type: obj?.type,
+          dims: obj?.dims,
+          selectedProductId: obj?.selectedProductId,
+        };
+      }),
+    });
+  }, [space, state]);
+
+  const current = view.spaceId === spaceId ? view : { spaceId, render: null, error: null, layoutKey: "" };
   const render = current.render;
   const error = current.error;
+  const isSubmitting = submittingSpaceId === spaceId;
   const runningId = render?.status === "running" ? render.id : null;
 
   // Abandon in-flight requests when the space changes or the component unmounts.
@@ -49,14 +83,21 @@ export function useImagineView(spaceId: string) {
       try {
         const { render: next } = await fetchRender(runningId, controller.signal);
         if (controller.signal.aborted) return;
+        const normalized = normalizeRender(next);
         setView((prev) =>
-          prev.spaceId !== spaceId || prev.render?.id !== runningId ? prev : { spaceId, render: next, error: null },
+          prev.spaceId !== spaceId || prev.render?.id !== runningId
+            ? prev
+            : { spaceId, render: normalized, error: null, layoutKey: prev.layoutKey },
         );
-        if (next.status === "running") timer = setTimeout(tick, POLL_INTERVAL_MS);
+        if (normalized.status === "running") timer = setTimeout(tick, POLL_INTERVAL_MS);
       } catch (err) {
         if (controller.signal.aborted || isAbortError(err)) return;
         const message = err instanceof ApiError ? err.code : describeError(err);
-        setView((prev) => (prev.spaceId !== spaceId || prev.render?.id !== runningId ? prev : { spaceId, render: null, error: message }));
+        setView((prev) =>
+          prev.spaceId !== spaceId || prev.render?.id !== runningId
+            ? prev
+            : { spaceId, render: null, error: message, layoutKey: prev.layoutKey },
+        );
       }
     };
 
@@ -69,22 +110,34 @@ export function useImagineView(spaceId: string) {
 
   const imagine = useCallback(
     async (force = false) => {
+      if (isSubmitting || runningId !== null) {
+        if (!force) setOpen(true);
+        return;
+      }
       const id = ++requestRef.current;
+      setSubmittingSpaceId(spaceId);
       setOpen(true);
-      // The previous render stays on screen until the response says what to show, so an unchanged layout re-views without flashing.
-      setView((prev) => ({ spaceId, render: prev.spaceId === spaceId ? prev.render : null, error: null }));
+      // Keep the previous render only when !force and the layout hasn't changed; otherwise clear immediately so a stale image never flashes.
+      setView((prev) => ({
+        spaceId,
+        render: !force && prev.spaceId === spaceId && prev.layoutKey === layoutKey ? prev.render : null,
+        error: null,
+        layoutKey,
+      }));
       try {
         // enqueue waits for pending layout writes so the backend sees the latest positions.
         const result = await enqueue(() => createRender(spaceId, { force }));
         if (id !== requestRef.current) return;
-        setView({ spaceId, render: result.render, error: null });
+        setView({ spaceId, render: normalizeRender(result.render), error: null, layoutKey });
       } catch (err) {
         if (id !== requestRef.current || isAbortError(err)) return;
-        setView({ spaceId, render: null, error: err instanceof ApiError ? err.code : describeError(err) });
+        setView({ spaceId, render: null, error: err instanceof ApiError ? err.code : describeError(err), layoutKey });
+      } finally {
+        if (id === requestRef.current) setSubmittingSpaceId(null);
       }
     },
-    [enqueue, spaceId],
+    [enqueue, isSubmitting, layoutKey, runningId, spaceId],
   );
 
-  return { isOpen, setOpen, render, error, imagine };
+  return { isOpen, setOpen, render, error, isSubmitting, imagine };
 }

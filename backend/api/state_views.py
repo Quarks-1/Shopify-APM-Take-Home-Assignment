@@ -82,14 +82,15 @@ def _json_view(fn):
 
 
 def state_candidates(objects):
-    """Per object, in object order: the accepted candidates of its newest run
-    that has any (ordered like run JSON), then its selected candidate when that
-    came from another run. Two queries however many objects or runs exist."""
+    """Per object, in object order: the accepted candidates of its newest
+    finished (done) run that has any (ordered like run JSON), then its selected
+    candidate when that came from another run. Two queries however many objects
+    or runs exist."""
     has_accepted = Candidate.objects.filter(run=OuterRef('pk'), verdict=Verdict.ACCEPTED)
     newest = {}
     themes = {}
     for object_id, run_id, vibes in (
-        SearchRun.objects.filter(Exists(has_accepted))
+        SearchRun.objects.filter(Exists(has_accepted), status=RunStatus.DONE)
         .order_by('-created_at', '-pk')
         .values_list('object_id', 'pk', 'vibes')
     ):

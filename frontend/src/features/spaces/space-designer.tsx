@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { RiAddLine, RiCursorLine, RiShape2Line, RiSparkling2Line } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
@@ -107,6 +107,76 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const overlapping = useMemo(() => getOverlappingObjectIds(state, spaceId), [state, spaceId]);
   const imagineView = useImagineView(spaceId);
 
+  const items = useMemo(() => {
+    if (!space) return [];
+    return space.placements.flatMap((p) => {
+      const object = getObject(state, p.objectId);
+      if (!object) return [];
+      const size = footprint(object, space);
+      let rect: Rect = { x: p.x, y: p.y, w: size.w, h: size.h };
+      if (drag && drag.kind !== "draw" && drag.id === object.id) rect = drag.rect;
+      return [{ object, placement: p, rect }];
+    });
+  }, [drag, space, state]);
+
+  const cancelDrag = useCallback(() => {
+    const current = dragRef.current;
+    if (!current) return;
+    const svg = svgRef.current;
+    if (svg?.hasPointerCapture(current.pointerId)) svg.releasePointerCapture(current.pointerId);
+    setDrag(null);
+  }, [setDrag]);
+
+  // Rotate the selected object 90 degrees clockwise (swap w/h around its centre).
+  const rotateSelected = useCallback(() => {
+    if (!space || !selectedObjectId || dragRef.current) return;
+    const item = items.find((it) => it.object.id === selectedObjectId);
+    if (!item) return;
+    const { object, rect } = item;
+    const { w, h } = rect;
+    if (w === h) return;
+    if (h > space.dims.x || w > space.dims.y) {
+      toast(`${object.name} doesn't fit rotated`);
+      return;
+    }
+    const x = clamp(round4(rect.x + w / 2 - h / 2), 0, space.dims.x - h);
+    const y = clamp(round4(rect.y + h / 2 - w / 2), 0, space.dims.y - w);
+    actions.resizeObject(object.id, { w: h, h: w }, spaceId);
+    if (x !== rect.x || y !== rect.y) actions.moveObject(spaceId, object.id, { x, y });
+  }, [actions, items, selectedObjectId, space, spaceId]);
+
+  useEffect(() => {
+    if (!space) return;
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const openDialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
+      for (const dialog of openDialogs) {
+        if (!dialog.closest("[data-exiting]")) return;
+      }
+      const target = e.target instanceof Element ? e.target : null;
+      if (
+        target?.closest(
+          "input, textarea, select, [contenteditable='true'], [contenteditable=''], [role='textbox'], [role='searchbox'], [role='spinbutton'], [role='listbox'], [role='option'], [role='combobox']",
+        )
+      ) {
+        return;
+      }
+      if (e.key === "Escape") {
+        cancelDrag();
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "v" || e.key === "V") setMode("select");
+      else if (e.key === "d" || e.key === "D") setMode("draw");
+      else if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        rotateSelected();
+      }
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => window.removeEventListener("keydown", onWindowKeyDown);
+  }, [cancelDrag, rotateSelected, space]);
+
   if (!space) return null;
 
   const { dims, unit } = space;
@@ -117,15 +187,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   const fontSize = longest / 45;
   const handleSize = longest / 45;
   const labelRoom = fontSize * 1.3;
-
-  const items = space.placements.flatMap((p) => {
-    const object = getObject(state, p.objectId);
-    if (!object) return [];
-    const size = footprint(object, space);
-    let rect: Rect = { x: p.x, y: p.y, w: size.w, h: size.h };
-    if (drag && drag.kind !== "draw" && drag.id === object.id) rect = drag.rect;
-    return [{ object, placement: p, rect }];
-  });
 
   const weight = getSpaceWeight(state, spaceId);
   const weightRatio = space.weightLimit ? weight / space.weightLimit : 0;
@@ -139,6 +200,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
       dims: dimsForFootprint(space, w, h),
     });
     actions.placeObject(spaceId, id, pos);
+    setMode("select");
     onSelectObject(id);
     drawer.open(id, { isNew: true });
   };
@@ -148,14 +210,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   };
 
   /* -------------------------------------------------------------- pointer */
-
-  const cancelDrag = () => {
-    const current = dragRef.current;
-    if (!current) return;
-    const svg = svgRef.current;
-    if (svg?.hasPointerCapture(current.pointerId)) svg.releasePointerCapture(current.pointerId);
-    setDrag(null);
-  };
 
   const drawRect = (a: { x: number; y: number }, b: { x: number; y: number }): Rect => {
     const x0 = clamp(snap(Math.min(a.x, b.x), snapStep), 0, dims.x);
@@ -227,12 +281,16 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         },
       });
     } else {
+      const maxW = Math.max(snapStep, dims.x - o.x);
+      const minW = Math.min(snapStep, maxW);
+      const maxH = Math.max(snapStep, dims.y - o.y);
+      const minH = Math.min(snapStep, maxH);
       setDrag({
         ...current,
         rect: {
           ...o,
-          w: clamp(snap(o.w + dx, snapStep), Math.min(snapStep, dims.x - o.x), dims.x - o.x),
-          h: clamp(snap(o.h + dy, snapStep), Math.min(snapStep, dims.y - o.y), dims.y - o.y),
+          w: clamp(snap(o.w + dx, snapStep), minW, maxW),
+          h: clamp(snap(o.h + dy, snapStep), minH, maxH),
         },
       });
     }
@@ -248,7 +306,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
       const r = current.rect;
       if (r.w >= snapStep && r.h >= snapStep) {
         createAt(r.w, r.h, { x: r.x, y: r.y });
-        setMode("select");
       }
       return;
     }
@@ -258,43 +315,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
   };
 
   /* ------------------------------------------------------------- keyboard */
-
-  // Rotate the selected object 90 degrees clockwise (swap w/h around its centre).
-  // Rect keydown events bubble to the root handler, so this is only called from there.
-  const rotateSelected = () => {
-    if (!selectedObjectId || dragRef.current) return;
-    const item = items.find((it) => it.object.id === selectedObjectId);
-    if (!item) return;
-    const { object, rect } = item;
-    const { w, h } = rect;
-    if (w === h) return;
-    if (h > dims.x || w > dims.y) {
-      toast(`${object.name} doesn't fit rotated`);
-      return;
-    }
-    const x = clamp(round4(rect.x + w / 2 - h / 2), 0, dims.x - h);
-    const y = clamp(round4(rect.y + h / 2 - w / 2), 0, dims.y - w);
-    actions.resizeObject(object.id, { w: h, h: w }, spaceId);
-    if (x !== rect.x || y !== rect.y) actions.moveObject(spaceId, object.id, { x, y });
-  };
-
-  const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    // React bubbles events from portals (the Imagine view modal) through this tree; ignore anything outside the DOM root.
-    if (!rootRef.current?.contains(target)) return;
-    if (target.closest("input, textarea, select, [contenteditable='true']")) return;
-    if (e.key === "Escape") {
-      cancelDrag();
-      return;
-    }
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === "v" || e.key === "V") setMode("select");
-    else if (e.key === "d" || e.key === "D") setMode("draw");
-    else if (e.key === "r" || e.key === "R") {
-      e.preventDefault();
-      rotateSelected();
-    }
-  };
 
   const onRectKeyDown = (e: ReactKeyboardEvent<SVGGElement>, item: (typeof items)[number]) => {
     if (e.target !== e.currentTarget) return;
@@ -315,8 +335,12 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     e.preventDefault();
     const [dx, dy] = delta;
     if (e.shiftKey) {
-      const w = clamp(round4(rect.w + dx * snapStep), Math.min(snapStep, dims.x - rect.x), dims.x - rect.x);
-      const h = clamp(round4(rect.h + dy * snapStep), Math.min(snapStep, dims.y - rect.y), dims.y - rect.y);
+      const maxW = Math.max(snapStep, dims.x - rect.x);
+      const minW = Math.min(snapStep, maxW);
+      const maxH = Math.max(snapStep, dims.y - rect.y);
+      const minH = Math.min(snapStep, maxH);
+      const w = clamp(round4(rect.w + dx * snapStep), minW, maxW);
+      const h = clamp(round4(rect.h + dy * snapStep), minH, maxH);
       if (w !== rect.w || h !== rect.h) actions.resizeObject(object.id, { w, h }, spaceId);
     } else {
       const x = clamp(round4(rect.x + dx * snapStep), 0, dims.x - rect.w);
@@ -352,7 +376,6 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
     <div
       ref={rootRef}
       tabIndex={-1}
-      onKeyDown={onRootKeyDown}
       className={cx("flex h-full min-h-0 flex-col gap-2 outline-none", className)}
     >
       <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -691,6 +714,7 @@ export function SpaceDesigner({ spaceId, selectedObjectId, onSelectObject, class
         onOpenChange={imagineView.setOpen}
         render={imagineView.render}
         error={imagineView.error}
+        isSubmitting={imagineView.isSubmitting}
         onRegenerate={() => void imagineView.imagine(true)}
         onRetry={() => void imagineView.imagine(false)}
       />

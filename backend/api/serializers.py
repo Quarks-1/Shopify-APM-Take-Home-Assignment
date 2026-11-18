@@ -661,7 +661,9 @@ def _validate(data, kind, *, partial, path='', allow_id=False, allow_timestamps=
             ('priceLimitFuzzy', 'price_limit_fuzzy', 'price_limit'),
         ):
             if has(key):
-                if not isinstance(data[key], bool):
+                if data[key] is None:
+                    out[field] = False
+                elif not isinstance(data[key], bool):
                     errors[prefix + key] = 'must be a boolean'
                 else:
                     out[field] = data[key]

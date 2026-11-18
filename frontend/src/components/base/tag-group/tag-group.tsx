@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, isValidElement, useContext } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
   Button as AriaButton,
@@ -94,13 +94,22 @@ export interface TagProps extends Omit<AriaTagProps, "className" | "children"> {
   children: ReactNode;
 }
 
+function extractText(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return extractText(node.props.children);
+  return "";
+}
+
 export function Tag({ color = "neutral", icon: Icon, className, children, ...props }: TagProps) {
   const size = useContext(SizeContext);
+  const resolvedText = (props.textValue ?? extractText(children)).trim();
+  const removeLabel = resolvedText ? `Remove ${resolvedText}` : "Remove";
 
   return (
     <AriaTag
       {...props}
-      textValue={props.textValue ?? (typeof children === "string" ? children : undefined)}
+      textValue={resolvedText || undefined}
       className={({ isSelected, selectionMode, allowsRemoving, isHovered, isFocusVisible, isDisabled }) => {
         const allowsSelection = selectionMode !== "none";
         return cx(
@@ -108,7 +117,7 @@ export function Tag({ color = "neutral", icon: Icon, className, children, ...pro
           "transition-[background-color,color,box-shadow,filter] duration-150 ease-out",
           size === "small" ? "h-6 px-1.5 text-caption-1-medium" : "h-7 px-2 text-body-medium",
           allowsRemoving && (size === "small" ? "pe-0.5" : "pe-1"),
-          isSelected ? "bg-accent-500 text-white" : CHIP_COLORS[color],
+          isSelected ? "bg-accent-500 text-text-white" : CHIP_COLORS[color],
           allowsSelection ? "cursor-pointer" : "cursor-default",
           allowsSelection && !isSelected && isHovered && (color === "neutral" ? "bg-background-tertiary-hover" : "brightness-95"),
           isFocusVisible && "ring-2 ring-border-focus-ring",
@@ -124,9 +133,12 @@ export function Tag({ color = "neutral", icon: Icon, className, children, ...pro
           {allowsRemoving ? (
             <AriaButton
               slot="remove"
+              aria-label={removeLabel}
+              {...({ "aria-labelledby": null } as object)}
               className={cx(
                 "flex shrink-0 cursor-pointer items-center justify-center rounded-md opacity-60 outline-none",
                 "transition-[opacity,background-color] duration-150 ease-out hover:bg-current/15 hover:opacity-100",
+                "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-border-focus-ring data-[focus-visible]:opacity-100 data-[focus-visible]:ring-2 data-[focus-visible]:ring-border-focus-ring",
                 size === "small" ? "size-4" : "size-5",
               )}
             >

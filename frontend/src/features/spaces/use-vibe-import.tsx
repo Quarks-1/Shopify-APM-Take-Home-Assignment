@@ -174,8 +174,11 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
       bump();
     };
 
+    let refreshInFlight: Promise<void> | null = null;
+
     const refresh = () => {
-      api
+      if (refreshInFlight) return;
+      refreshInFlight = api
         .listPendingVibeImports()
         .then((imports) => {
           const spaceIds = new Set(getState().spaces.map((s) => s.id));
@@ -187,7 +190,10 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
             observe(create(imp.spaceId, { kind: "starting" }), imp);
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          refreshInFlight = null;
+        });
     };
 
     return { start, dismiss, hide, refresh, remove, removeAll };
