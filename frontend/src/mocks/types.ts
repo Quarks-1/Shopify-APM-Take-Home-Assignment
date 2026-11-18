@@ -25,6 +25,7 @@ export interface Space {
   unit: LengthUnit;
   dims: Dims;
   weightLimit?: number;
+  vibeBoardId?: string;
   placements: Placement[];
   createdAt: string;
   updatedAt: string;

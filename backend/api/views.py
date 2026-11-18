@@ -251,7 +251,7 @@ def workspace_overview(_request):
                     'id': 'space-inspirations-clear',
                     'method': 'DELETE',
                     'path': '/api/spaces/<id>/inspirations/',
-                    'description': "Clear all imported inspiration pins for a space",
+                    'description': "Detach and clear a space's active vibe board selection",
                     'status': 'operational',
                 },
                 {
@@ -265,7 +265,14 @@ def workspace_overview(_request):
                     'id': 'inspirations-list',
                     'method': 'GET',
                     'path': '/api/inspirations/',
-                    'description': 'List categorized inspiration pins deduplicated across spaces',
+                    'description': 'List categorized inspiration pins organized by board and deduplicated',
+                    'status': 'operational',
+                },
+                {
+                    'id': 'vibe-boards',
+                    'method': 'GET',
+                    'path': '/api/vibe-boards/',
+                    'description': 'List imported Pinterest boards in the shared workspace library',
                     'status': 'operational',
                 },
                 {

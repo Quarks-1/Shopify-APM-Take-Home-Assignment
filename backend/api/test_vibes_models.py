@@ -1,12 +1,13 @@
-"""Vibe import data model and on-disk path guards."""
+"""Vibe board / import data model and on-disk path guards."""
 import tempfile
+import uuid
 from pathlib import Path
 
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import Space, SearchRun, SpaceInspiration, SpaceObject, VibeImport
+from .models import SearchRun, Space, SpaceInspiration, SpaceObject, VibeBoard, VibeImport
 from .searcher import engine
 from .vibes import paths
 
@@ -20,20 +21,42 @@ def make_space(sid='space1'):
 
 
 class VibeModelTests(TestCase):
-    def test_space_pin_is_unique(self):
-        space = make_space()
-        SpaceInspiration.objects.create(space=space, pin_id='p1', pin_url='https://pinterest.com/pin/p1/')
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            SpaceInspiration.objects.create(space=space, pin_id='p1', pin_url='https://pinterest.com/pin/p1/')
-
-    def test_deleting_space_cascades(self):
-        space = make_space()
-        imp = VibeImport.objects.create(space=space, board_url='https://pin.it/x')
+    def test_board_pin_is_unique(self):
+        board = VibeBoard.objects.create(board_url='https://pin.it/x', title='Cozy')
         SpaceInspiration.objects.create(
-            space=space, vibe_import=imp, pin_id='p1', pin_url='https://pinterest.com/pin/p1/'
+            board=board, pin_id='p1', pin_url='https://pinterest.com/pin/p1/'
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            SpaceInspiration.objects.create(
+                board=board, pin_id='p1', pin_url='https://pinterest.com/pin/p1/'
+            )
+
+    def test_deleting_space_keeps_shared_board_and_pins(self):
+        space = make_space()
+        board = VibeBoard.objects.create(board_url='https://pin.it/x', title='Cozy')
+        space.vibe_board = board
+        space.save(update_fields=['vibe_board'])
+        imp = VibeImport.objects.create(space=space, board=board, board_url='https://pin.it/x')
+        SpaceInspiration.objects.create(
+            board=board, vibe_import=imp, pin_id='p1', pin_url='https://pinterest.com/pin/p1/'
         )
         space.delete()
-        self.assertFalse(VibeImport.objects.filter(pk=imp.pk).exists())
+        self.assertTrue(VibeBoard.objects.filter(pk=board.pk).exists())
+        self.assertEqual(SpaceInspiration.objects.count(), 1)
+        imp.refresh_from_db()
+        self.assertIsNone(imp.space_id)
+
+    def test_deleting_board_cascades_pins_and_clears_space_fk(self):
+        space = make_space()
+        board = VibeBoard.objects.create(board_url='https://pin.it/x', title='Cozy')
+        space.vibe_board = board
+        space.save(update_fields=['vibe_board'])
+        SpaceInspiration.objects.create(
+            board=board, pin_id='p1', pin_url='https://pinterest.com/pin/p1/'
+        )
+        board.delete()
+        space.refresh_from_db()
+        self.assertIsNone(space.vibe_board_id)
         self.assertEqual(SpaceInspiration.objects.count(), 0)
 
     def test_search_run_vibes_defaults_to_none(self):
@@ -47,20 +70,27 @@ class VibeModelTests(TestCase):
 
 
 class VibePathTests(TestCase):
-    def test_space_dir_rejects_traversal(self):
+    def test_space_and_board_dir_reject_traversal(self):
         with self.assertRaises(ValueError):
             paths.space_dir('../x')
+        with self.assertRaises(ValueError):
+            paths.board_dir('../x')
 
-    def test_space_dir_accepts_valid_id(self):
+    def test_space_and_board_dir_accept_valid_id(self):
+        bid = uuid.uuid4()
         with tempfile.TemporaryDirectory() as tmp, override_settings(VIBES_DIR=tmp):
-            self.assertEqual(paths.space_dir('abc-1'), Path(tmp).resolve() / 'abc-1')
+            root = Path(tmp).resolve()
+            self.assertEqual(paths.space_dir('abc-1'), root / 'abc-1')
+            self.assertEqual(paths.board_dir(bid), root / 'boards' / str(bid))
 
     def test_resolve_inside_rejects_escape_and_accepts_file(self):
         with tempfile.TemporaryDirectory() as tmp, override_settings(VIBES_DIR=tmp):
             root = Path(tmp).resolve()
-            (root / 'space1').mkdir()
-            (root / 'space1' / 'p1.jpg').write_bytes(b'\xff\xd8\xff')
+            (root / 'boards' / 'b1').mkdir(parents=True)
+            (root / 'boards' / 'b1' / 'p1.jpg').write_bytes(b'\xff\xd8\xff')
             self.assertIsNone(paths.resolve_inside('../../etc/passwd'))
-            self.assertIsNone(paths.resolve_inside('space1'))  # a directory
-            self.assertIsNone(paths.resolve_inside('space1/missing.jpg'))
-            self.assertEqual(paths.resolve_inside('space1/p1.jpg'), root / 'space1' / 'p1.jpg')
+            self.assertIsNone(paths.resolve_inside('boards/b1'))  # a directory
+            self.assertIsNone(paths.resolve_inside('boards/b1/missing.jpg'))
+            self.assertEqual(
+                paths.resolve_inside('boards/b1/p1.jpg'), root / 'boards' / 'b1' / 'p1.jpg'
+            )

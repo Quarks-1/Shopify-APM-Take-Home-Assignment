@@ -108,7 +108,6 @@ function EditSpace({ spaceId }: { spaceId: string }) {
     status: inspirationsStatus,
     inspirations,
     remove: removeInspiration,
-    clear: clearInspirations,
     retry: retryInspirations,
   } = useSpaceInspirations(spaceId);
   const panelSplit = usePanelSplit();
@@ -268,8 +267,6 @@ function EditSpace({ spaceId }: { spaceId: string }) {
       isOpen={settingsOpen}
       onOpenChange={setSettingsOpen}
       spaceId={space.id}
-      pinCount={inspirationsStatus === "ready" ? inspirations.length : undefined}
-      onClearVibes={clearInspirations}
     />
     <SeeTheVibeModal
       isOpen={vibeOpen}

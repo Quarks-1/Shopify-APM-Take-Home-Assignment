@@ -387,6 +387,7 @@ export interface ApiSpaceCreate {
   unit: LengthUnit;
   dims: Dims;
   weightLimit?: number | null;
+  vibeBoardId?: string | null;
 }
 
 export type ApiSpacePatch = Partial<Omit<ApiSpaceCreate, "id">>;
@@ -508,7 +509,8 @@ export type ApiVibeImportStatus = "queued" | "running" | "done" | "failed";
 
 export interface ApiVibeImport {
   id: string;
-  spaceId: string;
+  spaceId: string | null;
+  boardId: string | null;
   boardUrl: string;
   boardTitle: string;
   status: ApiVibeImportStatus;
@@ -646,6 +648,17 @@ export const fetchLatestRender = (spaceId: string, signal?: AbortSignal) =>
     (r) => ({ ...r, render: normalizeRender(r.render) }),
   );
 
+export interface ApiVibeBoard {
+  id: string;
+  boardUrl: string;
+  resolvedUrl: string;
+  title: string;
+  pinCount: number;
+  usableCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiInspiration {
   id: number;
   pinId: string;
@@ -661,14 +674,28 @@ export interface ApiInspiration {
   vote: string;
   source: string;
   importId: string | null;
+  boardId: string;
   categorized: boolean;
-  spaceId: string;
+  spaceId: string | null;
   primaryType: ObjectType | "other";
 }
 
-/** Every imported, sorted pin across spaces (de-duplicated), in board order. */
+export interface ApiInspirationBoard extends ApiVibeBoard {
+  inspirations: ApiInspiration[];
+}
+
+export interface ApiInspirationsPayload {
+  boards: ApiInspirationBoard[];
+  inspirations: ApiInspiration[];
+}
+
+/** Imported boards in the shared workspace library that have categorized pins, newest first. */
+export const listVibeBoards = (signal?: AbortSignal) =>
+  request<{ boards: ApiVibeBoard[] }>("GET", "/api/vibe-boards/", { signal }).then((r) => r.boards);
+
+/** Sorted pins organized per imported board (`boards`), plus the de-duplicated flat `inspirations` list. */
 export const listInspirations = (signal?: AbortSignal) =>
-  request<{ inspirations: ApiInspiration[] }>("GET", "/api/inspirations/", { signal }).then((r) => r.inspirations);
+  request<ApiInspirationsPayload>("GET", "/api/inspirations/", { signal });
 
 /** A space's imported, sorted and unsorted pins, in board order. */
 export const listSpaceInspirations = (spaceId: string, signal?: AbortSignal) =>

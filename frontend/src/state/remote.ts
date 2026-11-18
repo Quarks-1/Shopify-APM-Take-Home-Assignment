@@ -237,7 +237,14 @@ function diff<T extends object, K extends keyof T>(
   return Object.keys(body).length > 0 ? body : null;
 }
 
-const SPACE_PATCH_KEYS = ["name", "type", "unit", "dims", "weightLimit"] as const satisfies readonly (keyof Space)[];
+const SPACE_PATCH_KEYS = [
+  "name",
+  "type",
+  "unit",
+  "dims",
+  "weightLimit",
+  "vibeBoardId",
+] as const satisfies readonly (keyof Space)[];
 
 // Never id, createdAt, candidateIds, selectedProductId or search: the backend owns or ignores those.
 const OBJECT_PATCH_KEYS = [
@@ -267,6 +274,7 @@ export function spaceCreateBody(space: Space): ApiSpaceCreate {
     unit: space.unit,
     dims: space.dims,
     weightLimit: space.weightLimit,
+    vibeBoardId: space.vibeBoardId,
   };
 }
 

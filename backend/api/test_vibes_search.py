@@ -13,7 +13,8 @@ from django.utils import timezone
 from PIL import Image
 
 from .models import (
-    Candidate, CatalogQuery, Placement, RunStatus, SearchMode, SearchRun, Space, SpaceInspiration, VibeImport,
+    Candidate, CatalogQuery, Placement, RunStatus, SearchMode, SearchRun, Space, SpaceInspiration,
+    VibeBoard, VibeImport,
 )
 from .searcher import engine, like_images, prompts, query_builder, runner, ucp_client
 from .serializers import run_to_json
@@ -51,15 +52,25 @@ class VibesBase(TestCase):
         Placement.objects.create(space=self.space, object=self.obj, x=1, y=1)
         self.rank = 0
 
-    def pin(self, pin_id, item='sofa', categories=('furniture',), space=None, image=True,
+    def board_for(self, space):
+        if space.vibe_board_id is None:
+            board = VibeBoard.objects.create(
+                board_url=f'https://pin.it/{space.id}', title=f'{space.id} board'
+            )
+            space.vibe_board = board
+            space.save(update_fields=['vibe_board'])
+        return space.vibe_board
+
+    def pin(self, pin_id, item='sofa', categories=('furniture',), space=None, board=None, image=True,
             labeled=True, rank=None, vibe_import=None, **kw):
         space = space or self.space
+        board = board or self.board_for(space)
         self.rank += 1
-        rel = f'{space.id}/{pin_id}.jpg'
+        rel = f'boards/{board.id}/{pin_id}.jpg'
         if image:
             write_jpeg(paths.vibes_dir() / rel)
         fields = dict(
-            space=space, pin_id=pin_id, pin_url=f'https://pinterest.com/pin/{pin_id}/',
+            board=board, pin_id=pin_id, pin_url=f'https://pinterest.com/pin/{pin_id}/',
             image_path=rel if image else '', board_rank=self.rank if rank is None else rank,
             categories=list(categories), item=item, styles=['japandi'], colors=['oat'],
             materials=['oak'], description=f'{item} pin', vibe_import=vibe_import,
@@ -242,6 +253,32 @@ class RunVibesTests(VibesBase):
         self.pin('evil', image=False, image_path='../outside.jpg')
         self.assertTrue(outside.exists())
         self.assertEqual(self.vibes_for()['photos'], [])
+
+    def test_switching_space_to_another_imported_board_steers_new_searches(self):
+        board_a = VibeBoard.objects.create(board_url='https://pin.it/a', title='Board A')
+        board_b = VibeBoard.objects.create(board_url='https://pin.it/b', title='Board B')
+        self.pin('sofa_a', 'sofa', ['furniture'], board=board_a, styles=['brutalist'], colors=['black'])
+        self.pin('sofa_b', 'sofa', ['furniture'], board=board_b, styles=['scandinavian'], colors=['cream'])
+
+        self.space.vibe_board = board_a
+        self.space.save(update_fields=['vibe_board'])
+        run_a = engine.create_run(self.obj)
+        self.assertEqual([p['pinId'] for p in run_a.vibes['pins']], ['sofa_a'])
+        self.assertEqual(run_a.vibes['summary']['styles'], ['brutalist'])
+
+        # Selecting board_b on the space immediately steers all new searches on that space.
+        self.space.vibe_board = board_b
+        self.space.save(update_fields=['vibe_board'])
+        run_b = engine.create_run(self.obj)
+        self.assertEqual([p['pinId'] for p in run_b.vibes['pins']], ['sofa_b'])
+        self.assertEqual(run_b.vibes['summary']['styles'], ['scandinavian'])
+
+        # Clearing the space's board means new searches have no vibes, while boards remain stored.
+        self.space.vibe_board = None
+        self.space.save(update_fields=['vibe_board'])
+        run_none = engine.create_run(self.obj)
+        self.assertIsNone(run_none.vibes)
+        self.assertEqual(VibeBoard.objects.count(), 2)
 
 
 # ------------------------------------------------------------- create_run
@@ -647,18 +684,21 @@ class VibesAgentEndToEndTests(TransactionTestCase):
             p.start()
             self.addCleanup(p.stop)
         self.space = make_space()
+        self.board = VibeBoard.objects.create(board_url='https://pin.it/cozy', title='Cozy')
+        self.space.vibe_board = self.board
+        self.space.save(update_fields=['vibe_board'])
         self.obj = make_object(dims={'x': 48, 'y': 24, 'z': 18})
         Placement.objects.create(space=self.space, object=self.obj, x=1, y=1)
         for i in range(4):
-            rel = f'{self.space.id}/p{i}.jpg'
+            rel = f'boards/{self.board.id}/p{i}.jpg'
             write_jpeg(paths.vibes_dir() / rel, (40 * i, 80, 80))
             SpaceInspiration.objects.create(
-                space=self.space, pin_id=f'p{i}', pin_url=f'https://pinterest.com/pin/p{i}/',
+                board=self.board, pin_id=f'p{i}', pin_url=f'https://pinterest.com/pin/p{i}/',
                 image_path=rel, board_rank=i, categories=['furniture'], item='coffee table',
                 styles=['japandi'], colors=['oat'], materials=['oak'], description='low table',
                 categorized_at=timezone.now())
         SpaceInspiration.objects.create(
-            space=self.space, pin_id='art', pin_url='https://pinterest.com/pin/art/',
+            board=self.board, pin_id='art', pin_url='https://pinterest.com/pin/art/',
             categories=['wall-art'], item='print', styles=['maximalist'], colors=['red'],
             categorized_at=timezone.now())
 
@@ -764,9 +804,10 @@ class ThemeRankingTests(ThemeBase):
 
 class CropTests(ThemeBase):
     def big(self, pin_id):
-        write_jpeg(paths.vibes_dir() / f'{self.space.id}/{pin_id}.jpg')
+        target = paths.board_dir(self.board_for(self.space).id) / f'{pin_id}.jpg'
+        write_jpeg(target)
         img = Image.new('RGB', (400, 200), (10, 20, 30))
-        img.save(paths.vibes_dir() / f'{self.space.id}/{pin_id}.jpg', 'JPEG')
+        img.save(target, 'JPEG')
 
     def test_boxed_pins_are_photographed_cropped_inside_the_vibes_dir(self):
         self.theme_board()
@@ -797,16 +838,16 @@ class CropTests(ThemeBase):
     def test_long_side_is_capped_at_1024(self):
         self.theme_board()
         Image.new('RGB', (3000, 2000), (1, 2, 3)).save(
-            paths.vibes_dir() / f'{self.space.id}/sofa.jpg', 'JPEG')
+            paths.board_dir(self.board_for(self.space).id) / 'sofa.jpg', 'JPEG')
         sofa = [p for p in self.vibes_corner()['photos'] if p['pinId'] == 'sofa'][0]
         with Image.open(sofa['path']) as image:
             self.assertEqual(max(image.size), 1024)
 
     def test_no_box_falls_back_to_the_full_image(self):
-        self.pin('plain', 'sofa', ['furniture'])
+        row = self.pin('plain', 'sofa', ['furniture'])
         photo = self.vibes_for()['photos'][0]
         self.assertFalse(photo['cropped'])
-        self.assertEqual(photo['path'], str((paths.vibes_dir() / 'space1/plain.jpg').resolve()))
+        self.assertEqual(photo['path'], str((paths.vibes_dir() / row.image_path).resolve()))
 
     def test_pins_with_a_box_are_preferred_for_photos(self):
         self.pin('first', 'sofa', ['furniture'])

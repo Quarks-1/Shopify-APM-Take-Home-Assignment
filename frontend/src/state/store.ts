@@ -87,6 +87,7 @@ type Action =
   | { type: "local/replace"; local: LocalState }
   | { type: "space/create"; id: string; input: SpaceInput; now: string }
   | { type: "space/update"; id: string; patch: SpacePatch; now: string }
+  | { type: "space/set-vibe-board"; id: string; vibeBoardId: string | undefined }
   | { type: "space/delete"; id: string }
   | { type: "placement/place"; spaceId: string; objectId: string; pos: Pos; now: string }
   | { type: "placement/move"; spaceId: string; objectId: string; pos: Pos; now: string }
@@ -186,6 +187,10 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "space/update":
       return mapSpace(state, action.id, (s) => ({ ...s, ...action.patch, updatedAt: action.now }));
+    case "space/set-vibe-board":
+      return mapSpace(state, action.id, (s) =>
+        s.vibeBoardId === action.vibeBoardId ? s : { ...s, vibeBoardId: action.vibeBoardId },
+      );
     case "space/delete":
       return { ...state, spaces: state.spaces.filter((s) => s.id !== action.id) };
 
@@ -341,6 +346,8 @@ function reducer(state: AppState, action: Action): AppState {
 export interface AppActions {
   createSpace(input: SpaceInput): string;
   updateSpace(id: string, patch: SpacePatch): void;
+  /** Local only: mirrors `vibeBoardId` attached by a background vibe import worker. */
+  setSpaceVibeBoard(id: string, vibeBoardId: string | undefined): void;
   deleteSpace(id: string): void;
 
   placeObject(spaceId: string, objectId: string, pos?: Pos): void;
@@ -396,6 +403,10 @@ export interface StoreInternals {
   enqueue<T>(task: () => Promise<T>): Promise<T>;
   /** Called when the demo is reset and every object is replaced. */
   onReset(listener: () => void): () => void;
+  /** Whether a reset's backend work is still pending (backend reads can return pre-reset data until it settles). */
+  isResetting(): boolean;
+  /** Called once every pending reset has finished on the backend (success or failure); refetch backend data then. */
+  onResetSettled(listener: () => void): () => void;
 }
 
 export interface AppStore extends StoreInternals {
@@ -495,6 +506,8 @@ export function createAppStore(): AppStore {
   let booting: Promise<void> | null = null;
   const listeners = new Set<() => void>();
   const resetListeners = new Set<() => void>();
+  const resetSettledListeners = new Set<() => void>();
+  let pendingResets = 0;
   const queue = new WriteQueue();
 
   const emit = () => listeners.forEach((l) => l());
@@ -727,6 +740,7 @@ export function createAppStore(): AppStore {
       const body = next ? spacePatchBody(prev, next) : null;
       if (body) write(() => api.updateSpace(id, body));
     },
+    setSpaceVibeBoard: (id, vibeBoardId) => dispatch({ type: "space/set-vibe-board", id, vibeBoardId }),
     deleteSpace(id) {
       if (!getSpace(state, id)) return;
       dispatch({ type: "space/delete", id });
@@ -977,18 +991,24 @@ export function createAppStore(): AppStore {
       // Deleting the objects deletes their cart lines; those merchant carts then need emptying.
       const cartStores = storesOfLines(state, state.cart);
       dispatch({ type: "reset", seed });
+      pendingResets++;
       resetListeners.forEach((l) => l());
       write(async () => {
-        // Everything the backend has, including what other tabs added.
-        const current = await api.getState();
-        for (const space of current.spaces) await ignoreMissing(() => api.deleteSpace(space.id));
-        for (const object of current.objects) await ignoreMissing(() => api.deleteObject(object.id));
-        await api.resetState();
-        await api.importState(seed);
-        const snapshot = await api.getState();
-        if (queue.hasOthersPending()) resync();
-        else hydrate(snapshot);
-        scheduleSync(cartStores);
+        try {
+          // Everything the backend has, including what other tabs added.
+          const current = await api.getState();
+          for (const space of current.spaces) await ignoreMissing(() => api.deleteSpace(space.id));
+          for (const object of current.objects) await ignoreMissing(() => api.deleteObject(object.id));
+          await api.resetState();
+          await api.importState(seed);
+          const snapshot = await api.getState();
+          if (queue.hasOthersPending()) resync();
+          else hydrate(snapshot);
+          scheduleSync(cartStores);
+        } finally {
+          pendingResets--;
+          if (pendingResets === 0) resetSettledListeners.forEach((l) => l());
+        }
       });
     },
   };
@@ -1008,6 +1028,13 @@ export function createAppStore(): AppStore {
       resetListeners.add(listener);
       return () => {
         resetListeners.delete(listener);
+      };
+    },
+    isResetting: () => pendingResets > 0,
+    onResetSettled(listener) {
+      resetSettledListeners.add(listener);
+      return () => {
+        resetSettledListeners.delete(listener);
       };
     },
     retry: () => void boot(),

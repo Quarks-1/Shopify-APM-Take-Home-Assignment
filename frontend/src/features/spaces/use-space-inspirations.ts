@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/base/toast/toast";
 import { ApiError, deleteSpaceInspiration, listSpaceInspirations, request, type ApiInspiration } from "@/lib/api";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
+import { useAppState } from "@/state/app-store";
+import { getSpace } from "@/state/selectors";
 import { useStoreInternals } from "@/state/store-context";
 
-/** Tracks spaces whose vibes were explicitly cleared so SpaceFormModal doesn't re-prefill a cleared board URL. */
-export const clearedVibeSpaces = new Set<string>();
+/** Tracks spaces whose vibes were explicitly cleared in-session. */
+const clearedVibeSpaces = new Set<string>();
 
 export interface SpaceInspirationsResult {
   status: "loading" | "ready" | "error";
@@ -16,10 +18,11 @@ export interface SpaceInspirationsResult {
   retry(): void;
 }
 
-/** One space's categorized pins. Refetches when its vibe import finishes (done or failed); keeps old data meanwhile. */
+/** One space's categorized pins (from its chosen board). Refetches when its chosen board or import changes. */
 export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
+  const state = useAppState();
   const { viewFor } = useVibeImport();
-  const { onReset } = useStoreInternals();
+  const { enqueue, onReset, onResetSettled, isResetting } = useStoreInternals();
   const [loaded, setLoaded] = useState<{ spaceId: string; list: ApiInspiration[] } | null>(null);
   // Data from a previous space never shows for this one.
   const data = loaded?.spaceId === spaceId ? loaded.list : null;
@@ -34,11 +37,14 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   );
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Bumped when a reset starts and when it settles, to abort and re-run the fetch effect.
+  const [resetEpoch, setResetEpoch] = useState(0);
   const dataRef = useRef<ApiInspiration[] | null>(null);
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
 
+  const vibeBoardId = getSpace(state, spaceId)?.vibeBoardId ?? "";
   const view = viewFor(spaceId);
   const doneKey = view?.kind === "done" ? view.imp.id : view?.kind === "failed" && view.imp ? view.imp.id : "";
   // Latch the latest non-empty finished import id so auto-dismissing back to "" doesn't trigger a redundant refetch.
@@ -51,10 +57,18 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   const activeDoneId = seenDone.spaceId === spaceId ? seenDone.id : doneKey;
 
   useEffect(() => {
+    // The backend is mid-reset and would answer with the old pins; the settle refetch below covers it.
+    if (isResetting()) return;
     if (activeDoneId !== "") clearedVibeSpaces.delete(spaceId);
     const controller = new AbortController();
-    listSpaceInspirations(spaceId, controller.signal)
+    // Wait for pending space writes (such as selecting a board in Space settings) before reading.
+    enqueue(async () => {})
+      .then(() => {
+        if (controller.signal.aborted) return;
+        return listSpaceInspirations(spaceId, controller.signal);
+      })
       .then((list) => {
+        if (!list || controller.signal.aborted) return;
         const categorized = list.filter((p) => p.categorized);
         if (categorized.length > 0) clearedVibeSpaces.delete(spaceId);
         setData(categorized);
@@ -64,19 +78,25 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spaceId, activeDoneId, attempt, setData]);
+  }, [spaceId, vibeBoardId, activeDoneId, attempt, resetEpoch, isResetting, enqueue, setData]);
 
-  // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
-  useEffect(
-    () =>
-      onReset(() => {
-        clearedVibeSpaces.clear();
-        setSeenDone({ spaceId, id: "" });
-        setData([]);
-        setFailed(false);
-      }),
-    [onReset, setData, spaceId],
-  );
+  // Reset demo data: the seed has no boards, so show an empty list at once. Any in-flight fetch is aborted
+  // (the epoch bump re-runs the effect, which skips fetching while the reset is pending); once the backend
+  // has finished, refetch so the list reflects its real state.
+  useEffect(() => {
+    const offReset = onReset(() => {
+      clearedVibeSpaces.clear();
+      setSeenDone({ spaceId, id: "" });
+      setData([]);
+      setFailed(false);
+      setResetEpoch((n) => n + 1);
+    });
+    const offSettled = onResetSettled(() => setResetEpoch((n) => n + 1));
+    return () => {
+      offReset();
+      offSettled();
+    };
+  }, [onReset, onResetSettled, setData, spaceId]);
 
   const retry = useCallback(() => {
     setFailed(false);

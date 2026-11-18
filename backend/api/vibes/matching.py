@@ -14,7 +14,7 @@ from collections import Counter
 from django.conf import settings
 from PIL import Image
 
-from ..models import Placement, SpaceInspiration, VoteChoice
+from ..models import Placement, Space, SpaceInspiration, VoteChoice
 from ..searcher import like_images
 from . import patterns as pattern_lib
 from . import paths
@@ -192,16 +192,27 @@ def _choose_photos(pins):
 
 def run_vibes(obj, snapshot, mode):
     """The run's `vibes` snapshot, or None when no pin matches (or the object
-    sits in no space)."""
+    sits in no space with a selected vibe board)."""
     space_ids = object_space_ids(obj)
     if not space_ids:
         return None
     wanted = (snapshot or {}).get('type')
     if not wanted:
         return None
+    board_by_space = dict(
+        Space.objects.filter(pk__in=space_ids, vibe_board_id__isnull=False)
+        .values_list('pk', 'vibe_board_id')
+    )
+    board_ids = []
+    for sid in space_ids:
+        bid = board_by_space.get(sid)
+        if bid is not None and bid not in board_ids:
+            board_ids.append(bid)
+    if not board_ids:
+        return None
     rows = list(SpaceInspiration.objects
-                .filter(space_id__in=space_ids, vote=VoteChoice.UP, categorized_at__isnull=False)
-                .select_related('vibe_import'))
+                .filter(board_id__in=board_ids, vote=VoteChoice.UP, categorized_at__isnull=False)
+                .select_related('vibe_import', 'board'))
     unique = {}
     for row in rows:
         unique.setdefault(row.pin_id, row)

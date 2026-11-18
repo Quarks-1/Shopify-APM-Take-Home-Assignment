@@ -11,7 +11,7 @@ const TLDS =
   "com|ca|co\\.uk|com\\.au|com\\.mx|com\\.br|de|fr|es|it|pt|ie|nz|ch|at|se|dk|" +
   "jp|co\\.kr|nl|no|fi|pl|cl|ph|ru|co|in|id|com\\.co|hu|cz|gr|ro|sk|tr";
 const PINTEREST_HOST = new RegExp(`^(?:[a-z]{2,3}\\.)?pinterest\\.(?:${TLDS})$`);
-const PIN_IT_PATH = /^\/[A-Za-z0-9]+\/?$/;
+const PIN_IT_PATH = /^\/[A-Za-z0-9_-]+\/?$/;
 const SEGMENT_RE = /^[\w%.~-]+$/;
 
 const RESERVED_FIRST_SEGMENTS = new Set([
@@ -90,4 +90,25 @@ export function parseBoardUrl(raw: string): BoardUrlResult {
   }
 
   return { url: `https://${host}/${user}/${board}/` };
+}
+
+/** Readable name for an imported Pinterest board, falling back to its URL slug when untitled. */
+export function boardDisplayName(board: { title: string; resolvedUrl?: string; boardUrl: string }): string {
+  const trimmed = board.title.trim();
+  if (trimmed) return trimmed;
+  const raw = board.resolvedUrl || board.boardUrl;
+  try {
+    const segments = new URL(raw).pathname
+      .split("/")
+      .filter(Boolean)
+      .map((s) => decodeURIComponent(s).replace(/[-_]+/g, " "));
+    if (segments.length >= 2) {
+      const slug = segments[1].trim();
+      if (slug) return slug.charAt(0).toUpperCase() + slug.slice(1);
+    }
+    if (segments.length === 1) return `pin.it/${segments[0]}`;
+  } catch {
+    // Fall through to raw URL or generic label.
+  }
+  return raw || "Pinterest board";
 }
