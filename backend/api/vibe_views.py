@@ -55,14 +55,24 @@ def space_vibe_imports(request, space_id):
 
 
 @_json_view
-@require_http_methods(['GET'])
+@require_http_methods(['GET', 'POST'])
 def vibe_imports(request):
-    """`?pending=1`: the newest non-dismissed import of each space."""
+    """GET (`?pending=1`): newest non-dismissed import per target (each space + library).
+    POST: start a standalone library import (`space=None`)."""
+    if request.method == 'POST':
+        data, err = _body(request)
+        if err:
+            return err
+        url = validate_vibe_import(data)
+        try:
+            imp, created = importer.start_import(None, url)
+        except importer.ImportInProgress as busy:
+            body = {'error': 'import_in_progress', **_import_json(busy.active)}
+            return JsonResponse(body, status=409)
+        return JsonResponse(_import_json(imp), status=202 if created else 200)
     _housekeeping()
     newest = {}
-    for imp in VibeImport.objects.filter(
-        dismissed=False, space_id__isnull=False
-    ).order_by('-created_at', '-pk'):
+    for imp in VibeImport.objects.filter(dismissed=False).order_by('-created_at', '-pk'):
         newest.setdefault(imp.space_id, imp)
     imports = sorted(newest.values(), key=lambda i: i.created_at)
     return JsonResponse({'imports': [vibe_import_to_json(i) for i in imports]})
