@@ -51,6 +51,9 @@ export function CheckboxGlyph({
               hover ? "border-border-checkbox-hover" : "border-border-checkbox-default",
             ),
         isDisabled && "opacity-50",
+        "group-focus-visible:ring-2 group-focus-visible:ring-border-focus-ring group-focus-visible:ring-offset-2",
+        "group-data-[focus-visible]:ring-2 group-data-[focus-visible]:ring-border-focus-ring group-data-[focus-visible]:ring-offset-2",
+        "group-has-[:focus-visible]:ring-2 group-has-[:focus-visible]:ring-border-focus-ring group-has-[:focus-visible]:ring-offset-2",
         isFocusVisible && "ring-2 ring-border-focus-ring ring-offset-2",
       )}
     >

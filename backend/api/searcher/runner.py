@@ -34,7 +34,18 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from .. import claude_cli
-from ..models import AgentMode, ObjectSource, RunStatus, RunStep, SearchMode, SearchRun, Verdict
+from ..cart.stores import line_store, touch_stores
+from ..models import (
+    AgentMode,
+    CartLine,
+    ObjectSource,
+    RunStatus,
+    RunStep,
+    SearchMode,
+    SearchRun,
+    SpaceObject,
+    Verdict,
+)
 from ..vibes import paths as vibe_paths
 from . import engine, feedback, like_images, prompts, query_builder, ucp_client
 from .object_state import sync_object_search
@@ -210,6 +221,23 @@ def _fail(run_id, message):
     return bool(changed)
 
 
+def _clear_object_selection(object_id):
+    """Clear the object's selected candidate and any cart line when a plain
+    search settles with new (or empty) results."""
+    with transaction.atomic():
+        line = (
+            CartLine.objects.select_related('object__selected_candidate')
+            .filter(object_id=object_id)
+            .first()
+        )
+        if line is not None:
+            touch_stores([line_store(line)])
+            line.delete()
+        SpaceObject.objects.filter(
+            pk=object_id, selected_candidate__isnull=False
+        ).update(selected_candidate=None)
+
+
 def finalize(run):
     """Settle a run's final status. Idempotent; never touches a canceled run's status."""
     run.refresh_from_db()
@@ -233,6 +261,8 @@ def finalize(run):
             status=status, step=None, finished_at=run.finished_at or now,
         )
     run.refresh_from_db()
+    if run.mode == SearchMode.SEARCH and run.status in (RunStatus.DONE, RunStatus.EMPTY):
+        _clear_object_selection(run.object_id)
     sync_object_search(run.object_id)
     return run
 
@@ -279,17 +309,29 @@ def _create_refine_run(space_object):
     return run
 
 
-def start_search(space_object, like_candidate=None, refine=False):
-    """Returns (run, created). Reuses the object's queued/running run if any."""
+def start_search(space_object, like_candidate=None, refine=False, *, force=False):
+    """Returns (run, created). Reuses the object's queued/running run if any,
+    unless `force=True` cancels active runs first and starts a fresh run."""
     if space_object.source == ObjectSource.IMPORTED:
         raise SearchRefused('imported objects are already owned')
+    if force:
+        for active in SearchRun.objects.filter(object_id=space_object.pk, status__in=ACTIVE):
+            cancel_run(active)
+        space_object.refresh_from_db()
+        if space_object.source == ObjectSource.IMPORTED:
+            raise SearchRefused('imported objects are already owned')
     with transaction.atomic():
         active = (
             SearchRun.objects.filter(object_id=space_object.pk, status__in=ACTIVE)
             .order_by('-created_at').first()
         )
         if active is not None:
-            return active, False
+            if not force:
+                return active, False
+            SearchRun.objects.filter(pk=active.pk, status__in=ACTIVE).update(
+                status=RunStatus.CANCELED, step=None, finished_at=timezone.now(),
+            )
+            space_object.refresh_from_db()
         if refine:
             run = _create_refine_run(space_object)
         elif like_candidate is None:
@@ -609,7 +651,8 @@ def vibe_photo_entries(run):
             continue
         out.append({'index': item.get('index'), 'path': path, 'contentType': media_type,
                     'kind': 'vibe'})
-    return out[:settings.VIBES_MAX_PHOTOS]
+    cap = 5 if isinstance(vibes, dict) and vibes.get('explicitReferences') else settings.VIBES_MAX_PHOTOS
+    return out[:cap]
 
 
 def agent_photos(run):

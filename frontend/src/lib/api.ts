@@ -395,6 +395,7 @@ export type ApiSpacePatch = Partial<Omit<ApiSpaceCreate, "id">>;
 export interface ApiObjectCreate {
   id?: string;
   name: string;
+  description?: string | null;
   type: ObjectType;
   dims: ObjectDims;
   weight?: number | null;
@@ -402,10 +403,11 @@ export interface ApiObjectCreate {
   style?: Style | null;
   priceMin?: number | null;
   priceLimit?: number | null;
-  priceMinFuzzy?: boolean | null;
-  priceLimitFuzzy?: boolean | null;
+  priceMinFuzzy?: boolean;
+  priceLimitFuzzy?: boolean;
   minRating?: number | null;
   similarItems?: string[];
+  referencePins?: string[];
   source?: SpaceObject["source"];
   owned?: OwnedInfo | null;
   createdAt?: string;
@@ -465,6 +467,34 @@ export const updateObject = (id: string, patch: ApiObjectPatch) =>
 
 export const deleteObject = (id: string) => request<void>("DELETE", `/api/objects/${seg(id)}/`);
 
+export interface ApiParsedObject {
+  name: string;
+  description: string;
+  type: ObjectType;
+  dims: ObjectDims;
+  weight: number | null;
+  material: Material | null;
+  style: Style | null;
+  priceMin: number | null;
+  priceLimit: number | null;
+  priceMinFuzzy: boolean;
+  priceLimitFuzzy: boolean;
+  minRating: number | null;
+  similarItems: string[];
+}
+
+export interface ApiParsePromptResponse {
+  parsed: ApiParsedObject;
+  similarPins: ApiInspiration[];
+  categoryPins: ApiInspiration[];
+  agentMode: "claude" | "deterministic";
+}
+
+export const parseObjectPrompt = (
+  body: { prompt: string; spaceIds?: string[]; drawnDims?: ObjectDims | null },
+  signal?: AbortSignal,
+) => request<ApiParsePromptResponse>("POST", "/api/objects/parse-prompt/", { body, signal });
+
 // ---------------------------------------------------------------------------
 // Searches
 // ---------------------------------------------------------------------------
@@ -477,12 +507,20 @@ interface RunReadOptions {
 
 const includeQuery = (includeAll?: boolean) => (includeAll ? "?include=all" : "");
 
-/** Starts a run (HTTP 202), or returns the object's active one (200). Imported objects are refused (400). */
-export const startSearch = (
-  objectId: string,
-  opts?: { mode: "like"; candidateId: number } | { mode: "refine" },
-) =>
-  request<ApiSearchRun>("POST", `/api/objects/${seg(objectId)}/searches/`, opts ? { body: opts } : undefined);
+export type StartSearchOptions =
+  | { force?: boolean }
+  | { mode: "like"; candidateId: number }
+  | { mode: "refine" };
+
+/** Starts a run (HTTP 202), or returns the object's active one (200) unless `force` is true. Imported objects are refused (400). */
+export const startSearch = (objectId: string, opts?: StartSearchOptions) => {
+  const hasBody = opts !== undefined && ("mode" in opts || Boolean(opts.force));
+  return request<ApiSearchRun>(
+    "POST",
+    `/api/objects/${seg(objectId)}/searches/`,
+    hasBody ? { body: opts } : undefined,
+  );
+};
 
 export const getSearch = (runId: string, { includeAll, signal }: RunReadOptions = {}) =>
   request<ApiSearchRun>("GET", `/api/searches/${seg(runId)}/${includeQuery(includeAll)}`, { signal });
@@ -619,14 +657,30 @@ export interface ApiRenderResult {
   reused: boolean;
 }
 
+function resolveApiUrl(url: string | null): string | null {
+  if (!url || !API_BASE) return url;
+  return url.startsWith("/") ? `${API_BASE}${url}` : url;
+}
+
+function normalizeRender(render: ApiRender): ApiRender {
+  return { ...render, imageUrl: resolveApiUrl(render.imageUrl) };
+}
+
 export const createRender = (spaceId: string, { force }: { force?: boolean } = {}, signal?: AbortSignal) =>
-  request<ApiRenderResult>("POST", `/api/spaces/${seg(spaceId)}/renders/`, { body: force ? { force: true } : {}, signal });
+  request<ApiRenderResult>("POST", `/api/spaces/${seg(spaceId)}/renders/`, { body: force ? { force: true } : {}, signal }).then(
+    (r) => ({ ...r, render: normalizeRender(r.render) }),
+  );
 
 export const fetchRender = (id: string, signal?: AbortSignal) =>
-  request<{ render: ApiRender }>("GET", `/api/renders/${seg(id)}/`, { signal });
+  request<{ render: ApiRender }>("GET", `/api/renders/${seg(id)}/`, { signal }).then((r) => ({
+    ...r,
+    render: normalizeRender(r.render),
+  }));
 
 export const fetchLatestRender = (spaceId: string, signal?: AbortSignal) =>
-  request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal });
+  request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal }).then(
+    (r) => ({ ...r, render: normalizeRender(r.render) }),
+  );
 
 export interface ApiVibeBoard {
   id: string;
@@ -686,3 +740,7 @@ export const listSpaceInspirations = (spaceId: string, signal?: AbortSignal) =>
 /** Removes one imported pin. 409 `import_in_progress` while an import runs. */
 export const deleteSpaceInspiration = (spaceId: string, inspirationId: number) =>
   request<void>("DELETE", `/api/spaces/${seg(spaceId)}/inspirations/${seg(String(inspirationId))}/`);
+
+/** Removes all imported pins for a space. 409 `import_in_progress` while an import runs. */
+export const clearSpaceInspirations = (spaceId: string) =>
+  request<void>("DELETE", `/api/spaces/${seg(spaceId)}/inspirations/`);

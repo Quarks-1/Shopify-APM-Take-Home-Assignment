@@ -7,7 +7,7 @@ import { useAppActions, useAppState } from "@/state/app-store";
 import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
 export interface ObjectSearchApi {
-  search(objectId: string): void;
+  search(objectId: string, opts?: { force?: boolean }): void;
   /** Finds products visually similar to the candidate (a "like" run); keeps the user's selection. */
   searchLike(objectId: string, candidateId: number): void;
   /** Re-runs the search using the thumbs votes; keeps the user's selection. */
@@ -98,20 +98,34 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       if (!obj) return;
       switch (run.status) {
         case "done":
-        case "empty":
-          // Results of a normal search clear the pick (the user chooses a card); a "like" run keeps it.
+        case "empty": {
+          const isFollowUp = run.mode === "like" || run.mode === "refine";
+          if (isFollowUp && run.status === "empty" && obj.candidateIds.length > 0) {
+            actions.setSearchState(objectId, {
+              status: "done",
+              lastRunAt: run.finishedAt ?? obj.search.lastRunAt,
+            });
+            toast(run.mode === "like" ? "No similar items found" : "No new matches found", {
+              description: "Your current matches are unchanged.",
+            });
+            break;
+          }
+          // Results of a normal search clear the pick (the user chooses a card); a "like"/"refine" run keeps it.
           actions.applySearchResults(objectId, run.status === "done" ? run.candidates : [], run.finishedAt, {
-            keepSelection: run.mode === "like" || run.mode === "refine",
+            keepSelection: isFollowUp,
           });
-          if (run.mode === "like" && run.status === "empty") {
-            toast("No similar items found", { description: "Your current matches are unchanged." });
+          if (isFollowUp && run.status === "empty") {
+            toast(run.mode === "like" ? "No similar items found" : "No new matches found", {
+              description: "Your current matches are unchanged.",
+            });
           }
           break;
+        }
         case "failed":
           toast.error(`Search failed for ${obj.name}`, {
             description: run.error ?? "The searcher stopped before finding matches.",
           });
-          actions.setSearchState(objectId, { status: "idle", lastRunAt: run.finishedAt ?? obj.search.lastRunAt });
+          settleIdle(objectId, run.finishedAt);
           break;
         case "canceled":
           settleIdle(objectId, run.finishedAt);
@@ -202,20 +216,34 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       return tracker;
     };
 
-    const startRun = (objectId: string, opts?: { mode: "like"; candidateId: number } | { mode: "refine" }) => {
+    const startRun = (objectId: string, opts?: api.StartSearchOptions) => {
       const obj = findObject(objectId);
-      // A second press while running is a no-op; the backend would hand back the same run anyway.
-      if (!obj || obj.source !== "search" || trackers.current.has(objectId)) return;
+      const force = Boolean(opts && !("mode" in opts) && opts.force);
+      // A second press while running is a no-op unless forced (e.g. "Save & search").
+      if (!obj || obj.source !== "search") return;
+      if (trackers.current.has(objectId) && !force) return;
+      const prevRunId = force ? trackers.current.get(objectId)?.runId : undefined;
+      if (trackers.current.has(objectId)) {
+        stop(objectId);
+      }
       const tracker = track(objectId, true);
       actions.setSearchState(objectId, { status: "running", step: "planning", lastRunAt: obj.search.lastRunAt });
-      // Queued behind pending writes, so a just-created object reaches the backend first.
-      enqueue(() => api.startSearch(objectId, opts))
+      // Queued behind pending writes, so a just-created or just-updated object reaches the backend first.
+      enqueue(async () => {
+        if (force && prevRunId) {
+          await api.cancelSearch(prevRunId).catch(() => {});
+        }
+        return api.startSearch(objectId, opts);
+      })
         .then((run) => {
           if (tracker.cancelRequested) {
-            // A newer search for this object gets the same active run back, so cancelling it would kill that one.
-            if (!trackers.current.has(objectId) && ACTIVE_RUN_STATUSES.has(run.status)) void enqueue(() => api.cancelSearch(run.id)).catch(() => {});
+            // A newer search for this object gets its own tracker, so only cancel when none is active.
+            if (!trackers.current.has(objectId) && ACTIVE_RUN_STATUSES.has(run.status)) {
+              void enqueue(() => api.cancelSearch(run.id)).catch(() => {});
+            }
             return;
           }
+          if (tracker.stopped) return;
           observe(tracker, run);
         })
         .catch((error: unknown) => {
@@ -226,7 +254,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
         });
     };
 
-    const search = (objectId: string) => startRun(objectId);
+    const search = (objectId: string, opts?: { force?: boolean }) => startRun(objectId, opts);
     const searchLike = (objectId: string, candidateId: number) => startRun(objectId, { mode: "like", candidateId });
 
     const refine = (objectId: string) => startRun(objectId, { mode: "refine" });
@@ -282,7 +310,7 @@ export function ObjectSearchProvider({ children }: { children: ReactNode }) {
       searchLike: engine.searchLike,
       refine: engine.refine,
       // The backend queues runs (two at a time), so they can all start at once.
-      searchAll: (objectIds) => objectIds.forEach(engine.search),
+      searchAll: (objectIds) => objectIds.forEach((id) => engine.search(id)),
       cancel: engine.cancel,
       isRunning: (objectId) => trackers.current.has(objectId),
       likeTitle: (objectId) => trackers.current.get(objectId)?.likeTitle,

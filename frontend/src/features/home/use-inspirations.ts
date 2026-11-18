@@ -33,15 +33,20 @@ export function useInspirations(): InspirationsResult {
     .map((s) => `${s.id}:${s.vibeBoardId ?? ""}`)
     .sort()
     .join(",");
-  const doneKey = [null, ...spaces.map((s) => s.id)]
+  const doneIds = [null, ...spaces.map((s) => s.id)]
     .map((targetId) => {
       const view = viewFor(targetId);
       if (view?.kind === "done") return view.imp.id;
       return view?.kind === "failed" && view.imp ? view.imp.id : "";
     })
     .filter(Boolean)
-    .sort()
-    .join(",");
+    .sort();
+  // Accumulate seen finished import ids so auto-dismissing a pill never triggers a redundant refetch.
+  const [seenDoneKey, setSeenDoneKey] = useState<string>(() => doneIds.join(","));
+  const knownIds = seenDoneKey === "" ? [] : seenDoneKey.split(",");
+  if (doneIds.some((id) => !knownIds.includes(id))) {
+    setSeenDoneKey([...new Set([...knownIds, ...doneIds])].sort().join(","));
+  }
 
   useEffect(() => {
     // The backend is mid-reset and would answer with the old pins; the settle refetch below covers it.
@@ -61,13 +66,14 @@ export function useInspirations(): InspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spacesKey, doneKey, attempt, resetEpoch, isResetting, enqueue]);
+  }, [spacesKey, seenDoneKey, attempt, resetEpoch, isResetting, enqueue]);
 
   // Reset demo data: the seed has no boards, so show an empty list at once. Any in-flight fetch is aborted
   // (the epoch bump re-runs the effect, which skips fetching while the reset is pending); once the backend
   // has finished, refetch so the list reflects its real state.
   useEffect(() => {
     const offReset = onReset(() => {
+      setSeenDoneKey("");
       setData(EMPTY_PAYLOAD);
       setFailed(false);
       setResetEpoch((n) => n + 1);

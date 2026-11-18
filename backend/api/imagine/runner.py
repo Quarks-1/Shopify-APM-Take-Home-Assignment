@@ -1,6 +1,7 @@
 import logging
 import threading
 from datetime import timedelta
+from types import SimpleNamespace
 
 from django.conf import settings
 from django.db import connection, transaction
@@ -12,6 +13,17 @@ from . import layout, photos, prompt, providers
 logger = logging.getLogger(__name__)
 
 MAX_PHOTOS = 10
+
+
+def _snapshot_space(space):
+    return SimpleNamespace(type=space.type, name=space.name, dims=dict(space.dims))
+
+
+def _snapshot_items(items):
+    return [
+        dict(i, dims=dict(i['dims']) if isinstance(i.get('dims'), dict) else i.get('dims'))
+        for i in items
+    ]
 
 
 def mark_if_stale(render):
@@ -45,8 +57,9 @@ def _manifest(items, photo_numbers=frozenset()):
 def start_render(space, force=False):
     """Return (render, created). Reuses an identical running or done render
     unless force is set."""
-    items = layout.render_items(space)
-    fp = layout.fingerprint(space, items)
+    space_snap = _snapshot_space(space)
+    items = _snapshot_items(layout.render_items(space))
+    fp = layout.fingerprint(space_snap, items)
 
     if not force:
         candidates = (
@@ -73,11 +86,13 @@ def start_render(space, force=False):
     )
     render_id = render.id
     if settings.IMAGINE_RUN_INLINE:
-        run_render(render_id)
+        run_render(render_id, space_snap, items)
         return SpaceRender.objects.defer('image').get(pk=render_id), True
 
     transaction.on_commit(
-        lambda: threading.Thread(target=run_render, args=(render_id,), daemon=True).start()
+        lambda: threading.Thread(
+            target=run_render, args=(render_id, space_snap, items), daemon=True
+        ).start()
     )
     return render, True
 
@@ -91,10 +106,14 @@ def _select_photo_items(items):
     return [i for i in with_urls if i['number'] in keep]
 
 
-def _run(render_id):
-    render = SpaceRender.objects.select_related('space').get(pk=render_id)
-    space = render.space
-    items = layout.render_items(space)
+def _run(render_id, space_snap=None, items=None):
+    render = SpaceRender.objects.select_related('space').filter(pk=render_id).first()
+    if render is None:
+        return
+    if space_snap is None or items is None:
+        space_snap = _snapshot_space(render.space)
+        items = _snapshot_items(layout.render_items(render.space))
+        render.fingerprint = layout.fingerprint(space_snap, items)
 
     fetched = {}
     for item in _select_photo_items(items):
@@ -102,16 +121,21 @@ def _run(render_id):
         if result is not None:
             fetched[item['number']] = result
 
-    render.items = _manifest(items, frozenset(fetched))
-    render.save(update_fields=['items'])
+    manifest = _manifest(items, frozenset(fetched))
+    SpaceRender.objects.filter(pk=render_id).update(
+        fingerprint=render.fingerprint, items=manifest
+    )
 
-    guide = layout.layout_guide_png(space, items)
-    text, _index = prompt.build_prompt(space, items, set(fetched))
-    aspect = layout.aspect_ratio(space)
+    guide = layout.layout_guide_png(space_snap, items)
+    text, _index = prompt.build_prompt(space_snap, items, set(fetched))
+    aspect = layout.aspect_ratio(space_snap)
     photo_list = [fetched[n] for n in sorted(fetched)]
 
     image, mime, provider_name, model_name = providers.generate(text, guide, photo_list, aspect)
 
+    if not SpaceRender.objects.filter(pk=render_id).exists():
+        return
+    render.items = manifest
     render.image = image
     render.image_mime = mime
     render.prompt = text
@@ -120,13 +144,16 @@ def _run(render_id):
     render.status = RenderStatus.DONE
     render.error = ''
     render.finished_at = timezone.now()
-    render.save()
+    render.save(update_fields=[
+        'fingerprint', 'items', 'image', 'image_mime', 'prompt',
+        'provider', 'model', 'status', 'error', 'finished_at',
+    ])
 
 
-def run_render(render_id):
+def run_render(render_id, space_snap=None, items=None):
     try:
         try:
-            _run(render_id)
+            _run(render_id, space_snap, items)
         except providers.ProviderNotConfigured:
             SpaceRender.objects.filter(pk=render_id).update(
                 status=RenderStatus.FAILED,

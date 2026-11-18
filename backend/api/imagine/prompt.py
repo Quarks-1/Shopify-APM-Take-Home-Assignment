@@ -138,6 +138,10 @@ def _item_lines(item, items, space, photo_number):
             f"  - Its product photo is image {photo_number}; reproduce this exact product "
             f"(shape, color, material, details) seen from above."
         )
+    elif item.get('description'):
+        lines.append(
+            f"  - No photo: render a plausible {item['type']} matching: {item['description']}"
+        )
     else:
         lines.append(f"  - No photo: render a plausible {item['type']} matching the description.")
     return lines

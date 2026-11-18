@@ -1,6 +1,15 @@
 from django.urls import path
 
-from . import cart_views, render_views, search_views, state_views, vibe_views, views, vote_views
+from . import (
+    cart_views,
+    object_parse_views,
+    render_views,
+    search_views,
+    state_views,
+    vibe_views,
+    views,
+    vote_views,
+)
 
 app_name = 'api'
 
@@ -18,6 +27,11 @@ urlpatterns = [
         name='placement-detail',
     ),
     path('objects/', state_views.objects_collection, name='objects'),
+    path(
+        'objects/parse-prompt/',
+        object_parse_views.parse_object_prompt,
+        name='object-parse-prompt',
+    ),
     path('objects/<str:object_id>/', state_views.object_detail, name='object-detail'),
     path('objects/<str:object_id>/searches/', search_views.object_searches, name='object-searches'),
     path(

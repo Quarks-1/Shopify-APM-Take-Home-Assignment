@@ -102,6 +102,11 @@ def active_import(space):
     return VibeImport.objects.filter(space=space, status__in=ACTIVE).order_by('created_at').first()
 
 
+def has_active_for_space(space_id):
+    """True when the space has a queued or running vibe import."""
+    return VibeImport.objects.filter(space_id=space_id, status__in=ACTIVE).exists()
+
+
 def active_import_for_board(board_id):
     """Oldest queued/running import currently updating `board_id`, or None."""
     if board_id is None:

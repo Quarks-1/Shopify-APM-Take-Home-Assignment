@@ -102,6 +102,8 @@ class UrlValidationTests(SimpleTestCase):
         'https://www.pinterest.de/someuser/cozy-living/more/': 'https://www.pinterest.de/someuser/cozy-living/',
         'https://pin.it/1s1rrkzfA': 'https://pin.it/1s1rrkzfA',
         'pin.it/AbC123/': 'https://pin.it/AbC123',
+        'https://m.pinterest.com/someuser/cozy-living/': 'https://m.pinterest.com/someuser/cozy-living/',
+        'https://pin.it/AbC_12-3/': 'https://pin.it/AbC_12-3',
     }
     REJECT = {
         'http://www.pinterest.com/someuser/cozy-living/': pin.InvalidBoardUrl,

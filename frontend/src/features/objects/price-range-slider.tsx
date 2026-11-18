@@ -105,8 +105,12 @@ export function PriceRangeSlider({ value, onChange, className }: PriceRangeSlide
   const labelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const minIndex = value.min === undefined ? MIN_STOP_INDEX : priceToStopIndex(value.min);
-  const maxIndex = value.max === undefined ? MAX_STOP_INDEX : priceToStopIndex(value.max);
+  const rawMinIndex =
+    value.min === undefined ? MIN_STOP_INDEX : Math.min(MAX_STOP_INDEX - 1, priceToStopIndex(value.min));
+  const rawMaxIndex =
+    value.max === undefined ? MAX_STOP_INDEX : Math.max(MIN_STOP_INDEX + 1, priceToStopIndex(value.max));
+  const minIndex = Math.min(rawMinIndex, rawMaxIndex);
+  const maxIndex = Math.max(rawMinIndex, rawMaxIndex);
 
   // The slider's values are stop indexes, which a screen reader would read as "3".
   // React Aria derives aria-valuetext itself, so overwrite it with the price after each render.
@@ -121,13 +125,21 @@ export function PriceRangeSlider({ value, onChange, className }: PriceRangeSlide
 
   const handleChange = (indexes: number[]) => {
     const [nextMin, nextMax] = indexes;
-    const min = nextMin === minIndex ? value.min : nextMin === MIN_STOP_INDEX ? undefined : stopIndexToPrice(nextMin);
-    const max = nextMax === maxIndex ? value.max : nextMax === MAX_STOP_INDEX ? undefined : stopIndexToPrice(nextMax);
+    const clampedMin = Math.min(MAX_STOP_INDEX - 1, Math.max(MIN_STOP_INDEX, nextMin));
+    const clampedMax = Math.max(MIN_STOP_INDEX + 1, Math.min(MAX_STOP_INDEX, nextMax));
+    const minMoved = clampedMin !== minIndex;
+    const maxMoved = clampedMax !== maxIndex;
+    let min = !minMoved ? value.min : clampedMin === MIN_STOP_INDEX ? undefined : stopIndexToPrice(clampedMin);
+    let max = !maxMoved ? value.max : clampedMax === MAX_STOP_INDEX ? undefined : stopIndexToPrice(clampedMax);
+    if (min !== undefined && max !== undefined && min > max) {
+      if (minMoved && !maxMoved) max = min;
+      else min = max;
+    }
     onChange({
       min,
       max,
-      minFuzzy: min === undefined ? undefined : value.minFuzzy,
-      maxFuzzy: max === undefined ? undefined : value.maxFuzzy,
+      minFuzzy: min === undefined ? false : Boolean(value.minFuzzy),
+      maxFuzzy: max === undefined ? false : Boolean(value.maxFuzzy),
     });
   };
 

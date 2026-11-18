@@ -51,6 +51,8 @@ export type ProductVote = "up" | "down";
 export interface SpaceObject {
   id: string;
   name: string;
+  /** Natural-language prompt or extra description steering catalog search. */
+  description?: string;
   dims: ObjectDims;
   weight?: number;
   type: ObjectType;
@@ -67,6 +69,8 @@ export interface SpaceObject {
   /** Minimum product star rating (0-5) to accept; unset means any. */
   minRating?: number;
   similarItems: string[];
+  /** Pinterest pin IDs explicitly selected as visual image references (max 5). */
+  referencePins: string[];
   source: "search" | "imported";
   owned?: OwnedInfo;
   /** Product ids of the latest search's accepted candidates (`cand_<id>`), selection first. Derived client-side. */

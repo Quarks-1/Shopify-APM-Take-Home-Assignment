@@ -18,7 +18,18 @@ from django.db import connection
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
-from .models import Candidate, RunStatus, SearchRun, SpaceObject, Verdict
+from .models import (
+    Candidate,
+    CartLine,
+    CatalogQuery,
+    MerchantCart,
+    MerchantCartStatus,
+    RunStatus,
+    SearchMode,
+    SearchRun,
+    SpaceObject,
+    Verdict,
+)
 from .searcher import engine, runner
 from .serializers import iso, run_to_json
 
@@ -600,3 +611,73 @@ class FinalizeTests(TestCase):
         self.assertEqual(state['lastRunAt'], iso(SearchRun.objects.get(pk=self.run.pk).finished_at))
         runner.finalize(newer)
         self.assertEqual(SpaceObject.objects.get(pk='obj1').search['status'], 'empty')
+
+    def _seed_selection_and_cart(self, obj):
+        old_run = engine.create_run(obj)
+        SearchRun.objects.filter(pk=old_run.pk).update(status=RunStatus.DONE)
+        cq = CatalogQuery.objects.create(run=old_run, round=1, strategy='exact', payload={})
+        cand = Candidate.objects.create(
+            run=old_run, query=cq, product_gid='gid://shopify/p/old',
+            variant_gid='gid://shopify/ProductVariant/1001', title='Old table',
+            seller_domain='shop.example.com', pdp_url='https://shop.example.com/products/1001',
+            verdict=Verdict.ACCEPTED,
+        )
+        obj.selected_candidate = cand
+        obj.save(update_fields=['selected_candidate'])
+        CartLine.objects.create(id=f'line_{obj.pk}', object=obj, qty=2, created_at=timezone.now())
+        MerchantCart.objects.update_or_create(
+            domain='shop.example.com',
+            defaults={'status': MerchantCartStatus.SYNCED, 'revision': 3},
+        )
+        return cand
+
+    def test_plain_search_done_and_empty_clear_selection_and_cart_line(self):
+        for outcome in ('done', 'empty'):
+            obj = make_object(f'clear_{outcome}')
+            self._seed_selection_and_cart(obj)
+            run = engine.create_run(obj)
+            if outcome == 'done':
+                cq = CatalogQuery.objects.create(run=run, round=1, strategy='exact', payload={})
+                Candidate.objects.create(
+                    run=run, query=cq, product_gid='gid://shopify/p/new',
+                    title='New table', verdict=Verdict.ACCEPTED,
+                )
+            settled = runner.finalize(run)
+            self.assertEqual(settled.status, outcome)
+            obj.refresh_from_db()
+            self.assertIsNone(obj.selected_candidate_id)
+            self.assertFalse(CartLine.objects.filter(object=obj).exists())
+            mc = MerchantCart.objects.get(pk='shop.example.com')
+            self.assertEqual(mc.status, MerchantCartStatus.DIRTY)
+            self.assertEqual(mc.revision, 4)
+
+    def test_canceled_failed_and_non_plain_runs_preserve_selection_and_cart_line(self):
+        cases = [
+            ('canceled', SearchMode.SEARCH, {'status': RunStatus.CANCELED}),
+            ('failed', SearchMode.SEARCH, {'status': RunStatus.RUNNING, 'error': 'boom'}),
+            ('like_done', SearchMode.LIKE, {}),
+            ('like_empty', SearchMode.LIKE, {}),
+            ('refine_empty', SearchMode.REFINE, {}),
+        ]
+        for label, mode, updates in cases:
+            with self.subTest(label=label):
+                obj = make_object(f'keep_{label}')
+                cand = self._seed_selection_and_cart(obj)
+                kw = {'like_source': {}} if mode == SearchMode.LIKE else (
+                    {'feedback': {}} if mode == SearchMode.REFINE else {}
+                )
+                run = engine.create_run(obj, mode=mode, **kw)
+                if label == 'like_done':
+                    cq = CatalogQuery.objects.create(run=run, round=1, strategy='like:product', payload={})
+                    Candidate.objects.create(
+                        run=run, query=cq, product_gid='gid://shopify/p/like',
+                        title='Similar table', verdict=Verdict.ACCEPTED,
+                    )
+                if updates:
+                    SearchRun.objects.filter(pk=run.pk).update(**updates)
+                runner.finalize(run)
+                obj.refresh_from_db()
+                self.assertEqual(obj.selected_candidate_id, cand.pk)
+                self.assertTrue(CartLine.objects.filter(object=obj).exists())
+                self.assertEqual(MerchantCart.objects.get(pk='shop.example.com').status,
+                                 MerchantCartStatus.SYNCED)

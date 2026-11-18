@@ -126,7 +126,14 @@ function fromApiObject(o: ApiObject, candidates: ApiCandidate[]): SpaceObject {
   const ids = candidates.map((c) => candidateProductId(c.id));
   // The newest run found nothing, so the candidates listed are an older run's: show none (keep the pick).
   const visible = rest.search.status === "empty" ? ids.filter((id) => id === selected) : ids;
-  return { ...rest, votes: rest.votes ?? {}, preferences: rest.preferences ?? null, candidateIds: withSelectionFirst(visible, selected), selectedProductId: selected };
+  return {
+    ...rest,
+    referencePins: rest.referencePins ?? [],
+    votes: rest.votes ?? {},
+    preferences: rest.preferences ?? null,
+    candidateIds: withSelectionFirst(visible, selected),
+    selectedProductId: selected,
+  };
 }
 
 export function localOf(state: LocalState): LocalState {
@@ -216,11 +223,23 @@ function sameValue(a: unknown, b: unknown): boolean {
   return true;
 }
 
-/** The changed keys among `keys`, with undefined sent as null (clears the field). */
-function diff<T extends object, K extends keyof T>(prev: T, next: T, keys: readonly K[]): Record<string, unknown> | null {
+/** The changed keys among `keys`, with undefined sent as null (or false for boolean keys). */
+function diff<T extends object, K extends keyof T>(
+  prev: T,
+  next: T,
+  keys: readonly K[],
+  booleanKeys?: ReadonlySet<string>,
+): Record<string, unknown> | null {
   const body: Record<string, unknown> = {};
   for (const k of keys) {
-    if (!sameValue(prev[k], next[k])) body[k as string] = next[k] === undefined ? null : next[k];
+    const key = k as string;
+    if (booleanKeys?.has(key)) {
+      const prevBool = Boolean(prev[k]);
+      const nextBool = Boolean(next[k]);
+      if (prevBool !== nextBool) body[key] = nextBool;
+    } else if (!sameValue(prev[k], next[k])) {
+      body[key] = next[k] === undefined ? null : next[k];
+    }
   }
   return Object.keys(body).length > 0 ? body : null;
 }
@@ -237,6 +256,7 @@ const SPACE_PATCH_KEYS = [
 // Never id, createdAt, candidateIds, selectedProductId or search: the backend owns or ignores those.
 const OBJECT_PATCH_KEYS = [
   "name",
+  "description",
   "dims",
   "weight",
   "type",
@@ -248,9 +268,12 @@ const OBJECT_PATCH_KEYS = [
   "priceLimitFuzzy",
   "minRating",
   "similarItems",
+  "referencePins",
   "source",
   "owned",
 ] as const satisfies readonly (keyof SpaceObject)[];
+
+const OBJECT_BOOLEAN_PATCH_KEYS: ReadonlySet<string> = new Set(["priceMinFuzzy", "priceLimitFuzzy"]);
 
 export function spaceCreateBody(space: Space): ApiSpaceCreate {
   return {
@@ -270,6 +293,7 @@ export function objectCreateBody(o: SpaceObject): ApiObjectCreate {
   return {
     id: o.id,
     name: o.name,
+    description: o.description,
     type: o.type,
     dims: o.dims,
     weight: o.weight,
@@ -277,10 +301,11 @@ export function objectCreateBody(o: SpaceObject): ApiObjectCreate {
     style: o.style,
     priceMin: o.priceMin,
     priceLimit: o.priceLimit,
-    priceMinFuzzy: o.priceMinFuzzy,
-    priceLimitFuzzy: o.priceLimitFuzzy,
+    priceMinFuzzy: o.priceMinFuzzy === undefined ? undefined : Boolean(o.priceMinFuzzy),
+    priceLimitFuzzy: o.priceLimitFuzzy === undefined ? undefined : Boolean(o.priceLimitFuzzy),
     minRating: o.minRating,
     similarItems: o.similarItems,
+    referencePins: o.referencePins,
     source: o.source,
     owned: o.owned,
     createdAt: o.createdAt,
@@ -288,7 +313,7 @@ export function objectCreateBody(o: SpaceObject): ApiObjectCreate {
 }
 
 export const objectPatchBody = (prev: SpaceObject, next: SpaceObject) =>
-  diff(prev, next, OBJECT_PATCH_KEYS) as ApiObjectPatch | null;
+  diff(prev, next, OBJECT_PATCH_KEYS, OBJECT_BOOLEAN_PATCH_KEYS) as ApiObjectPatch | null;
 
 // ---------------------------------------------------------------------------
 // localStorage
@@ -421,6 +446,7 @@ export function legacyImportPayload(legacy: LegacyAppState): ApiImportPayload {
         .filter(Boolean)
         .map((s) => clip(s, 80))
         .slice(0, 20),
+      referencePins: (o.referencePins ?? []).slice(0, 5),
       candidateIds: [],
       search: { status: "idle" },
     };

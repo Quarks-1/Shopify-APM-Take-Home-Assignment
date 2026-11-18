@@ -37,6 +37,7 @@ export function HomePage() {
     if (importing || state.importedAt) return;
     setImporting(true);
     importTimer.current = setTimeout(() => {
+      importTimer.current = null;
       importFromShopify();
       setImporting(false);
       toast.success("Imported 4 items from Shopify");
@@ -185,6 +186,11 @@ export function HomePage() {
         description="This restores the original spaces and objects and clears your cart."
         confirmLabel="Reset"
         onConfirm={() => {
+          if (importTimer.current !== null) {
+            clearTimeout(importTimer.current);
+            importTimer.current = null;
+          }
+          setImporting(false);
           resetDemo();
           toast.success("Demo data reset");
         }}

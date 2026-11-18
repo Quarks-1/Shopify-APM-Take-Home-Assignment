@@ -514,3 +514,74 @@ class DeleteInspirationCountTests(VibeApiBase):
         self.assertEqual(self.board.pins_usable, 2)
         self.assertFalse(crop.exists())
         self.assertFalse((paths.vibes_dir() / rows[0].image_path).exists())
+
+
+class ClearSpaceInspirationsTests(VibeApiBase):
+    pin = DeleteInspirationTests.pin
+
+    def test_clear_detaches_space_board_and_dismisses_imports_while_preserving_shared_board(self):
+        other = make_space('space2')
+        board = make_board(self.space, usable=2)
+        other.vibe_board = board
+        other.save(update_fields=['vibe_board'])
+        imp1 = VibeImport.objects.create(
+            space=self.space, board=board, board_url=BOARD, status=VibeImportStatus.DONE,
+            pins_usable=2, dismissed=False,
+        )
+        imp2 = VibeImport.objects.create(
+            space=self.space, board_url=OTHER, status=VibeImportStatus.FAILED,
+            pins_usable=1, dismissed=False,
+        )
+        other_imp = VibeImport.objects.create(
+            space=other, board=board, board_url=BOARD, status=VibeImportStatus.DONE,
+            pins_usable=2, dismissed=False,
+        )
+        p0 = self.pin(board, 'p0', 0)
+        p1 = self.pin(board, 'p1', 1)
+
+        res = self.client.delete('/api/spaces/space1/inspirations/')
+        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.content, b'')
+
+        self.space.refresh_from_db()
+        self.assertIsNone(self.space.vibe_board_id)
+        self.assertEqual(
+            self.client.get('/api/spaces/space1/inspirations/').json()['inspirations'], []
+        )
+
+        for imp in (imp1, imp2):
+            imp.refresh_from_db()
+            self.assertTrue(imp.dismissed)
+
+        # Shared board rows, files, and other space's selection/imports remain intact.
+        self.assertTrue(SpaceInspiration.objects.filter(pk=p0.pk).exists())
+        self.assertTrue(SpaceInspiration.objects.filter(pk=p1.pk).exists())
+        self.assertTrue((paths.vibes_dir() / p0.image_path).is_file())
+        other.refresh_from_db()
+        self.assertEqual(other.vibe_board_id, board.id)
+        other_imp.refresh_from_db()
+        self.assertFalse(other_imp.dismissed)
+
+        # Idempotent when already detached.
+        self.assertEqual(self.client.delete('/api/spaces/space1/inspirations/').status_code, 204)
+
+    def test_clear_unknown_space_is_404(self):
+        res = self.client.delete('/api/spaces/nope/inspirations/')
+        self.assertEqual((res.status_code, res.json()), (404, {'error': 'not_found'}))
+
+    def test_clear_while_import_active_is_409_and_preserves_selection(self):
+        board = make_board(self.space, usable=1)
+        row = self.pin(board, 'p0', 0)
+        for status in (VibeImportStatus.QUEUED, VibeImportStatus.RUNNING):
+            imp = VibeImport.objects.create(
+                space=self.space, board=board, board_url=BOARD,
+                status=status, started_at=timezone.now(),
+            )
+            self.assertTrue(importer.has_active_for_space('space1'))
+            res = self.client.delete('/api/spaces/space1/inspirations/')
+            self.assertEqual((res.status_code, res.json()), (409, {'error': 'import_in_progress'}))
+            self.space.refresh_from_db()
+            self.assertEqual(self.space.vibe_board_id, board.id)
+            self.assertTrue(SpaceInspiration.objects.filter(pk=row.pk).exists())
+            imp.delete()
+        self.assertFalse(importer.has_active_for_space('space1'))

@@ -69,14 +69,19 @@ def variadic(argv, flag):
     return out
 
 
+def is_object_parse():
+    return bool(os.environ.get('OBJECT_PARSE_ID'))
+
+
 def is_categorize(argv):
-    return variadic(argv, '--tools') == ['']
+    return variadic(argv, '--tools') == [''] and not is_object_parse()
 
 
 def check_flags(argv):
     problems = []
     stream = '--input-format' in argv
     categorize = is_categorize(argv)
+    obj_parse = is_object_parse()
     if not argv or argv[0] != '-p':
         problems.append('-p must come first')
     elif stream:
@@ -93,6 +98,13 @@ def check_flags(argv):
             problems.append('categorize mode needs stream-json input')
         if '--allowedTools' in argv:
             problems.append('categorize mode must not pass --allowedTools')
+    elif obj_parse:
+        if stream:
+            problems.append('object parse mode uses text -p input')
+        if variadic(argv, '--tools') != ['']:
+            problems.append('object parse mode must pass --tools ""')
+        if '--allowedTools' in argv:
+            problems.append('object parse mode must not pass --allowedTools')
     else:
         if variadic(argv, '--allowedTools') != ALLOWED:
             problems.append(f'--allowedTools must be exactly {ALLOWED}')
@@ -120,7 +132,12 @@ def check_flags(argv):
 
 
 def dump(info):
-    ident = os.environ.get('SEARCH_RUN_ID') or os.environ.get('VIBES_BATCH_ID') or 'none'
+    ident = (
+        os.environ.get('SEARCH_RUN_ID')
+        or os.environ.get('VIBES_BATCH_ID')
+        or os.environ.get('OBJECT_PARSE_ID')
+        or 'none'
+    )
     path = os.path.join(os.getcwd(), f'fake-claude-{ident}.json')
     with open(path, 'w', encoding='utf-8') as fh:
         json.dump(info, fh, indent=1)
@@ -240,6 +257,85 @@ def emit(doc, stream):
     print(json.dumps(doc))
 
 
+def run_object_parse(info, text, stream):
+    mode = 'object_parse'
+    for m in ('slow', 'exit1', 'error_json', 'notjson', 'hallucinate'):
+        if f'fake={m}' in text:
+            mode = m
+            break
+    info['mode'] = mode
+    dump(info)
+    if mode == 'slow':
+        time.sleep(120)
+        return 0
+    if mode == 'exit1':
+        print('fake claude crashed', file=sys.stderr)
+        return 1
+    if mode == 'notjson':
+        print('this is not json')
+        return 0
+    if mode == 'error_json':
+        emit(result_doc(1, 0, 'gave_up', is_error=True, subtype='error_during_execution'), stream)
+        return 0
+
+    start = text.index('{')
+    payload, _end = json.JSONDecoder().raw_decode(text[start:])
+    desc = payload.get('userDescription') or ''
+    lower = desc.lower()
+    pins = payload.get('boardPins') or []
+
+    if mode == 'hallucinate':
+        # Deliberately tries to force scandinavian + fake price/weight/rating when none were asked.
+        structured = {
+            'name': 'Japandi white bouclé couch',
+            'type': 'furniture',
+            'explicitDims': {'x': 82, 'y': 35, 'z': 30},
+            'estimatedFootprint': {'x': 90, 'y': 40, 'z': None},
+            'weight': 120,
+            'material': 'fabric',
+            'style': 'scandinavian',
+            'priceMin': 500,
+            'priceLimit': 2000,
+            'priceMinFuzzy': False,
+            'priceLimitFuzzy': False,
+            'minRating': 4.5,
+            'similarItems': ['Invented Sofa 3000'],
+            'recommendedPinIds': [p['pinId'] for p in pins],
+        }
+    else:
+        otype = 'wall-art' if 'painting' in lower or 'print' in lower else (
+            'lighting' if 'lamp' in lower else ('rug' if 'rug' in lower else 'furniture')
+        )
+        name = 'Japandi white bouclé couch' if 'japandi' in lower else desc.strip().rstrip('.')[:80]
+        mat = 'fabric' if ('fabric' in lower or 'boucl' in lower) else ('wood' if 'walnut' in lower or 'oak' in lower else None)
+        style = 'mid-century' if 'mid-century' in lower else ('scandinavian' if 'scandinavian' in lower else None)
+        rec = [
+            p['pinId'] for p in pins
+            if otype in (p.get('categories') or [])
+            and any(k in (p.get('item') or '') for k in ('sofa', 'couch', 'lamp', 'rug', 'art', 'chair'))
+        ]
+        structured = {
+            'name': name,
+            'type': otype,
+            'explicitDims': {'x': None, 'y': None, 'z': None},
+            'estimatedFootprint': {'x': 90, 'y': 40, 'z': None} if otype != 'wall-art' else {'x': 36, 'y': None, 'z': 48},
+            'weight': None,
+            'material': mat,
+            'style': style,
+            'priceMin': None,
+            'priceLimit': 1200 if 'under $1200' in lower else None,
+            'priceMinFuzzy': False,
+            'priceLimitFuzzy': 'around $' in lower,
+            'minRating': None,
+            'similarItems': ['Eames lounge chair'] if 'eames' in lower else [],
+            'recommendedPinIds': rec[:8],
+        }
+    doc = result_doc(1, 0, 'done')
+    doc['structured_output'] = structured
+    emit(doc, stream)
+    return 0
+
+
 def main(argv):
     info = {'argv': argv, 'env': dict(os.environ), 'pid': os.getpid(), 'children': []}
     problems = check_flags(argv)
@@ -253,6 +349,13 @@ def main(argv):
             info['stdin_text'] = prompt
         except (ValueError, KeyError, TypeError) as exc:
             problems.append(f'stdin is not a stream-json user message: {exc}')
+    if is_object_parse():
+        info['mode'] = 'object_parse'
+        dump(info)
+        if problems:
+            print('fake claude: bad flags: ' + '; '.join(problems), file=sys.stderr)
+            return 3
+        return run_object_parse(info, prompt, stream)
     if is_categorize(argv):
         info['mode'] = 'categorize'
         dump(info)

@@ -97,7 +97,24 @@ function placementRects(state: AppState, space: Space): { objectId: string; rect
   });
 }
 
-/** First free spot on a 6 inch grid, or {0, 0} when nothing is free. */
+function overlapArea(a: Rect, b: Rect): number {
+  const overlapW = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const overlapH = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return overlapW > 0 && overlapH > 0 ? overlapW * overlapH : 0;
+}
+
+function gridStops(max: number, step: number): number[] {
+  const stops: number[] = [];
+  for (let v = 0; v <= max; v += step) {
+    stops.push(v);
+  }
+  if (stops[stops.length - 1] !== max) {
+    stops.push(max);
+  }
+  return stops;
+}
+
+/** First free spot on a grid (including maxX/maxY), or the spot with minimum overlap area when crowded. */
 export function findOpenPosition(
   state: AppState,
   spaceId: string,
@@ -106,16 +123,28 @@ export function findOpenPosition(
   const space = getSpace(state, spaceId);
   if (!space) return { x: 0, y: 0 };
   const existing = placementRects(state, space).map((r) => r.rect);
-  const maxX = Math.max(0, space.dims.x - size.w);
-  const maxY = Math.max(0, space.dims.y - size.h);
-  const step = 6;
-  for (let y = 0; y <= maxY; y += step) {
-    for (let x = 0; x <= maxX; x += step) {
+  const maxX = Math.round(Math.max(0, space.dims.x - size.w) * 100) / 100;
+  const maxY = Math.round(Math.max(0, space.dims.y - size.h) * 100) / 100;
+  const step = Math.min(6, Math.max(1, Math.floor(Math.min(space.dims.x, space.dims.y) / 12)));
+  const xs = gridStops(maxX, step);
+  const ys = gridStops(maxY, step);
+  let best = { x: 0, y: 0 };
+  let bestArea = Number.POSITIVE_INFINITY;
+  for (const y of ys) {
+    for (const x of xs) {
       const rect = { x, y, w: size.w, h: size.h };
-      if (!existing.some((r) => overlaps(rect, r))) return { x, y };
+      let totalArea = 0;
+      for (const r of existing) {
+        totalArea += overlapArea(rect, r);
+      }
+      if (totalArea === 0) return { x, y };
+      if (totalArea < bestArea) {
+        bestArea = totalArea;
+        best = { x, y };
+      }
     }
   }
-  return { x: 0, y: 0 };
+  return best;
 }
 
 export function getOverlappingObjectIds(state: AppState, spaceId: string): Set<string> {
@@ -143,7 +172,12 @@ export function getSpaceWeight(state: AppState, spaceId: string): number {
 }
 
 export function getSpaceEstimatedTotal(state: AppState, spaceId: string): number {
-  return getObjectsForSpace(state, spaceId).reduce((sum, o) => sum + (getSelectedProduct(state, o)?.price ?? 0), 0);
+  return getObjectsForSpace(state, spaceId).reduce((sum, o) => {
+    const product = getSelectedProduct(state, o);
+    if (!product) return sum;
+    const qty = getCartLineForObject(state, o.id)?.qty ?? 1;
+    return sum + product.price * qty;
+  }, 0);
 }
 
 export type ObjectStatus =
@@ -163,8 +197,8 @@ export function getObjectStatus(state: AppState, objectId: string): ObjectStatus
   const obj = getObject(state, objectId);
   if (!obj) return "not-searched";
   if (obj.source === "imported") return "owned";
-  if (getCartLineForObject(state, objectId)) return "in-cart";
   if (obj.search.status === "running") return "searching";
+  if (getCartLineForObject(state, objectId)) return "in-cart";
   if (obj.selectedProductId) return "selected";
   if (obj.search.status === "empty") return "no-matches";
   if (obj.candidateIds.length > 0) return "matches";

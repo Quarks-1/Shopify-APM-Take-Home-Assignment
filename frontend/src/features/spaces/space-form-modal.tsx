@@ -16,7 +16,7 @@ import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import type { LengthUnit, Space, SpaceType } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
-import { getSpace } from "@/state/selectors";
+import { footprint, getObject, getSpace } from "@/state/selectors";
 
 export interface SpaceFormModalProps {
   isOpen: boolean;
@@ -161,7 +161,13 @@ function SpaceForm({
 
   const selectedBoard = boards.find((b) => b.id === effectiveChoice);
 
-  const nameError = values.name.trim() === "" ? "Enter a name." : null;
+  const trimmedName = values.name.trim();
+  const nameError =
+    trimmedName === ""
+      ? "Enter a name."
+      : trimmedName.length > 120
+        ? "Name must be 120 characters or fewer."
+        : null;
   const xError = (finite(values.x) ?? 0) > 0 ? null : "Must be greater than 0.";
   const yError = (finite(values.y) ?? 0) > 0 ? null : "Must be greater than 0.";
 
@@ -214,7 +220,7 @@ function SpaceForm({
     }
 
     const base = {
-      name: values.name.trim(),
+      name: trimmedName,
       type: values.type,
       unit: values.unit,
       dims: z === undefined ? { x, y } : { x, y, z },
@@ -225,6 +231,20 @@ function SpaceForm({
     let id: string;
     if (existing) {
       actions.updateSpace(existing.id, base);
+      if (x < existing.dims.x || y < existing.dims.y || values.type !== existing.type) {
+        for (const p of existing.placements) {
+          const obj = getObject(state, p.objectId);
+          if (!obj) continue;
+          const size = footprint(obj, { type: values.type });
+          const maxX = Math.max(0, x - size.w);
+          const maxY = Math.max(0, y - size.h);
+          const clampedX = Math.min(Math.max(0, p.x), maxX);
+          const clampedY = Math.min(Math.max(0, p.y), maxY);
+          if (clampedX !== p.x || clampedY !== p.y) {
+            actions.moveObject(existing.id, p.objectId, { x: clampedX, y: clampedY });
+          }
+        }
+      }
       id = existing.id;
     } else {
       id = actions.createSpace(base);
@@ -276,7 +296,7 @@ function SpaceForm({
           autoFocus
           value={values.name}
           onChange={(name) => patch({ name })}
-          isInvalid={submitted && nameError !== null}
+          isInvalid={(submitted || trimmedName.length > 120) && nameError !== null}
           errorMessage={nameError ?? undefined}
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

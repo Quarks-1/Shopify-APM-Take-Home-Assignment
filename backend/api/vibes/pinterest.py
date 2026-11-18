@@ -49,7 +49,7 @@ _TLDS = (
     "com|ca|co\\.uk|com\\.au|com\\.mx|com\\.br|de|fr|es|it|pt|ie|nz|ch|at|se|dk|"
     "jp|co\\.kr|nl|no|fi|pl|cl|ph|ru|co|in|id|com\\.co|hu|cz|gr|ro|sk|tr"
 )
-PINTEREST_HOST_RE = re.compile(rf"^(?:[a-z]{{2,3}}\.)?pinterest\.(?:{_TLDS})$")
+PINTEREST_HOST_RE = re.compile(rf"^(?:(?:www|m|[a-z]{{2,3}})\.)?pinterest\.(?:{_TLDS})$")
 SHORT_HOST = "pin.it"
 API_HOST = "api.pinterest.com"
 RESERVED_FIRST_SEGMENTS = frozenset(
@@ -57,7 +57,7 @@ RESERVED_FIRST_SEGMENTS = frozenset(
 )
 RESERVED_SECOND_SEGMENTS = frozenset({"_created", "_saved", "_tools", "pins", "boards"})
 SEGMENT_RE = re.compile(r"^[\w%.~-]+$")
-SHORT_PATH_RE = re.compile(r"^/[A-Za-z0-9]+/?$")
+SHORT_PATH_RE = re.compile(r"^/[A-Za-z0-9_-]+/?$")
 _SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
 
 

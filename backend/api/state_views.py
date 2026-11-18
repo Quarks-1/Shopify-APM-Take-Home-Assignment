@@ -83,14 +83,15 @@ def _json_view(fn):
 
 
 def state_candidates(objects):
-    """Per object, in object order: the accepted candidates of its newest run
-    that has any (ordered like run JSON), then its selected candidate when that
-    came from another run. Two queries however many objects or runs exist."""
+    """Per object, in object order: the accepted candidates of its newest
+    finished (done) run that has any (ordered like run JSON), then its selected
+    candidate when that came from another run. Two queries however many objects
+    or runs exist."""
     has_accepted = Candidate.objects.filter(run=OuterRef('pk'), verdict=Verdict.ACCEPTED)
     newest = {}
     themes = {}
     for object_id, run_id, vibes in (
-        SearchRun.objects.filter(Exists(has_accepted))
+        SearchRun.objects.filter(Exists(has_accepted), status=RunStatus.DONE)
         .order_by('-created_at', '-pk')
         .values_list('object_id', 'pk', 'vibes')
     ):
@@ -348,11 +349,12 @@ def state_import(request):
             oid = fields.pop('id')
             # Import is a full snapshot: absent optional fields reset to defaults.
             defaults = {
-                'weight': None, 'material': None, 'style': None, 'price_min': None,
-                'price_limit': None, 'price_min_fuzzy': False,
+                'description': '', 'weight': None, 'material': None, 'style': None,
+                'price_min': None, 'price_limit': None, 'price_min_fuzzy': False,
                 'price_limit_fuzzy': False, 'min_rating': None,
                 'owned': None, 'selected_product_id': None, 'similar_items': [],
-                'candidate_ids': [], 'search': default_search(), 'source': 'search',
+                'reference_pins': [], 'candidate_ids': [], 'search': default_search(),
+                'source': 'search',
             }
             defaults.update(fields)
             SpaceObject.objects.update_or_create(

@@ -3,6 +3,7 @@ imported boards, and list/delete inspiration pins."""
 from collections import defaultdict
 import logging
 
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -119,17 +120,24 @@ def vibe_boards(_request):
 
 
 @_json_view
-@require_http_methods(['GET'])
-def space_inspirations(_request, space_id):
+@require_http_methods(['GET', 'DELETE'])
+def space_inspirations(request, space_id):
     space = Space.objects.filter(pk=space_id).only('pk', 'vibe_board_id').first()
     if space is None:
         return _not_found()
-    if space.vibe_board_id is None:
-        return JsonResponse({'inspirations': []})
-    rows = SpaceInspiration.objects.filter(board_id=space.vibe_board_id).order_by('board_rank', 'pk')
-    return JsonResponse(
-        {'inspirations': [inspiration_to_json(r, space_id=space.pk) for r in rows]}
-    )
+    if request.method == 'GET':
+        if space.vibe_board_id is None:
+            return JsonResponse({'inspirations': []})
+        rows = SpaceInspiration.objects.filter(board_id=space.vibe_board_id).order_by('board_rank', 'pk')
+        return JsonResponse(
+            {'inspirations': [inspiration_to_json(r, space_id=space.pk) for r in rows]}
+        )
+    with transaction.atomic():
+        if importer.active_import(space) is not None:
+            return JsonResponse({'error': 'import_in_progress'}, status=409)
+        Space.objects.filter(pk=space.pk).update(vibe_board=None)
+        VibeImport.objects.filter(space=space).update(dismissed=True)
+    return HttpResponse(status=204)
 
 
 @_json_view
