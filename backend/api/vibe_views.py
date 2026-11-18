@@ -103,8 +103,12 @@ def space_inspiration_detail(request, space_id, inspiration_id):
     if importer.active_import(space) is not None:
         return JsonResponse({'error': 'import_in_progress'}, status=409)
     image_path = row.image_path
+    import_id = row.vibe_import_id
     row.delete()
     importer.remove_files([image_path])
+    if import_id is not None:
+        VibeImport.objects.filter(pk=import_id).update(
+            pins_usable=importer.usable_count(space.pk))
     return HttpResponse(status=204)
 
 

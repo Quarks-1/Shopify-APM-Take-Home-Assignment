@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from .models import Space, SpaceInspiration, VibeImport, VibeImportStatus, VibeImportStep
 from .test_fixtures.vibes_helpers import (
-    BOARD_URL, FakeClient, TempVibes, make_space, pins_for, raw_pin,
+    BOARD_URL, FakeClient, TempVibes, jpeg_bytes, make_space, pins_for, raw_pin,
 )
 from .vibes import categorize, importer, paths
 
@@ -358,3 +358,14 @@ class ConcurrencyTests(ImportBase):
         self.assertEqual(imp.batches_total, 10)
         self.assertEqual(imp.batches_done, 10)
         self.assertEqual(peak, 3)
+
+
+class RemoveFilesCropTests(TempVibes, TestCase):
+    def test_removes_crop_sibling_and_tolerates_absence(self):
+        d = paths.vibes_dir() / 's1'
+        d.mkdir(parents=True)
+        (d / 'a.jpg').write_bytes(jpeg_bytes())
+        (d / 'a.crop.jpg').write_bytes(jpeg_bytes())
+        (d / 'b.jpg').write_bytes(jpeg_bytes())
+        importer.remove_files(['s1/a.jpg', 's1/b.jpg', 's1/missing.jpg', ''])
+        self.assertEqual(list(d.iterdir()), [])

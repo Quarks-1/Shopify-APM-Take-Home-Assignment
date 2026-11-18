@@ -51,7 +51,7 @@ PHOTO_TYPE = 'image/jpeg'
 CROP_PAD = 0.08  # of the box's width / height, on each side
 CROP_MAX_SIDE = 1024
 CROP_QUALITY = 88
-CROP_SUFFIX = '.crop.jpg'
+CROP_SUFFIX = paths.CROP_SUFFIX
 PRIMARY_WEIGHT = 2  # summary weight of pins whose own type is the object's
 
 

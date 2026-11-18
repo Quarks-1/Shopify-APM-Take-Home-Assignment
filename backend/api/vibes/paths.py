@@ -6,6 +6,9 @@ from django.conf import settings
 from api import serializers
 from api.searcher import like_images
 
+# Cached crop written next to a pin image: <stem>.crop.jpg.
+CROP_SUFFIX = '.crop.jpg'
+
 
 def vibes_dir() -> Path:
     configured = getattr(settings, 'VIBES_DIR', None)

@@ -258,17 +258,19 @@ def _read_board(imp, client):
 
 
 def remove_files(rel_paths):
-    """Best-effort delete of stored image files (relative to vibes_dir)."""
+    """Best-effort delete of stored image files (relative to vibes_dir) and
+    their cached crops."""
     for rel in rel_paths:
         if not rel:
             continue
         target = paths.inside_vibes_dir(rel)
         if target is None:
             continue
-        try:
-            target.unlink()
-        except OSError:
-            pass
+        for victim in (target, target.with_name(f'{target.stem}{paths.CROP_SUFFIX}')):
+            try:
+                victim.unlink()
+            except OSError:
+                pass
 
 
 def _prune_to_board(imp, pins):
@@ -396,11 +398,16 @@ def _sort(imp):
         raise _Gone()
 
 
+def usable_count(space_id):
+    """How many of the space's pins are sorted into at least one category."""
+    return sum(1 for cats in SpaceInspiration.objects.filter(
+        space_id=space_id, categorized_at__isnull=False).values_list('categories', flat=True)
+        if cats)
+
+
 def _finish(imp):
     _set_step(imp.pk, VibeImportStep.SAVING)
-    usable = sum(1 for cats in SpaceInspiration.objects.filter(
-        space_id=imp.space_id, categorized_at__isnull=False).values_list('categories', flat=True)
-        if cats)
+    usable = usable_count(imp.space_id)
     work_dir = paths.import_dir(imp.pk)
     if work_dir.is_dir():
         for entry in work_dir.iterdir():  # keep logs and the CLI's result files

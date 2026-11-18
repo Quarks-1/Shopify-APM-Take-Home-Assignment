@@ -342,3 +342,22 @@ class DeleteInspirationTests(VibeApiBase):
         self.assertEqual(res.json(), {'error': 'import_in_progress'})
         self.assertTrue(SpaceInspiration.objects.filter(pk=row.pk).exists())
         self.assertTrue((paths.vibes_dir() / row.image_path).is_file())
+
+
+class DeleteInspirationCountTests(VibeApiBase):
+    pin = DeleteInspirationTests.pin
+    url = DeleteInspirationTests.url
+
+    def test_delete_updates_import_count_and_removes_crop(self):
+        imp = VibeImport.objects.create(
+            space=self.space, board_url=BOARD, status=VibeImportStatus.DONE, pins_usable=3)
+        rows = [self.pin(self.space, f'p{i}', i) for i in range(3)]
+        SpaceInspiration.objects.filter(pk__in=[r.pk for r in rows]).update(
+            vibe_import=imp, categories=['furniture'])
+        crop = paths.vibes_dir() / 'space1' / 'p0.crop.jpg'
+        crop.write_bytes(jpeg_bytes())
+        self.assertEqual(self.client.delete(self.url(rows[0])).status_code, 204)
+        imp.refresh_from_db()
+        self.assertEqual(imp.pins_usable, 2)
+        self.assertFalse(crop.exists())
+        self.assertFalse((paths.vibes_dir() / rows[0].image_path).exists())
