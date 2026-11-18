@@ -433,7 +433,7 @@ function ObjectForm({ object, isNew, isDrawn, onCommit, onFinish }: ObjectFormPr
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {parsing ? (
                   <div className="flex w-full items-center justify-between gap-2 py-0.5">
-                    <AgentThinking variant="stars" label="Filling out object details" />
+                    <AgentThinking variant="stars" label="Filling out object details" showTimer={false} />
                     <Button variant="ghost" size="small" onClick={cancelGenerate}>
                       Cancel
                     </Button>

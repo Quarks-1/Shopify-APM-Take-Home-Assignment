@@ -90,7 +90,6 @@ const textareaStyles = sortCx({
     "block w-full min-w-0 bg-transparent border-0 outline-none m-0 p-0 px-1",
     "font-sans text-body-regular text-text-primary",
     "placeholder:text-text-tertiary",
-    "focus:placeholder:text-text-primary",
     "disabled:text-input-disabled-text disabled:placeholder:text-input-disabled-text",
     "disabled:cursor-not-allowed",
     "aria-invalid:placeholder:text-text-error-placeholder",
