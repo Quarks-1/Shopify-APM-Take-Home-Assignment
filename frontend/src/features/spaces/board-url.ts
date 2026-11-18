@@ -6,17 +6,56 @@
  */
 export type BoardUrlResult = { url: string } | { error: string };
 
-const TLDS = "com|ca|co\\.uk|com\\.au|com\\.mx|de|fr|es|it|pt|ie|nz|ch|at|se|dk|jp";
-const PINTEREST_HOST = new RegExp(`^(?:[a-z]{2}\\.|www\\.)?pinterest\\.(?:${TLDS})$`);
-const PIN_IT_PATH = /^\/[A-Za-z0-9]+\/?$/;
+const MAX_INPUT_LEN = 2000;
+const TLDS =
+  "com|ca|co\\.uk|com\\.au|com\\.mx|com\\.br|de|fr|es|it|pt|ie|nz|ch|at|se|dk|" +
+  "jp|co\\.kr|nl|no|fi|pl|cl|ph|ru|co|in|id|com\\.co|hu|cz|gr|ro|sk|tr";
+const PINTEREST_HOST = new RegExp(`^(?:[a-z]{2,3}\\.)?pinterest\\.(?:${TLDS})$`);
+const PIN_IT_PATH = /^\/[A-Za-z0-9_-]+\/?$/;
+const SEGMENT_RE = /^[\w%.~-]+$/;
+
+const RESERVED_FIRST_SEGMENTS = new Set([
+  "pin",
+  "search",
+  "ideas",
+  "_",
+  "settings",
+  "business",
+  "today",
+  "explore",
+  "login",
+  "news_hub",
+  "about",
+]);
+
+const RESERVED_SECOND_SEGMENTS = new Set([
+  "_created",
+  "_saved",
+  "_tools",
+  "pins",
+  "boards",
+  "followers",
+  "following",
+]);
 
 const INVALID = "That doesn't look like a Pinterest board link.";
 const SINGLE_PIN = "That's a link to a single pin. Paste a board link instead.";
 
+function hasUnsafeChars(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code <= 0x20 || code === 0x5c || code === 0x7f) return true;
+  }
+  return false;
+}
+
 export function parseBoardUrl(raw: string): BoardUrlResult {
   let text = raw.trim();
   if (text === "") return { url: "" };
+  if (text.length > MAX_INPUT_LEN) return { error: INVALID };
   if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) text = `https://${text}`;
+  // Reject backslashes, spaces, and control characters before URL parsing percent-encodes them.
+  if (text.length > MAX_INPUT_LEN || hasUnsafeChars(text)) return { error: INVALID };
 
   let url: URL;
   try {
@@ -24,16 +63,52 @@ export function parseBoardUrl(raw: string): BoardUrlResult {
   } catch {
     return { error: INVALID };
   }
-  if (url.protocol !== "https:" || url.username || url.password || url.port) return { error: INVALID };
-
   const host = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" || url.username || url.password || url.port || !host || host.endsWith(".")) {
+    return { error: INVALID };
+  }
+
   if (host === "pin.it") {
-    return PIN_IT_PATH.test(url.pathname) ? { url: url.toString() } : { error: INVALID };
+    return PIN_IT_PATH.test(url.pathname)
+      ? { url: `https://pin.it/${url.pathname.replace(/^\/+|\/+$/g, "")}` }
+      : { error: INVALID };
   }
   if (!PINTEREST_HOST.test(host)) return { error: INVALID };
 
   const segments = url.pathname.split("/").filter(Boolean);
-  if (segments[0] === "pin") return { error: SINGLE_PIN };
-  if (segments.length < 2) return { error: INVALID };
-  return { url: url.toString() };
+  if (segments.length === 0) return { error: INVALID };
+  const first = segments[0].toLowerCase();
+  if (first === "pin") {
+    return segments.length >= 2 && SEGMENT_RE.test(segments[1]) ? { error: SINGLE_PIN } : { error: INVALID };
+  }
+  if (RESERVED_FIRST_SEGMENTS.has(first) || segments.length < 2) return { error: INVALID };
+
+  const [user, board] = segments;
+  if (!SEGMENT_RE.test(user) || !SEGMENT_RE.test(board)) return { error: INVALID };
+  if (RESERVED_SECOND_SEGMENTS.has(board.toLowerCase()) || board.startsWith("_")) {
+    return { error: INVALID };
+  }
+
+  return { url: `https://${host}/${user}/${board}/` };
+}
+
+/** Readable name for an imported Pinterest board, falling back to its URL slug when untitled. */
+export function boardDisplayName(board: { title: string; resolvedUrl?: string; boardUrl: string }): string {
+  const trimmed = board.title.trim();
+  if (trimmed) return trimmed;
+  const raw = board.resolvedUrl || board.boardUrl;
+  try {
+    const segments = new URL(raw).pathname
+      .split("/")
+      .filter(Boolean)
+      .map((s) => decodeURIComponent(s).replace(/[-_]+/g, " "));
+    if (segments.length >= 2) {
+      const slug = segments[1].trim();
+      if (slug) return slug.charAt(0).toUpperCase() + slug.slice(1);
+    }
+    if (segments.length === 1) return `pin.it/${segments[0]}`;
+  } catch {
+    // Fall through to raw URL or generic label.
+  }
+  return raw || "Pinterest board";
 }

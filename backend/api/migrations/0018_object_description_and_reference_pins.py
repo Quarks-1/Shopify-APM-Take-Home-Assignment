@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0016_repair_vibe_counts_and_crops'),
+        ('api', '0017_vibe_boards'),
     ]
 
     operations = [

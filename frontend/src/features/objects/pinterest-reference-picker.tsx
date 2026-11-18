@@ -131,8 +131,8 @@ export function PinterestReferencePicker({
           }
           // If the object holds selected pins from another space, resolve their metadata too.
           if (selectedPinIds.some((id) => !seen.has(id))) {
-            const globalPins = await listInspirations(controller.signal);
-            for (const pin of globalPins) {
+            const globalPayload = await listInspirations(controller.signal);
+            for (const pin of globalPayload.inspirations) {
               if (selectedPinIds.includes(pin.pinId) && !seen.has(pin.pinId)) {
                 seen.add(pin.pinId);
                 merged.push(pin);
@@ -141,8 +141,8 @@ export function PinterestReferencePicker({
           }
           if (!controller.signal.aborted) setBoardPins(merged);
         } else if (hasSelected) {
-          const globalPins = await listInspirations(controller.signal);
-          if (!controller.signal.aborted) setBoardPins(globalPins);
+          const globalPayload = await listInspirations(controller.signal);
+          if (!controller.signal.aborted) setBoardPins(globalPayload.inspirations);
         } else {
           setBoardPins([]);
         }

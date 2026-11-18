@@ -404,16 +404,22 @@ def _invoke_haiku(user_message, parse_id):
 
 
 def _load_board_rows(spaces):
-    space_ids = [s.id for s in spaces]
-    if not space_ids:
-        return []
-    rank_by_space = {sid: idx for idx, sid in enumerate(space_ids)}
+    board_ids = []
+    space_by_board = {}
+    for space in spaces:
+        bid = getattr(space, 'vibe_board_id', None)
+        if bid is not None and bid not in space_by_board:
+            space_by_board[bid] = space.id
+            board_ids.append(bid)
+    if not board_ids:
+        return [], {}
+    rank_by_board = {bid: idx for idx, bid in enumerate(board_ids)}
     rows = list(
         SpaceInspiration.objects.filter(
-            space_id__in=space_ids, vote=VoteChoice.UP, categorized_at__isnull=False
+            board_id__in=board_ids, vote=VoteChoice.UP, categorized_at__isnull=False
         )
     )
-    rows.sort(key=lambda r: (rank_by_space.get(r.space_id, 999), r.board_rank, r.pk))
+    rows.sort(key=lambda r: (rank_by_board.get(r.board_id, 999), r.board_rank, r.pk))
     seen = set()
     unique = []
     for row in rows:
@@ -421,7 +427,7 @@ def _load_board_rows(spaces):
             continue
         seen.add(row.pin_id)
         unique.append(row)
-    return unique
+    return unique, space_by_board
 
 
 def _pin_prompt_entry(row):
@@ -560,7 +566,7 @@ def parse_prompt(prompt_text, *, spaces=(), drawn_dims=None):
     """Parse `prompt_text` into `{parsed, similarPins, categoryPins, agentMode}`."""
     cleaned = clean_prompt(prompt_text)
     primary_space = spaces[0] if spaces else None
-    board_rows = _load_board_rows(spaces)
+    board_rows, space_by_board = _load_board_rows(spaces)
 
     space_info = None
     if primary_space is not None:
@@ -598,7 +604,11 @@ def parse_prompt(prompt_text, *, spaces=(), drawn_dims=None):
 
     return {
         'parsed': parsed,
-        'similarPins': [inspiration_to_json(r) for r in similar_rows],
-        'categoryPins': [inspiration_to_json(r) for r in category_rows],
+        'similarPins': [
+            inspiration_to_json(r, space_id=space_by_board.get(r.board_id)) for r in similar_rows
+        ],
+        'categoryPins': [
+            inspiration_to_json(r, space_id=space_by_board.get(r.board_id)) for r in category_rows
+        ],
         'agentMode': agent_mode,
     }

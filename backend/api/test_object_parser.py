@@ -10,7 +10,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
 
-from .models import Placement, Space, SpaceInspiration, SpaceObject
+from .models import Placement, Space, SpaceInspiration, SpaceObject, VibeBoard
 from .searcher import engine, prompts as searcher_prompts, query_builder
 from .test_like_search import FAKE_CLAUDE, FAKE_UCP
 from .vibes import matching, paths
@@ -39,12 +39,18 @@ class ObjectParserTests(TestCase):
         self.addCleanup(cm.disable)
 
         now = timezone.now()
+        self.board = VibeBoard.objects.create(
+            board_url='https://www.pinterest.com/tester/living-room/',
+            resolved_url='https://www.pinterest.com/tester/living-room/',
+            title='Living room vibes',
+        )
         self.space = Space.objects.create(
             id='space_living',
             name='Living room',
             type='floor',
             unit='in',
             dims={'x': 144, 'y': 120},
+            vibe_board=self.board,
             created_at=now,
             updated_at=now,
         )
@@ -62,10 +68,10 @@ class ObjectParserTests(TestCase):
         description='white boucle sofa',
     ):
         self.rank += 1
-        rel = f'{self.space.id}/{pin_id}.jpg'
+        rel = f'boards/{self.board.id}/{pin_id}.jpg'
         _write_jpeg(paths.vibes_dir() / rel)
         return SpaceInspiration.objects.create(
-            space=self.space,
+            board=self.board,
             pin_id=pin_id,
             pin_url=f'https://www.pinterest.com/pin/{pin_id}/',
             image_url=f'https://i.pinimg.com/736x/{pin_id}.jpg',

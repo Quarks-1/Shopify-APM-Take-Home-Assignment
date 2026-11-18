@@ -9,7 +9,7 @@ from django.core.management.base import CommandError
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from .test_fixtures.vibes_helpers import TempVibes, jpeg_bytes, make_space
+from .test_fixtures.vibes_helpers import TempVibes, jpeg_bytes, make_board, make_space
 from .models import SpaceInspiration
 from .test_vibes_categorize import entry
 from .vibes import categorize, paths, patterns
@@ -151,13 +151,13 @@ class ParseLabelFieldsTests(SimpleTestCase):
 class BackfillMigrationTests(TestCase):
     def test_backfill_from_text(self):
         migration = importlib.import_module('api.migrations.0014_inspiration_patterns')
-        space = make_space()
+        board = make_board()
         made = timezone.now()
 
         def row(pin, **kw):
             kw.setdefault('categorized_at', made)
             return SpaceInspiration.objects.create(
-                space=space, pin_id=pin, pin_url='https://x/', **kw)
+                board=board, pin_id=pin, pin_url='https://x/', **kw)
 
         a = row('a', description='A leopard print scalloped sofa', item='sofa')
         b = row('b', styles=['zebra-print'], materials=['cowhide'], item='bed')
@@ -181,15 +181,16 @@ class RelabelCommandTests(TempVibes, TestCase):
     def setUp(self):
         super().setUp()
         self.space = make_space()
+        self.board = make_board(self.space)
 
     def make_row(self, pin_id, title, image=True, **kw):
-        rel = f'{self.space.id}/{pin_id}.jpg'
+        rel = f'boards/{self.board.id}/{pin_id}.jpg'
         if image:
             target = paths.vibes_dir() / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(jpeg_bytes())
         return SpaceInspiration.objects.create(
-            space=self.space, pin_id=pin_id, pin_url='https://x/', image_path=rel if image else '',
+            board=self.board, pin_id=pin_id, pin_url='https://x/', image_path=rel if image else '',
             pin_text={'title': title, 'description': '', 'altText': ''}, board_rank=len(title),
             categories=['decor'], item='vase', categorized_at=timezone.now(), **kw)
 

@@ -87,6 +87,7 @@ type Action =
   | { type: "local/replace"; local: LocalState }
   | { type: "space/create"; id: string; input: SpaceInput; now: string }
   | { type: "space/update"; id: string; patch: SpacePatch; now: string }
+  | { type: "space/set-vibe-board"; id: string; vibeBoardId: string | undefined }
   | { type: "space/delete"; id: string }
   | { type: "placement/place"; spaceId: string; objectId: string; pos: Pos; now: string }
   | { type: "placement/move"; spaceId: string; objectId: string; pos: Pos; now: string }
@@ -97,7 +98,7 @@ type Action =
   | { type: "object/delete"; id: string }
   | { type: "search/set-state"; id: string; search: SearchState }
   | { type: "search/results"; id: string; candidates: api.ApiCandidate[]; lastRunAt: string; keepSelection?: boolean }
-  | { type: "product/select"; objectId: string; productId: string }
+  | { type: "product/select"; objectId: string; productId: string | undefined }
   | { type: "votes/set"; objectId: string; votes: Record<string, ProductVote> }
   | { type: "preferences/set"; objectId: string; preferences: SpaceObject["preferences"] }
   | { type: "cart/add"; objectIds: string[]; ids: string[] }
@@ -186,6 +187,10 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "space/update":
       return mapSpace(state, action.id, (s) => ({ ...s, ...action.patch, updatedAt: action.now }));
+    case "space/set-vibe-board":
+      return mapSpace(state, action.id, (s) =>
+        s.vibeBoardId === action.vibeBoardId ? s : { ...s, vibeBoardId: action.vibeBoardId },
+      );
     case "space/delete":
       return { ...state, spaces: state.spaces.filter((s) => s.id !== action.id) };
 
@@ -233,9 +238,15 @@ function reducer(state: AppState, action: Action): AppState {
       if (!obj) return state;
       const { products, stores } = mergeCandidates(state.products, state.stores, [obj], action.candidates);
       const found = action.candidates.map((c) => candidateProductId(c.id));
+      if (action.keepSelection && found.length === 0 && obj.candidateIds.length > 0) {
+        return mapObject({ ...state, products, stores }, action.id, (o) => ({
+          ...o,
+          search: { status: "done", lastRunAt: action.lastRunAt },
+        }));
+      }
       const kept = action.keepSelection ? obj.selectedProductId : undefined;
       if (kept) {
-        // "More like this" keeps the source product (first), its cart line and its product/store entries.
+        // "More like this" / "Refresh" keeps the source product (first), its cart line and its product/store entries.
         const ids = [kept, ...found.filter((id) => id !== kept)];
         return mapObject({ ...state, products, stores }, action.id, (o) => ({
           ...o,
@@ -270,6 +281,9 @@ function reducer(state: AppState, action: Action): AppState {
         selectedProductId: action.productId,
         candidateIds: withSelectionFirst(o.candidateIds, action.productId),
       }));
+      if (action.productId === undefined) {
+        return { ...next, cart: next.cart.filter((l) => l.objectId !== action.objectId) };
+      }
       return { ...next, cart: setCartProduct(next.cart, action.objectId, action.productId) };
     }
 
@@ -332,6 +346,8 @@ function reducer(state: AppState, action: Action): AppState {
 export interface AppActions {
   createSpace(input: SpaceInput): string;
   updateSpace(id: string, patch: SpacePatch): void;
+  /** Local only: mirrors `vibeBoardId` attached by a background vibe import worker. */
+  setSpaceVibeBoard(id: string, vibeBoardId: string | undefined): void;
   deleteSpace(id: string): void;
 
   placeObject(spaceId: string, objectId: string, pos?: Pos): void;
@@ -355,7 +371,8 @@ export interface AppActions {
   ): void;
   /** Local only: what the latest finished run's agent learned (`null` clears it). */
   setPreferences(objectId: string, preferences: SpaceObject["preferences"]): void;
-  selectProduct(objectId: string, productId: string): void;
+  /** Selects a candidate product on an object, or clears selection (and any cart line) when `undefined`. */
+  selectProduct(objectId: string, productId: string | undefined): void;
   /** Thumbs up/down on a candidate (`null` clears the vote). */
   voteProduct(objectId: string, productId: string, vote: ProductVote | null): void;
 
@@ -723,6 +740,7 @@ export function createAppStore(): AppStore {
       const body = next ? spacePatchBody(prev, next) : null;
       if (body) write(() => api.updateSpace(id, body));
     },
+    setSpaceVibeBoard: (id, vibeBoardId) => dispatch({ type: "space/set-vibe-board", id, vibeBoardId }),
     deleteSpace(id) {
       if (!getSpace(state, id)) return;
       dispatch({ type: "space/delete", id });
@@ -838,6 +856,19 @@ export function createAppStore(): AppStore {
       if (!obj || obj.selectedProductId === productId) return;
       const line = getCartLineForObject(state, objectId);
       const oldStore = line ? storeOfLine(state, line) : undefined;
+      if (productId === undefined) {
+        dispatch({ type: "product/select", objectId, productId: undefined });
+        if (oldStore) {
+          // Clearing the pick deletes the object's cart line on the backend.
+          writeCart([oldStore], async () => {
+            await api.selectCandidate(objectId, null);
+            return [oldStore];
+          });
+        } else {
+          write(() => api.selectCandidate(objectId, null));
+        }
+        return;
+      }
       dispatch({ type: "product/select", objectId, productId });
       const candidateId = candidateIdOf(productId);
       if (candidateId === undefined) return;

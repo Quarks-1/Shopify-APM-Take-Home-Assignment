@@ -3,7 +3,7 @@ import { toast } from "@/components/base/toast/toast";
 import * as api from "@/lib/api";
 import { ApiError, describeError, type ApiVibeImport } from "@/lib/api";
 import { VIBE_IMPORT_STEPS, type VibeImportStep } from "@/mocks/types";
-import { useAppState } from "@/state/app-store";
+import { useAppActions, useAppState } from "@/state/app-store";
 import { useAppStatus, useStoreInternals } from "@/state/store-context";
 
 /** What the status box shows for one space. */
@@ -57,6 +57,7 @@ interface Entry {
  */
 export function VibeImportProvider({ children }: { children: ReactNode }) {
   const state = useAppState();
+  const actions = useAppActions();
   const { status } = useAppStatus();
   const { getState, enqueue, onReset, onResetSettled, isResetting } = useStoreInternals();
 
@@ -92,6 +93,9 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
 
     const observe = (entry: Entry, imp: ApiVibeImport) => {
       if (entry.stopped) return;
+      if (imp.boardId && (imp.status === "running" || imp.status === "done")) {
+        actions.setSpaceVibeBoard(entry.spaceId, imp.boardId);
+      }
       if (imp.dismissed) {
         remove(entry.spaceId);
         return;
@@ -181,29 +185,40 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
       bump();
     };
 
+    let refreshInFlight: Promise<void> | null = null;
+
+    const handleResetWithClear = () => {
+      refreshInFlight = null;
+      handleReset();
+    };
+
     const refresh = () => {
       // The backend is still being wiped: what it lists now is pre-reset. Settling refreshes again.
-      if (isResetting()) return;
+      if (isResetting() || refreshInFlight) return;
       const generation = resetGeneration;
-      api
+      const run = api
         .listPendingVibeImports()
         .then((imports) => {
           // A reset started while this was in flight; its list holds imports the reset deleted.
           if (generation !== resetGeneration) return;
           const spaceIds = new Set(getState().spaces.map((s) => s.id));
           for (const imp of imports) {
-            if (imp.dismissed || !spaceIds.has(imp.spaceId)) continue;
+            if (imp.dismissed || !imp.spaceId || !spaceIds.has(imp.spaceId)) continue;
             const existing = entries.current.get(imp.spaceId);
             // Already followed (or being started right now): the tracker keeps its own pace.
             if (existing && (existing.importId === imp.id || existing.view.kind === "starting")) continue;
             observe(create(imp.spaceId, { kind: "starting" }), imp);
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          if (refreshInFlight === run) refreshInFlight = null;
+        });
+      refreshInFlight = run;
     };
 
-    return { start, dismiss, hide, refresh, remove, removeAll, handleReset };
-  }, [enqueue, getState, isResetting]);
+    return { start, dismiss, hide, refresh, remove, removeAll, handleReset: handleResetWithClear };
+  }, [actions, enqueue, getState, isResetting]);
 
   // Pick up imports that are going without us once the store is loaded.
   useEffect(() => {

@@ -22,6 +22,17 @@ def space_dir(space_id: str) -> Path:
     return vibes_dir() / space_id
 
 
+def boards_dir() -> Path:
+    return vibes_dir() / 'boards'
+
+
+def board_dir(board_id) -> Path:
+    bid = str(board_id)
+    if not serializers.ID_RE.match(bid):
+        raise ValueError(f'invalid board id: {board_id!r}')
+    return boards_dir() / bid
+
+
 def imports_dir() -> Path:
     return vibes_dir() / 'imports'
 

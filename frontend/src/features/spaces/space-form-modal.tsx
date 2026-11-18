@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { RiPinterestLine } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
+import { hintTextClassName } from "@/components/base/input/hint-text";
 import { Input } from "@/components/base/input/input";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/base/modal/modal";
 import { NumberField } from "@/components/base/number-field/number-field";
 import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmented-control/segmented-control";
-import { listSpaceVibeImports } from "@/lib/api";
-import type { ApiVibeImport } from "@/lib/api";
+import { Select, SelectItem } from "@/components/base/select/select";
+import { toast } from "@/components/base/toast/toast";
+import { listSpaceVibeImports, listVibeBoards } from "@/lib/api";
+import type { ApiVibeBoard } from "@/lib/api";
 import { fromDisplayLength, fromDisplayLengthKeeping, toDisplayLength } from "@/lib/format";
-import { parseBoardUrl } from "@/features/spaces/board-url";
+import { boardDisplayName, parseBoardUrl } from "@/features/spaces/board-url";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { SPACE_TYPE_OPTIONS } from "@/mocks/types";
 import type { LengthUnit, Space, SpaceType } from "@/mocks/types";
 import { useAppActions, useAppState } from "@/state/app-store";
-import { getSpace } from "@/state/selectors";
+import { footprint, getObject, getSpace } from "@/state/selectors";
 
 export interface SpaceFormModalProps {
   isOpen: boolean;
@@ -22,6 +25,9 @@ export interface SpaceFormModalProps {
   onSaved?: (id: string) => void;
   onCancel?: () => void;
 }
+
+const BOARD_NONE = "__none__";
+const BOARD_NEW = "__new__";
 
 interface FormValues {
   name: string;
@@ -32,12 +38,24 @@ interface FormValues {
   y?: number;
   z?: number;
   weightLimit?: number;
-  /** Pinterest board link to import as the space's vibes; empty for none. */
+  /** `BOARD_NONE`, `BOARD_NEW`, or a `VibeBoard` id. */
+  boardChoice: string;
+  /** Pinterest board link when importing a new board; empty otherwise. */
   boardUrl: string;
 }
 
 function initialValues(space: Space | undefined): FormValues {
-  if (!space) return { name: "Untitled space", type: "floor", unit: "in", x: 120, y: 96, boardUrl: "" };
+  if (!space) {
+    return {
+      name: "Untitled space",
+      type: "floor",
+      unit: "in",
+      x: 120,
+      y: 96,
+      boardChoice: BOARD_NONE,
+      boardUrl: "",
+    };
+  }
   return {
     name: space.name,
     type: space.type,
@@ -46,6 +64,7 @@ function initialValues(space: Space | undefined): FormValues {
     y: toDisplayLength(space.dims.y, space.unit),
     z: space.dims.z === undefined ? undefined : toDisplayLength(space.dims.z, space.unit),
     weightLimit: space.weightLimit,
+    boardChoice: space.vibeBoardId ?? BOARD_NONE,
     boardUrl: "",
   };
 }
@@ -86,42 +105,88 @@ function SpaceForm({
 
   const [values, setValues] = useState<FormValues>(() => initialValues(existing));
   const [submitted, setSubmitted] = useState(false);
-  const [savedBoard, setSavedBoard] = useState<ApiVibeImport | null>(null);
+  const [boards, setBoards] = useState<ApiVibeBoard[]>([]);
+  const [boardsLoaded, setBoardsLoaded] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    listVibeBoards(controller.signal)
+      .then((loaded) => {
+        if (controller.signal.aborted) return;
+        setBoards(loaded);
+        setBoardsLoaded(true);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setBoardsLoaded(true);
+      });
+    return () => controller.abort();
+  }, []);
 
   const existingId = existing?.id;
+  const activeImport = existingId !== undefined && vibes.isActive(existingId);
+
+  // When an import is actively running on this space, display its URL while the control is disabled.
   useEffect(() => {
-    if (existingId === undefined) return;
+    if (existingId === undefined || !activeImport) return;
     let cancelled = false;
     listSpaceVibeImports(existingId)
       .then((imports) => {
         if (cancelled) return;
-        const current = imports.find((i) => i.status === "done" || i.status === "running" || i.status === "queued");
-        if (!current) return;
-        setSavedBoard(current);
-        // Only prefill when the user hasn't started typing.
-        setValues((v) => (v.boardUrl === "" ? { ...v, boardUrl: current.boardUrl } : v));
+        const running = imports.find((i) => i.status === "running" || i.status === "queued");
+        if (!running) return;
+        setValues((v) =>
+          v.boardUrl === "" ? { ...v, boardChoice: BOARD_NEW, boardUrl: running.boardUrl } : v,
+        );
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [existingId]);
+  }, [existingId, activeImport]);
 
   const patch = (next: Partial<FormValues>) => setValues((v) => ({ ...v, ...next }));
   const isWall = values.type === "wall";
   const unitSuffix = values.unit;
 
-  const nameError = values.name.trim() === "" ? "Enter a name." : null;
+  const hasSavedBoards = boards.length > 0;
+  // Guard selectedKey if a previously referenced board had all of its pins removed.
+  const effectiveChoice =
+    !hasSavedBoards
+      ? BOARD_NEW
+      : values.boardChoice === BOARD_NONE || values.boardChoice === BOARD_NEW
+        ? values.boardChoice
+        : !boardsLoaded || boards.some((b) => b.id === values.boardChoice)
+          ? values.boardChoice
+          : BOARD_NONE;
+
+  const selectedBoard = boards.find((b) => b.id === effectiveChoice);
+
+  const trimmedName = values.name.trim();
+  const nameError =
+    trimmedName === ""
+      ? "Enter a name."
+      : trimmedName.length > 120
+        ? "Name must be 120 characters or fewer."
+        : null;
   const xError = (finite(values.x) ?? 0) > 0 ? null : "Must be greater than 0.";
   const yError = (finite(values.y) ?? 0) > 0 ? null : "Must be greater than 0.";
+
   const boardResult = parseBoardUrl(values.boardUrl);
-  const boardUrlError = "error" in boardResult ? boardResult.error : null;
-  const activeImport = existing !== undefined && vibes.isActive(existing.id);
-  const savedBoardResult = savedBoard ? parseBoardUrl(savedBoard.boardUrl) : null;
-  const savedBoardUrl = savedBoardResult && "url" in savedBoardResult ? savedBoardResult.url : "";
-  const currentUrl = "url" in boardResult ? boardResult.url : "";
-  const matchesSaved = savedBoard !== null && currentUrl !== "" && currentUrl === savedBoardUrl;
-  const valid = !nameError && !xError && !yError && !boardUrlError;
+  const parsedUrlError = "error" in boardResult ? boardResult.error : null;
+  const missingNewUrlError =
+    hasSavedBoards && effectiveChoice === BOARD_NEW && !activeImport && values.boardUrl.trim() === ""
+      ? "Paste a Pinterest board link, or choose No vibe board."
+      : null;
+  const boardUrlError =
+    effectiveChoice === BOARD_NEW
+      ? parsedUrlError ?? (submitted ? missingNewUrlError : null)
+      : null;
+  const boardSelectionValid =
+    activeImport ||
+    effectiveChoice !== BOARD_NEW ||
+    (parsedUrlError === null && missingNewUrlError === null);
+
+  const valid = !nameError && !xError && !yError && boardSelectionValid;
 
   const changeUnit = (unit: LengthUnit) => {
     if (unit === values.unit) return;
@@ -140,26 +205,76 @@ function SpaceForm({
     const z = zRaw !== undefined && zRaw > 0 ? fromDisplayLengthKeeping(zRaw, values.unit, existing?.dims.z) : undefined;
     const limit = finite(values.weightLimit);
     const weightLimit = limit !== undefined && limit > 0 ? limit : undefined;
+
+    let nextVibeBoardId: string | undefined = existing?.vibeBoardId;
+    let urlToImport = "";
+
+    if (!activeImport) {
+      if (effectiveChoice === BOARD_NEW) {
+        urlToImport = "url" in boardResult ? boardResult.url : "";
+      } else if (effectiveChoice === BOARD_NONE) {
+        nextVibeBoardId = undefined;
+      } else {
+        nextVibeBoardId = effectiveChoice;
+      }
+    }
+
     const base = {
-      name: values.name.trim(),
+      name: trimmedName,
       type: values.type,
       unit: values.unit,
       dims: z === undefined ? { x, y } : { x, y, z },
       weightLimit,
+      vibeBoardId: nextVibeBoardId,
     };
+
     let id: string;
     if (existing) {
       actions.updateSpace(existing.id, base);
+      if (x < existing.dims.x || y < existing.dims.y || values.type !== existing.type) {
+        for (const p of existing.placements) {
+          const obj = getObject(state, p.objectId);
+          if (!obj) continue;
+          const size = footprint(obj, { type: values.type });
+          const maxX = Math.max(0, x - size.w);
+          const maxY = Math.max(0, y - size.h);
+          const clampedX = Math.min(Math.max(0, p.x), maxX);
+          const clampedY = Math.min(Math.max(0, p.y), maxY);
+          if (clampedX !== p.x || clampedY !== p.y) {
+            actions.moveObject(existing.id, p.objectId, { x: clampedX, y: clampedY });
+          }
+        }
+      }
       id = existing.id;
     } else {
       id = actions.createSpace(base);
     }
-    const isNewBoard = "url" in boardResult && boardResult.url !== "" && boardResult.url !== savedBoardUrl;
-    if (!activeImport && isNewBoard) vibes.start(id, boardResult.url);
+
+    if (!activeImport) {
+      if (urlToImport !== "") {
+        vibes.start(id, urlToImport);
+      } else if (nextVibeBoardId !== existing?.vibeBoardId) {
+        vibes.dismiss(id);
+        if (selectedBoard) {
+          toast.success(`Using "${boardDisplayName(selectedBoard)}" vibes for ${base.name}`);
+        }
+      }
+    }
+
     savedRef.current = true;
     close();
     onSaved?.(id);
   };
+
+  const selectHint = activeImport
+    ? "A board is still importing…"
+    : selectedBoard
+      ? selectedBoard.id === existing?.vibeBoardId
+        ? `Using "${boardDisplayName(selectedBoard)}" · ${selectedBoard.usableCount} ${selectedBoard.usableCount === 1 ? "pin" : "pins"} steering searches in this space.`
+        : `Applies "${boardDisplayName(selectedBoard)}" (${selectedBoard.usableCount} ${selectedBoard.usableCount === 1 ? "pin" : "pins"}) to new searches in this space.`
+      : existing?.vibeBoardId
+        ? "Clears this space's vibe board. Imported boards stay in your library."
+        : "Choose a previously imported board (one board per space) or import a new link.";
 
   return (
     <form
@@ -181,7 +296,7 @@ function SpaceForm({
           autoFocus
           value={values.name}
           onChange={(name) => patch({ name })}
-          isInvalid={submitted && nameError !== null}
+          isInvalid={(submitted || trimmedName.length > 120) && nameError !== null}
           errorMessage={nameError ?? undefined}
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -252,28 +367,109 @@ function SpaceForm({
             hint="lb"
           />
         </div>
-        <Input
-          label="Import my vibes ✨"
-          type="url"
-          leadingIcon={RiPinterestLine}
-          placeholder="pin.it/… or pinterest.com/you/board"
-          value={values.boardUrl}
-          onChange={(boardUrl) => patch({ boardUrl })}
-          isInvalid={boardUrlError !== null}
-          errorMessage={boardUrlError ?? undefined}
-          isDisabled={activeImport}
-          hint={
-            activeImport
-              ? "A board is still importing…"
-              : matchesSaved && savedBoard
-                ? savedBoard.boardTitle
-                  ? `Imported from "${savedBoard.boardTitle}" · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
-                  : `Imported · ${savedBoard.pins.usable} pins in your vibes. Paste another board to replace it.`
+
+        {hasSavedBoards ? (
+          <div className="flex flex-col gap-2">
+            <Select
+              label="Import my vibes ✨"
+              className="w-full"
+              isDisabled={activeImport}
+              selectedKey={effectiveChoice}
+              onSelectionChange={(key) => {
+                if (key !== null) patch({ boardChoice: String(key) });
+              }}
+              renderValue={() => {
+                if (selectedBoard) {
+                  const title = boardDisplayName(selectedBoard);
+                  return (
+                    <span className="flex min-w-0 items-center gap-1.5 truncate">
+                      <RiPinterestLine className="size-4 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                      <span className="truncate">{title}</span>
+                      <span className="shrink-0 text-caption-1-medium text-text-tertiary">
+                        · {selectedBoard.pinCount} {selectedBoard.pinCount === 1 ? "pin" : "pins"}
+                      </span>
+                    </span>
+                  );
+                }
+                if (effectiveChoice === BOARD_NEW) {
+                  return (
+                    <span className="flex min-w-0 items-center gap-1.5 truncate">
+                      <RiPinterestLine className="size-4 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                      <span className="truncate">Import a new board…</span>
+                    </span>
+                  );
+                }
+                return <span className="truncate text-text-secondary">No vibe board</span>;
+              }}
+            >
+              <SelectItem id={BOARD_NONE} textValue="No vibe board">
+                No vibe board
+              </SelectItem>
+              {boards.map((board) => {
+                const title = boardDisplayName(board);
+                return (
+                  <SelectItem key={board.id} id={board.id} textValue={title}>
+                    <span className="flex w-full min-w-0 items-center gap-2">
+                      <RiPinterestLine className="size-4 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                      <span className="truncate">{title}</span>
+                      <span className="ms-auto shrink-0 ps-2 text-caption-1-medium text-text-tertiary">
+                        {board.pinCount} {board.pinCount === 1 ? "pin" : "pins"}
+                      </span>
+                    </span>
+                  </SelectItem>
+                );
+              })}
+              <SelectItem id={BOARD_NEW} textValue="Import a new board…">
+                <span className="flex min-w-0 items-center gap-2">
+                  <RiPinterestLine className="size-4 shrink-0 text-foreground-icon-tertiary" aria-hidden />
+                  <span className="truncate">Import a new board…</span>
+                </span>
+              </SelectItem>
+            </Select>
+
+            {effectiveChoice === BOARD_NEW ? (
+              <Input
+                aria-label="Pinterest board link"
+                type="url"
+                leadingIcon={RiPinterestLine}
+                placeholder="pin.it/… or pinterest.com/you/board"
+                value={values.boardUrl}
+                onChange={(boardUrl) => patch({ boardUrl })}
+                isInvalid={boardUrlError !== null}
+                errorMessage={boardUrlError ?? undefined}
+                isDisabled={activeImport}
+                hint={
+                  activeImport
+                    ? "A board is still importing…"
+                    : isEdit
+                      ? "Imports this board and applies it to new searches in this space."
+                      : "Paste a public Pinterest board link."
+                }
+              />
+            ) : (
+              <p className={hintTextClassName(false)}>{selectHint}</p>
+            )}
+          </div>
+        ) : (
+          <Input
+            label="Import my vibes ✨"
+            type="url"
+            leadingIcon={RiPinterestLine}
+            placeholder="pin.it/… or pinterest.com/you/board"
+            value={values.boardUrl}
+            onChange={(boardUrl) => patch({ boardUrl })}
+            isInvalid={boardUrlError !== null}
+            errorMessage={boardUrlError ?? undefined}
+            isDisabled={activeImport}
+            hint={
+              activeImport
+                ? "A board is still importing…"
                 : isEdit
-                  ? "Replaces your space's vibes with this board's pins."
+                  ? "Imports this board and applies it to new searches in this space."
                   : "Paste a public Pinterest board link."
-          }
-        />
+            }
+          />
+        )}
       </ModalBody>
       <ModalFooter>
         <Button type="button" variant="secondary" onClick={close}>

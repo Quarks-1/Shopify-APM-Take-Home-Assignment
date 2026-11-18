@@ -50,9 +50,12 @@ class VibesEndToEndTests(TempVibes, TransactionTestCase):
         return run
 
     def test_import_finished_with_eight_usable_pins(self):
+        self.space.refresh_from_db()
         self.assertEqual(self.imp.status, VibeImportStatus.DONE)
         self.assertEqual(self.imp.pins_usable, 8)
-        self.assertEqual(SpaceInspiration.objects.filter(space=self.space).count(), 10)
+        self.assertIsNotNone(self.space.vibe_board_id)
+        self.assertEqual(self.space.vibe_board_id, self.imp.board_id)
+        self.assertEqual(SpaceInspiration.objects.filter(board_id=self.imp.board_id).count(), 10)
 
     def test_couch_search_only_sees_furniture_pins(self):
         run = self.search(make_object(name='Couch', type='furniture', similar_items=['loveseat']))

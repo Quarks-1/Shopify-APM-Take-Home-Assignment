@@ -133,7 +133,7 @@ export function BackendStatusPage() {
   return (
       <div
         id="overview"
-        className="mx-auto flex min-w-0 w-full max-w-[1300px] flex-1 flex-col gap-6 p-4 sm:p-6"
+        className="mx-auto flex min-w-0 w-full max-w-[1300px] flex-1 flex-col gap-6"
       >
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-1">
@@ -259,7 +259,9 @@ export function BackendStatusPage() {
                   className="w-full sm:max-w-xs"
                 />
                 <Chip variant="caption" color="soft">
-                  Proxy /api to <bdi dir="ltr">{DJANGO_HOST}</bdi>
+                  <span>
+                    Proxy /api to <bdi dir="ltr">{DJANGO_HOST}</bdi>
+                  </span>
                 </Chip>
               </div>
 

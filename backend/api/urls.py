@@ -67,6 +67,7 @@ urlpatterns = [
         name='space-inspiration-detail',
     ),
     path('inspirations/', vibe_views.inspirations, name='inspirations'),
+    path('vibe-boards/', vibe_views.vibe_boards, name='vibe-boards'),
     path('vibe-imports/', vibe_views.vibe_imports, name='vibe-imports'),
     path('vibe-imports/<uuid:import_id>/', vibe_views.vibe_import_detail, name='vibe-import-detail'),
     path(

@@ -190,6 +190,44 @@ class RenderTests(Base):
         self.assertEqual(render['status'], 'failed')
         self.assertIn('boom', render['error'])
 
+    def test_layout_edit_mid_render_keeps_snapshot_consistent_with_fingerprint(self):
+        space_obj = Space.objects.get(pk=self.space['id'])
+        initial_fp = layout.fingerprint(space_obj, layout.render_items(space_obj))
+        real_generate = providers.generate
+
+        def mutate_then_generate(text, guide, photo_list, aspect):
+            # Simulate the user moving an object and deleting another mid-render.
+            Placement.objects.filter(object_id=self.sofa['id']).update(x=55, y=60)
+            Placement.objects.filter(object_id=self.lamp['id']).delete()
+            return real_generate(text, guide, photo_list, aspect)
+
+        with mock.patch('api.imagine.providers.generate', side_effect=mutate_then_generate):
+            res = self.post()
+        self.assertEqual(res.status_code, 202, res.content)
+        render_json = res.json()['render']
+        self.assertEqual(render_json['fingerprint'], initial_fp)
+        self.assertEqual(render_json['itemCount'], 2)
+
+        stored = SpaceRender.objects.get(pk=render_json['id'])
+        self.assertIn('10 in from the left and 10 in from the top', stored.prompt)
+        self.assertNotIn('55 in from the left', stored.prompt)
+
+        # Because the live layout moved mid-render, /renders/latest/ reports current=False.
+        latest = self.call('get', f'/api/spaces/{self.space["id"]}/renders/latest/').json()
+        self.assertFalse(latest['current'])
+        self.assertEqual(latest['render']['id'], render_json['id'])
+
+    def test_direct_run_render_without_snapshot_updates_fingerprint(self):
+        render = SpaceRender.objects.create(
+            space_id=self.space['id'], fingerprint='stale_fp', status=RenderStatus.RUNNING
+        )
+        runner.run_render(render.pk)
+        render.refresh_from_db()
+        space_obj = Space.objects.get(pk=self.space['id'])
+        expected_fp = layout.fingerprint(space_obj, layout.render_items(space_obj))
+        self.assertEqual(render.status, RenderStatus.DONE)
+        self.assertEqual(render.fingerprint, expected_fp)
+
 
 class LayoutTests(Base):
     def test_wall_footprint_uses_z(self):

@@ -223,16 +223,35 @@ function sameValue(a: unknown, b: unknown): boolean {
   return true;
 }
 
-/** The changed keys among `keys`, with undefined sent as null (clears the field). */
-function diff<T extends object, K extends keyof T>(prev: T, next: T, keys: readonly K[]): Record<string, unknown> | null {
+/** The changed keys among `keys`, with undefined sent as null (or false for boolean keys). */
+function diff<T extends object, K extends keyof T>(
+  prev: T,
+  next: T,
+  keys: readonly K[],
+  booleanKeys?: ReadonlySet<string>,
+): Record<string, unknown> | null {
   const body: Record<string, unknown> = {};
   for (const k of keys) {
-    if (!sameValue(prev[k], next[k])) body[k as string] = next[k] === undefined ? null : next[k];
+    const key = k as string;
+    if (booleanKeys?.has(key)) {
+      const prevBool = Boolean(prev[k]);
+      const nextBool = Boolean(next[k]);
+      if (prevBool !== nextBool) body[key] = nextBool;
+    } else if (!sameValue(prev[k], next[k])) {
+      body[key] = next[k] === undefined ? null : next[k];
+    }
   }
   return Object.keys(body).length > 0 ? body : null;
 }
 
-const SPACE_PATCH_KEYS = ["name", "type", "unit", "dims", "weightLimit"] as const satisfies readonly (keyof Space)[];
+const SPACE_PATCH_KEYS = [
+  "name",
+  "type",
+  "unit",
+  "dims",
+  "weightLimit",
+  "vibeBoardId",
+] as const satisfies readonly (keyof Space)[];
 
 // Never id, createdAt, candidateIds, selectedProductId or search: the backend owns or ignores those.
 const OBJECT_PATCH_KEYS = [
@@ -254,6 +273,8 @@ const OBJECT_PATCH_KEYS = [
   "owned",
 ] as const satisfies readonly (keyof SpaceObject)[];
 
+const OBJECT_BOOLEAN_PATCH_KEYS: ReadonlySet<string> = new Set(["priceMinFuzzy", "priceLimitFuzzy"]);
+
 export function spaceCreateBody(space: Space): ApiSpaceCreate {
   return {
     id: space.id,
@@ -262,6 +283,7 @@ export function spaceCreateBody(space: Space): ApiSpaceCreate {
     unit: space.unit,
     dims: space.dims,
     weightLimit: space.weightLimit,
+    vibeBoardId: space.vibeBoardId,
   };
 }
 
@@ -279,8 +301,8 @@ export function objectCreateBody(o: SpaceObject): ApiObjectCreate {
     style: o.style,
     priceMin: o.priceMin,
     priceLimit: o.priceLimit,
-    priceMinFuzzy: o.priceMinFuzzy,
-    priceLimitFuzzy: o.priceLimitFuzzy,
+    priceMinFuzzy: o.priceMinFuzzy === undefined ? undefined : Boolean(o.priceMinFuzzy),
+    priceLimitFuzzy: o.priceLimitFuzzy === undefined ? undefined : Boolean(o.priceLimitFuzzy),
     minRating: o.minRating,
     similarItems: o.similarItems,
     referencePins: o.referencePins,
@@ -291,7 +313,7 @@ export function objectCreateBody(o: SpaceObject): ApiObjectCreate {
 }
 
 export const objectPatchBody = (prev: SpaceObject, next: SpaceObject) =>
-  diff(prev, next, OBJECT_PATCH_KEYS) as ApiObjectPatch | null;
+  diff(prev, next, OBJECT_PATCH_KEYS, OBJECT_BOOLEAN_PATCH_KEYS) as ApiObjectPatch | null;
 
 // ---------------------------------------------------------------------------
 // localStorage

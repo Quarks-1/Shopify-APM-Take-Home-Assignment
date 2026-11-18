@@ -8,9 +8,10 @@ import { getSpace, getSpaceEstimatedTotal } from "@/state/selectors";
 import { cx } from "@/utils/cx";
 import { SpacePlanPreview } from "./space-plan-preview";
 
-const CARD =
-  "flex w-72 shrink-0 flex-col gap-3 rounded-3xl border bg-background-primary-default p-3 text-start " +
-  "outline-none transition-colors focus-visible:ring-2 focus-visible:ring-border-focus-ring";
+const CARD = cx(
+  "flex w-72 shrink-0 flex-col gap-3 rounded-3xl border bg-background-primary-default p-3 text-start",
+  "outline-none transition-colors focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+);
 
 export interface SpaceCardProps {
   spaceId: string;

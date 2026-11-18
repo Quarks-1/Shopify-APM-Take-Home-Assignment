@@ -52,6 +52,9 @@ import { useObjectSearch } from "./use-object-search";
 
 const ANY = "any";
 const PLACEHOLDER_NEW_NAME = "New object";
+const MAX_NAME_LENGTH = 120;
+const MAX_SIMILAR_ITEMS = 20;
+const MAX_SIMILAR_LENGTH = 80;
 
 const MIN_RATING_STEPS = [3, 3.5, 4, 4.5];
 const formatMinRating = (value: number) => `${value}+ stars`;
@@ -89,18 +92,22 @@ interface ObjectFormProps {
   object: SpaceObject;
   isNew: boolean;
   isDrawn: boolean;
+  /** Marks a new object as committed so closing/navigating away won't discard it. */
+  onCommit: () => void;
   /** Close the drawer; with `discard` the object is deleted first. */
   onFinish: (opts?: { discard?: boolean }) => void;
 }
 
-function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
+function ObjectForm({ object, isNew, isDrawn, onCommit, onFinish }: ObjectFormProps) {
   const state = useAppState();
   const actions = useAppActions();
   const search = useObjectSearch();
   const advancedPanelId = useId();
 
   const initialSpaceIds = getParentSpaces(state, object.id).map((s) => s.id);
-  const parentSpace = getParentSpaces(state, object.id)[0];
+  const [spaceIds, setSpaceIds] = useState(initialSpaceIds);
+
+  const parentSpace = state.spaces.find((s) => spaceIds.includes(s.id));
   const unit: LengthUnit = parentSpace?.unit ?? "in";
   const owned = object.source === "imported";
   const purchase = object.owned;
@@ -112,6 +119,7 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
 
   const hasPrefilledName = object.name.trim() !== "" && object.name !== PLACEHOLDER_NEW_NAME;
 
+  const [displayUnit, setDisplayUnit] = useState<LengthUnit>(unit);
   const [promptText, setPromptText] = useState(() =>
     isNew ? (object.description ?? (hasPrefilledName ? object.name : "")) : (object.description ?? ""),
   );
@@ -134,8 +142,8 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
   const [minRating, setMinRating] = useState<string>(object.minRating === undefined ? ANY : String(object.minRating));
   const [similar, setSimilar] = useState(object.similarItems);
   const [similarDraft, setSimilarDraft] = useState("");
+  const [similarAttempted, setSimilarAttempted] = useState(false);
   const [referencePins, setReferencePins] = useState<string[]>(object.referencePins ?? []);
-  const [spaceIds, setSpaceIds] = useState(initialSpaceIds);
   const [submitted, setSubmitted] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -154,6 +162,17 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
     };
   }, []);
 
+  if (unit !== displayUnit) {
+    const convertDim = (val: number, stored: number | undefined): number => {
+      if (Number.isNaN(val)) return NaN;
+      return toDisplayLength(fromDisplayLengthKeeping(val, displayUnit, stored), unit);
+    };
+    setDisplayUnit(unit);
+    setX(convertDim(x, baseDims.x));
+    setY(convertDim(y, baseDims.y));
+    setZ(convertDim(z, baseDims.z));
+  }
+
   const isWall = parentSpace?.type === "wall" || type === "wall-art";
 
   const minRatingOptions =
@@ -161,19 +180,57 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
       ? MIN_RATING_STEPS
       : [...MIN_RATING_STEPS, object.minRating].sort((a, b) => a - b);
 
-  const errors = {
-    name: name.trim() ? undefined : "Name is required",
-    x: x > 0 ? undefined : "Width must be greater than 0",
-    z: !isWall || z > 0 ? undefined : "Height must be greater than 0",
-    y: isWall || y > 0 ? undefined : "Depth must be greater than 0",
-  };
-  const invalid = Boolean(errors.name || errors.x || errors.y || errors.z);
+  const trimmedName = name.trim();
+  const xInches = x > 0 ? fromDisplayLengthKeeping(x, unit, baseDims.x) : 0;
+  const yInches = !Number.isNaN(y) && y > 0 ? fromDisplayLengthKeeping(y, unit, baseDims.y) : 0;
+  const zInches = !Number.isNaN(z) && z > 0 ? fromDisplayLengthKeeping(z, unit, baseDims.z) : 0;
 
-  const resolvedDims = (): ObjectDims => ({
-    x: fromDisplayLengthKeeping(x, unit, baseDims.x),
-    y: Number.isNaN(y) ? undefined : fromDisplayLengthKeeping(y, unit, baseDims.y),
-    z: Number.isNaN(z) ? undefined : fromDisplayLengthKeeping(z, unit, baseDims.z),
-  });
+  const draftTrimmed = similarDraft.trim();
+  const isDuplicateDraft =
+    draftTrimmed !== "" && similar.some((s) => s.toLowerCase() === draftTrimmed.toLowerCase());
+  const similarValidationError =
+    draftTrimmed.length > MAX_SIMILAR_LENGTH || similar.some((s) => s.trim().length > MAX_SIMILAR_LENGTH)
+      ? `Each item must be ${MAX_SIMILAR_LENGTH} characters or fewer`
+      : similar.length > MAX_SIMILAR_ITEMS ||
+          (draftTrimmed !== "" && !isDuplicateDraft && similar.length >= MAX_SIMILAR_ITEMS)
+        ? `You can add up to ${MAX_SIMILAR_ITEMS} similar items`
+        : undefined;
+
+  const similarHintError =
+    draftTrimmed.length > MAX_SIMILAR_LENGTH
+      ? `Each item must be ${MAX_SIMILAR_LENGTH} characters or fewer`
+      : submitted
+        ? similarValidationError
+        : similarAttempted
+          ? (similarValidationError ??
+            (similar.length >= MAX_SIMILAR_ITEMS ? `You can add up to ${MAX_SIMILAR_ITEMS} similar items` : undefined))
+          : undefined;
+
+  const errors = {
+    name: !trimmedName
+      ? "Name is required"
+      : trimmedName.length > MAX_NAME_LENGTH
+        ? `Name must be ${MAX_NAME_LENGTH} characters or fewer`
+        : undefined,
+    x: x > 0 && xInches > 0 ? undefined : "Width must be greater than 0",
+    y: isWall
+      ? Number.isNaN(y) || (y > 0 && yInches > 0)
+        ? undefined
+        : "Depth must be greater than 0"
+      : y > 0 && yInches > 0
+        ? undefined
+        : "Depth must be greater than 0",
+    z: !isWall
+      ? Number.isNaN(z) || (z > 0 && zInches > 0)
+        ? undefined
+        : "Height must be greater than 0"
+      : z > 0 && zInches > 0
+        ? undefined
+        : "Height must be greater than 0",
+    weight: Number.isNaN(weight) || weight > 0 ? undefined : "Weight must be greater than 0",
+    similar: similarValidationError,
+  };
+  const invalid = Boolean(errors.name || errors.x || errors.y || errors.z || errors.weight || errors.similar);
 
   const handleGenerate = async () => {
     const trimmed = promptText.trim();
@@ -214,6 +271,8 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
       });
       setMinRating(parsed.minRating === null ? ANY : String(parsed.minRating));
       setSimilar(parsed.similarItems);
+      setSimilarDraft("");
+      setSimilarAttempted(false);
       setParsedPins({ similar: similarPins, category: categoryPins });
       setHasGenerated(true);
       setSubmitted(false);
@@ -244,9 +303,21 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
 
   const addSimilar = () => {
     const value = similarDraft.trim();
-    if (!value) return;
+    if (!value) {
+      if (similar.length >= MAX_SIMILAR_ITEMS) setSimilarAttempted(true);
+      return;
+    }
+    if (value.length > MAX_SIMILAR_LENGTH) {
+      setSimilarAttempted(true);
+      return;
+    }
+    if (!similar.some((s) => s.toLowerCase() === value.toLowerCase()) && similar.length >= MAX_SIMILAR_ITEMS) {
+      setSimilarAttempted(true);
+      return;
+    }
     setSimilar((prev) => (prev.some((s) => s.toLowerCase() === value.toLowerCase()) ? prev : [...prev, value]));
     setSimilarDraft("");
+    setSimilarAttempted(false);
   };
 
   /** Persists the form; returns false when validation fails. */
@@ -256,10 +327,17 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
       if (isNew && !advancedOpen) setAdvancedOpen(true);
       return false;
     }
-    const nextDims = resolvedDims();
+    const nextSimilar = draftTrimmed && !isDuplicateDraft ? [...similar, draftTrimmed] : similar;
+    if (nextSimilar !== similar) setSimilar(nextSimilar);
+    if (draftTrimmed) setSimilarDraft("");
+    const nextDims: ObjectDims = {
+      x: xInches,
+      y: Number.isNaN(y) ? undefined : yInches,
+      z: Number.isNaN(z) ? undefined : zInches,
+    };
     const cleanedDesc = description.trim();
     actions.updateObject(object.id, {
-      name: name.trim(),
+      name: trimmedName,
       description: cleanedDesc || undefined,
       type,
       dims: nextDims,
@@ -271,7 +349,7 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
       priceMinFuzzy: priceRange.minFuzzy,
       priceLimitFuzzy: priceRange.maxFuzzy,
       minRating: minRating === ANY ? undefined : Number(minRating),
-      similarItems: similar,
+      similarItems: nextSimilar,
       referencePins,
     });
     for (const space of state.spaces) {
@@ -282,7 +360,6 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
       } else if (!want && was) {
         actions.removeFromSpace(space.id, object.id);
       } else if (want && was && isNew && !isDrawn) {
-        // Keep estimated footprint inside the space bounds if the placeholder sat near an edge.
         const placement = space.placements.find((p) => p.objectId === object.id);
         if (placement) {
           const fp = footprint({ ...object, dims: nextDims }, space);
@@ -294,6 +371,7 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
         }
       }
     }
+    onCommit();
     return true;
   };
 
@@ -304,7 +382,16 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
   const styleLabel = STYLE_OPTIONS.find((o) => o.value === style)?.label;
   const priceLabel = formatPriceSummary(priceRange);
   const previewDims =
-    !Number.isNaN(x) && x > 0 ? formatDims(resolvedDims(), unit) : "";
+    xInches > 0
+      ? formatDims(
+          {
+            x: xInches,
+            y: Number.isNaN(y) ? undefined : yInches,
+            z: Number.isNaN(z) ? undefined : zInches,
+          },
+          unit,
+        )
+      : "";
 
   const showFeaturedPinterest =
     isNew &&
@@ -474,8 +561,9 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
                 value={name}
                 onChange={setName}
                 isRequired
-                isInvalid={Boolean(showError(errors.name))}
+                isInvalid={Boolean(showError(errors.name) || trimmedName.length > MAX_NAME_LENGTH)}
                 errorMessage={errors.name}
+                autoFocus={!isNew}
               />
               <Select
                 label="Type"
@@ -532,7 +620,14 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
                   hint={showError(errors.z) ?? (isWall ? undefined : "Optional")}
                 />
               </div>
-              <NumberField label="Weight (lb)" value={weight} onChange={setWeight} minValue={0} hint="Optional" />
+              <NumberField
+                label="Weight (lb)"
+                value={weight}
+                onChange={setWeight}
+                minValue={0}
+                isInvalid={Boolean(showError(errors.weight))}
+                hint={showError(errors.weight) ?? "Optional"}
+              />
             </Section>
 
             <Section title="Style">
@@ -588,17 +683,25 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
                 aria-label="Similar items"
                 items={similar.map((s) => ({ id: s }))}
                 emptyState="No similar items yet"
-                onRemove={(keys) => setSimilar((prev) => prev.filter((s) => !keys.has(s)))}
+                onRemove={(keys) => {
+                  setSimilar((prev) => prev.filter((s) => !keys.has(s)));
+                  if (similarAttempted) setSimilarAttempted(false);
+                }}
               >
                 {(item) => <Tag id={item.id}>{item.id}</Tag>}
               </TagGroup>
-              <div className="flex items-end gap-2">
+              <div className="flex items-start gap-2">
                 <Input
                   aria-label="Add a similar item"
                   placeholder="e.g. Eames lounge chair"
                   className="min-w-0 flex-1"
                   value={similarDraft}
-                  onChange={setSimilarDraft}
+                  onChange={(value) => {
+                    setSimilarDraft(value);
+                    if (similarAttempted) setSimilarAttempted(false);
+                  }}
+                  isInvalid={Boolean(similarHintError)}
+                  errorMessage={similarHintError}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
@@ -726,7 +829,7 @@ function ObjectForm({ object, isNew, isDrawn, onFinish }: ObjectFormProps) {
             disabled={saveDisabled}
             onClick={() => {
               if (!save()) return;
-              search.search(object.id);
+              search.search(object.id, { force: true });
               onFinish();
             }}
           >
@@ -762,37 +865,90 @@ export function ObjectDetailsDrawer() {
   const drawer = useObjectDrawer();
   const { objectId, isNew, isDrawn, close } = drawer;
   const object = objectId ? getObject(state, objectId) : undefined;
+  const open = Boolean(objectId && object);
 
   // The id we are already closing ourselves, so the unknown-id effect does not close twice.
   const closingId = useRef<string | null>(null);
+  // Tracks uncommitted `&new=1` objects so Browser Back / Forward cleans up abandoned "New object" rows.
+  const uncommittedNewIdRef = useRef<string | null>(null);
+  // Newly created objects that have been explicitly saved, so async URL close transitions never discard them.
+  const committedNewIdsRef = useRef(new Set<string>());
 
-  // Keep the last valid snapshot so the exit animation still has content.
-  const [shown, setShown] = useState<{ object: SpaceObject; isNew: boolean; isDrawn: boolean } | null>(null);
-  if (object && (shown?.object.id !== object.id || shown.isNew !== isNew || shown.isDrawn !== isDrawn)) {
-    setShown({ object, isNew, isDrawn });
+  const [prevOpenState, setPrevOpenState] = useState<{
+    open: boolean;
+    objectId: string | null;
+    isNew: boolean;
+    isDrawn: boolean;
+  }>({ open: false, objectId: null, isNew: false, isDrawn: false });
+
+  // Keep the last valid snapshot so the exit animation still has content; bump session on each open/id change.
+  const [shown, setShown] = useState<{
+    object: SpaceObject;
+    isNew: boolean;
+    isDrawn: boolean;
+    session: number;
+  } | null>(null);
+  if (
+    open !== prevOpenState.open ||
+    objectId !== prevOpenState.objectId ||
+    isNew !== prevOpenState.isNew ||
+    isDrawn !== prevOpenState.isDrawn
+  ) {
+    setPrevOpenState({ open, objectId, isNew, isDrawn });
+    if (open && object) {
+      const nextSession =
+        !prevOpenState.open || prevOpenState.objectId !== object.id || prevOpenState.isNew !== isNew
+          ? (shown?.session ?? 0) + 1
+          : (shown?.session ?? 1);
+      setShown({ object, isNew, isDrawn, session: nextSession });
+    }
   }
 
   useEffect(() => {
+    const abandonedId = uncommittedNewIdRef.current;
+    if (abandonedId && (objectId !== abandonedId || !isNew)) {
+      uncommittedNewIdRef.current = null;
+      if (!committedNewIdsRef.current.has(abandonedId)) {
+        actions.deleteObject(abandonedId);
+      }
+    }
+    if (objectId && isNew && !committedNewIdsRef.current.has(objectId)) {
+      uncommittedNewIdRef.current = objectId;
+    }
+  }, [objectId, isNew, actions]);
+
+  useEffect(() => {
     if (objectId && !object && closingId.current !== objectId) close();
+    if (!objectId) closingId.current = null;
   }, [objectId, object, close]);
+
+  const commitNew = () => {
+    if (objectId) committedNewIdsRef.current.add(objectId);
+    if (shown?.object.id) committedNewIdsRef.current.add(shown.object.id);
+    uncommittedNewIdRef.current = null;
+  };
 
   const finish = (opts?: { discard?: boolean }) => {
     if (!objectId) return;
     closingId.current = objectId;
-    if (opts?.discard) actions.deleteObject(objectId);
+    if (opts?.discard) {
+      if (uncommittedNewIdRef.current === objectId) {
+        uncommittedNewIdRef.current = null;
+      }
+      actions.deleteObject(objectId);
+    }
     close();
   };
-
-  const open = Boolean(objectId && object);
 
   return (
     <Drawer isOpen={open} onOpenChange={(next) => !next && finish({ discard: isNew })} aria-label="Object details">
       {shown ? (
         <ObjectForm
-          key={shown.object.id}
+          key={`${shown.object.id}:${shown.session}`}
           object={shown.object}
           isNew={shown.isNew}
           isDrawn={shown.isDrawn}
+          onCommit={commitNew}
           onFinish={finish}
         />
       ) : null}

@@ -387,6 +387,7 @@ export interface ApiSpaceCreate {
   unit: LengthUnit;
   dims: Dims;
   weightLimit?: number | null;
+  vibeBoardId?: string | null;
 }
 
 export type ApiSpacePatch = Partial<Omit<ApiSpaceCreate, "id">>;
@@ -402,8 +403,8 @@ export interface ApiObjectCreate {
   style?: Style | null;
   priceMin?: number | null;
   priceLimit?: number | null;
-  priceMinFuzzy?: boolean | null;
-  priceLimitFuzzy?: boolean | null;
+  priceMinFuzzy?: boolean;
+  priceLimitFuzzy?: boolean;
   minRating?: number | null;
   similarItems?: string[];
   referencePins?: string[];
@@ -506,12 +507,20 @@ interface RunReadOptions {
 
 const includeQuery = (includeAll?: boolean) => (includeAll ? "?include=all" : "");
 
-/** Starts a run (HTTP 202), or returns the object's active one (200). Imported objects are refused (400). */
-export const startSearch = (
-  objectId: string,
-  opts?: { mode: "like"; candidateId: number } | { mode: "refine" },
-) =>
-  request<ApiSearchRun>("POST", `/api/objects/${seg(objectId)}/searches/`, opts ? { body: opts } : undefined);
+export type StartSearchOptions =
+  | { force?: boolean }
+  | { mode: "like"; candidateId: number }
+  | { mode: "refine" };
+
+/** Starts a run (HTTP 202), or returns the object's active one (200) unless `force` is true. Imported objects are refused (400). */
+export const startSearch = (objectId: string, opts?: StartSearchOptions) => {
+  const hasBody = opts !== undefined && ("mode" in opts || Boolean(opts.force));
+  return request<ApiSearchRun>(
+    "POST",
+    `/api/objects/${seg(objectId)}/searches/`,
+    hasBody ? { body: opts } : undefined,
+  );
+};
 
 export const getSearch = (runId: string, { includeAll, signal }: RunReadOptions = {}) =>
   request<ApiSearchRun>("GET", `/api/searches/${seg(runId)}/${includeQuery(includeAll)}`, { signal });
@@ -530,7 +539,8 @@ export type ApiVibeImportStatus = "queued" | "running" | "done" | "failed";
 
 export interface ApiVibeImport {
   id: string;
-  spaceId: string;
+  spaceId: string | null;
+  boardId: string | null;
   boardUrl: string;
   boardTitle: string;
   status: ApiVibeImportStatus;
@@ -643,14 +653,41 @@ export interface ApiRenderResult {
   reused: boolean;
 }
 
+function resolveApiUrl(url: string | null): string | null {
+  if (!url || !API_BASE) return url;
+  return url.startsWith("/") ? `${API_BASE}${url}` : url;
+}
+
+function normalizeRender(render: ApiRender): ApiRender {
+  return { ...render, imageUrl: resolveApiUrl(render.imageUrl) };
+}
+
 export const createRender = (spaceId: string, { force }: { force?: boolean } = {}, signal?: AbortSignal) =>
-  request<ApiRenderResult>("POST", `/api/spaces/${seg(spaceId)}/renders/`, { body: force ? { force: true } : {}, signal });
+  request<ApiRenderResult>("POST", `/api/spaces/${seg(spaceId)}/renders/`, { body: force ? { force: true } : {}, signal }).then(
+    (r) => ({ ...r, render: normalizeRender(r.render) }),
+  );
 
 export const fetchRender = (id: string, signal?: AbortSignal) =>
-  request<{ render: ApiRender }>("GET", `/api/renders/${seg(id)}/`, { signal });
+  request<{ render: ApiRender }>("GET", `/api/renders/${seg(id)}/`, { signal }).then((r) => ({
+    ...r,
+    render: normalizeRender(r.render),
+  }));
 
 export const fetchLatestRender = (spaceId: string, signal?: AbortSignal) =>
-  request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal });
+  request<{ render: ApiRender; current: boolean }>("GET", `/api/spaces/${seg(spaceId)}/renders/latest/`, { signal }).then(
+    (r) => ({ ...r, render: normalizeRender(r.render) }),
+  );
+
+export interface ApiVibeBoard {
+  id: string;
+  boardUrl: string;
+  resolvedUrl: string;
+  title: string;
+  pinCount: number;
+  usableCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ApiInspiration {
   id: number;
@@ -667,14 +704,28 @@ export interface ApiInspiration {
   vote: string;
   source: string;
   importId: string | null;
+  boardId: string;
   categorized: boolean;
-  spaceId: string;
+  spaceId: string | null;
   primaryType: ObjectType | "other";
 }
 
-/** Every imported, sorted pin across spaces (de-duplicated), in board order. */
+export interface ApiInspirationBoard extends ApiVibeBoard {
+  inspirations: ApiInspiration[];
+}
+
+export interface ApiInspirationsPayload {
+  boards: ApiInspirationBoard[];
+  inspirations: ApiInspiration[];
+}
+
+/** Imported boards in the shared workspace library that have categorized pins, newest first. */
+export const listVibeBoards = (signal?: AbortSignal) =>
+  request<{ boards: ApiVibeBoard[] }>("GET", "/api/vibe-boards/", { signal }).then((r) => r.boards);
+
+/** Sorted pins organized per imported board (`boards`), plus the de-duplicated flat `inspirations` list. */
 export const listInspirations = (signal?: AbortSignal) =>
-  request<{ inspirations: ApiInspiration[] }>("GET", "/api/inspirations/", { signal }).then((r) => r.inspirations);
+  request<ApiInspirationsPayload>("GET", "/api/inspirations/", { signal });
 
 /** A space's imported, sorted and unsorted pins, in board order. */
 export const listSpaceInspirations = (spaceId: string, signal?: AbortSignal) =>
@@ -685,3 +736,7 @@ export const listSpaceInspirations = (spaceId: string, signal?: AbortSignal) =>
 /** Removes one imported pin. 409 `import_in_progress` while an import runs. */
 export const deleteSpaceInspiration = (spaceId: string, inspirationId: number) =>
   request<void>("DELETE", `/api/spaces/${seg(spaceId)}/inspirations/${seg(String(inspirationId))}/`);
+
+/** Removes all imported pins for a space. 409 `import_in_progress` while an import runs. */
+export const clearSpaceInspirations = (spaceId: string) =>
+  request<void>("DELETE", `/api/spaces/${seg(spaceId)}/inspirations/`);

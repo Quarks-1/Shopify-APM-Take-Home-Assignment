@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, Ref } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import { Checkbox as AriaCheckbox } from "react-aria-components";
 import type { CheckboxProps as AriaCheckboxProps } from "react-aria-components";
 import { cx } from "@/utils/cx";
@@ -36,14 +36,17 @@ export interface CheckboxProps extends Omit<AriaCheckboxProps, "children"> {
 
 export function Checkbox({ className, children, size = "md", ref, ...props }: CheckboxProps) {
   const s = checkboxSizes[size];
+  const labelId = useId();
+  const hasLabel = children !== undefined && children !== null && children !== false && children !== "";
 
   return (
     <AriaCheckbox
       ref={ref}
       {...props}
+      aria-labelledby={props["aria-labelledby"] ?? (!props["aria-label"] && hasLabel ? labelId : undefined)}
       className={(state) =>
         cx(
-          "group inline-flex items-center select-none",
+          "group relative inline-flex items-center outline-none select-none",
           s.gap,
           state.isDisabled ? "cursor-not-allowed" : "cursor-pointer",
           typeof className === "function" ? className(state) : className,
@@ -53,8 +56,10 @@ export function Checkbox({ className, children, size = "md", ref, ...props }: Ch
       {(state) => (
         <>
           <CheckboxGlyph state={state} size={size} />
-          {children !== undefined && children !== null && (
-            <span className={cx(s.label, "text-text-primary")}>{children}</span>
+          {hasLabel && (
+            <span id={labelId} className={cx(s.label, "text-text-primary")}>
+              {children}
+            </span>
           )}
         </>
       )}

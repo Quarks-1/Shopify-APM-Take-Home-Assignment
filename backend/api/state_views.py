@@ -21,6 +21,7 @@ from .models import (
     Space,
     SpaceObject,
     Verdict,
+    VibeBoard,
     VibeImport,
     default_search,
 )
@@ -82,14 +83,15 @@ def _json_view(fn):
 
 
 def state_candidates(objects):
-    """Per object, in object order: the accepted candidates of its newest run
-    that has any (ordered like run JSON), then its selected candidate when that
-    came from another run. Two queries however many objects or runs exist."""
+    """Per object, in object order: the accepted candidates of its newest
+    finished (done) run that has any (ordered like run JSON), then its selected
+    candidate when that came from another run. Two queries however many objects
+    or runs exist."""
     has_accepted = Candidate.objects.filter(run=OuterRef('pk'), verdict=Verdict.ACCEPTED)
     newest = {}
     themes = {}
     for object_id, run_id, vibes in (
-        SearchRun.objects.filter(Exists(has_accepted))
+        SearchRun.objects.filter(Exists(has_accepted), status=RunStatus.DONE)
         .order_by('-created_at', '-pk')
         .values_list('object_id', 'pk', 'vibes')
     ):
@@ -276,21 +278,45 @@ def object_detail(request, object_id):
 @require_http_methods(['POST'])
 def state_reset(request):
     """Clear what outlives spaces and objects: product votes (they steer searches
-    globally) and vibe import work folders no import row owns any more."""
+    globally), shared vibe boards no live space selects, and orphan import/board
+    folders."""
+    importer.cancel_all()
     with transaction.atomic():
         votes, _ = ProductVote.objects.all().delete()
-        root = vibe_paths.imports_dir()
-        known = {str(i) for i in VibeImport.objects.values_list('pk', flat=True)}
-        stale = []
-        if root.is_dir():
-            stale = [d for d in root.iterdir() if d.name not in known]
+        VibeImport.objects.filter(space_id__isnull=True).delete()
+        boards, _ = VibeBoard.objects.filter(spaces__isnull=True).delete()
+
+        imports_root = vibe_paths.imports_dir()
+        known_imports = {str(i) for i in VibeImport.objects.values_list('pk', flat=True)}
+        stale_imports = (
+            [d for d in imports_root.iterdir() if d.name not in known_imports]
+            if imports_root.is_dir()
+            else []
+        )
+
+        boards_root = vibe_paths.boards_dir()
+        known_boards = {str(b) for b in VibeBoard.objects.values_list('pk', flat=True)}
+        stale_boards = (
+            [d for d in boards_root.iterdir() if d.name not in known_boards]
+            if boards_root.is_dir()
+            else []
+        )
 
         def purge():
-            for d in stale:
+            for d in stale_imports + stale_boards:
                 shutil.rmtree(d, ignore_errors=True)
 
         transaction.on_commit(purge)
-    return JsonResponse({'reset': {'votes': votes, 'importDirs': len(stale)}})
+    return JsonResponse(
+        {
+            'reset': {
+                'votes': votes,
+                'boards': boards,
+                'importDirs': len(stale_imports),
+                'boardDirs': len(stale_boards),
+            }
+        }
+    )
 
 
 # ---------------------------------------------------------------- import
@@ -338,7 +364,7 @@ def state_import(request):
             sid = fields.pop('id')
             placements = fields.pop('placements')
             space, _ = Space.objects.update_or_create(
-                id=sid, defaults={'weight_limit': None, **fields, 'position': i}
+                id=sid, defaults={'weight_limit': None, 'vibe_board': None, **fields, 'position': i}
             )
             space.placements.all().delete()
             Placement.objects.bulk_create(

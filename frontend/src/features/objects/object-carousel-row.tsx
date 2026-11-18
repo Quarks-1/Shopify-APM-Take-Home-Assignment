@@ -14,6 +14,7 @@ import {
   getCandidateProducts,
   getCartLineForObject,
   getObject,
+  getParentSpaces,
   getProduct,
   getSelectedProduct,
   getSpace,
@@ -55,7 +56,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   const object = getObject(state, objectId);
   if (!object) return null;
 
-  const unit = (spaceId ? getSpace(state, spaceId)?.unit : undefined) ?? "in";
+  const unit = (spaceId ? getSpace(state, spaceId)?.unit : getParentSpaces(state, objectId)[0]?.unit) ?? "in";
   const typeLabel = OBJECT_TYPE_OPTIONS.find((o) => o.value === object.type)?.label ?? object.type;
   const owned = object.source === "imported";
   const minFuzzy = object.priceMin !== undefined && !!object.priceMinFuzzy;
@@ -94,7 +95,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
     (a, b) => Number(b.id === object.selectedProductId) - Number(a.id === object.selectedProductId),
   );
 
-  const hasSearched = object.search.status === "done" || object.search.status === "empty" || candidates.length > 0;
+  const hasFinishedSearch = object.search.status === "done" || object.search.status === "empty";
   const voteValues = Object.values(object.votes ?? {});
   const likedCount = voteValues.filter((v) => v === "up").length;
   const dislikedCount = voteValues.length - likedCount;
@@ -175,7 +176,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
             <Button variant="secondary" size="small" onClick={() => search.cancel(objectId)}>
               Cancel
             </Button>
-          ) : hasSearched ? (
+          ) : hasFinishedSearch ? (
             <Button
               variant="primary"
               size="small"
@@ -199,7 +200,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
               variant="primary"
               size="small"
               leadingIcon={RiShoppingCart2Line}
-              disabled={!selectedProduct}
+              disabled={!selectedProduct || running}
               onClick={buy}
             >
               Buy
@@ -226,7 +227,7 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
   if (owned) {
     body = ownedProduct ? (
       <div className="flex flex-wrap items-end gap-4">
-        <ProductCard product={ownedProduct} variant="cart" className={CARD_WIDTH} />
+        <ProductCard product={ownedProduct} variant="cart" unit={unit} className={CARD_WIDTH} />
         {object.owned ? (
           <p className="pb-1 text-body-regular text-text-secondary">
             Ordered {object.owned.orderName} · {formatRelativeTime(object.owned.purchasedAt)}
@@ -285,14 +286,17 @@ export function ObjectCarouselRow({ objectId, spaceId, highlighted = false, onFo
               <ProductCard
                 product={product}
                 variant="selected"
+                unit={unit}
                 priceNote={priceNoteFor(product.price)}
                 vote={voteOf(product)}
                 onVote={(v) => actions.voteProduct(objectId, product.id, v)}
+                onSelect={() => actions.selectProduct(objectId, undefined)}
               />
             ) : (
               <ProductCard
                 product={product}
                 variant="candidate"
+                unit={unit}
                 priceNote={priceNoteFor(product.price)}
                 vote={voteOf(product)}
                 onVote={(v) => actions.voteProduct(objectId, product.id, v)}

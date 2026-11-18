@@ -15,7 +15,7 @@ from collections import Counter
 from django.conf import settings
 from PIL import Image
 
-from ..models import Placement, SpaceInspiration, VoteChoice
+from ..models import Placement, Space, SpaceInspiration, VoteChoice
 from ..searcher import like_images
 from . import patterns as pattern_lib
 from . import paths
@@ -279,14 +279,24 @@ def suggest_pins(rows, snapshot, prompt_text=''):
 def _explicit_vibes(space_ids, ref_ids, snapshot, mode):
     """Build a `vibes` snapshot solely from the user's explicitly selected
     `referencePins` (preserving selection order; no board backfill)."""
+    board_by_space = dict(
+        Space.objects.filter(pk__in=space_ids, vibe_board_id__isnull=False)
+        .values_list('pk', 'vibe_board_id')
+    )
+    preferred_boards = []
+    for sid in space_ids:
+        bid = board_by_space.get(sid)
+        if bid is not None and bid not in preferred_boards:
+            preferred_boards.append(bid)
+    board_rank = {bid: idx for idx, bid in enumerate(preferred_boards)}
+
     qs = SpaceInspiration.objects.filter(
         pin_id__in=ref_ids, vote=VoteChoice.UP, categorized_at__isnull=False
-    ).select_related('vibe_import')
+    ).select_related('vibe_import', 'board')
     rows = list(qs)
     if not rows:
         return None
-    space_rank = {sid: idx for idx, sid in enumerate(space_ids)}
-    rows.sort(key=lambda r: (space_rank.get(r.space_id, len(space_rank)), r.board_rank, r.pk))
+    rows.sort(key=lambda r: (board_rank.get(r.board_id, len(board_rank)), r.board_rank, r.pk))
     by_pin = {}
     for row in rows:
         by_pin.setdefault(row.pin_id, row)
@@ -322,7 +332,7 @@ def _explicit_vibes(space_ids, ref_ids, snapshot, mode):
 
 def run_vibes(obj, snapshot, mode):
     """The run's `vibes` snapshot, or None when no pin matches (or the object
-    sits in no space and has no explicit referencePins)."""
+    sits in no space with a selected vibe board and has no explicit referencePins)."""
     space_ids = object_space_ids(obj)
     raw_refs = (snapshot or {}).get('referencePins') or []
     ref_ids = [p for p in raw_refs if isinstance(p, str) and p]
@@ -333,9 +343,20 @@ def run_vibes(obj, snapshot, mode):
     wanted = (snapshot or {}).get('type')
     if not wanted:
         return None
+    board_by_space = dict(
+        Space.objects.filter(pk__in=space_ids, vibe_board_id__isnull=False)
+        .values_list('pk', 'vibe_board_id')
+    )
+    board_ids = []
+    for sid in space_ids:
+        bid = board_by_space.get(sid)
+        if bid is not None and bid not in board_ids:
+            board_ids.append(bid)
+    if not board_ids:
+        return None
     rows = list(SpaceInspiration.objects
-                .filter(space_id__in=space_ids, vote=VoteChoice.UP, categorized_at__isnull=False)
-                .select_related('vibe_import'))
+                .filter(board_id__in=board_ids, vote=VoteChoice.UP, categorized_at__isnull=False)
+                .select_related('vibe_import', 'board'))
     unique = {}
     for row in rows:
         unique.setdefault(row.pin_id, row)

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { isValidElement, type ComponentType, type ReactNode } from "react";
 import { Button as AriaButton, NumberField as AriaNumberField } from "react-aria-components";
 import type { NumberFieldProps as AriaNumberFieldProps } from "react-aria-components";
 import { RiAddLine, RiSubtractLine } from "@remixicon/react";
@@ -44,10 +44,17 @@ export interface NumberFieldProps extends Omit<AriaNumberFieldProps, "className"
   fieldClassName?: string;
 }
 
+function extractText(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return extractText(node.props.children);
+  return "";
+}
+
 const STEPPER = [
   "flex shrink-0 cursor-pointer items-center justify-center rounded-md text-foreground-icon-secondary outline-none",
   "transition-colors duration-150 ease-out hover:bg-background-tertiary-hover hover:text-text-primary",
-  "data-[pressed]:bg-background-tertiary-hover data-[focus-visible]:ring-2 data-[focus-visible]:ring-border-focus-ring",
+  "data-[pressed]:bg-background-tertiary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring data-[focus-visible]:ring-2 data-[focus-visible]:ring-border-focus-ring",
   "data-[disabled]:cursor-not-allowed data-[disabled]:text-input-disabled-text data-[disabled]:hover:bg-transparent",
 ].join(" ");
 
@@ -60,16 +67,27 @@ export function NumberField({
   leadingIcon,
   hideSteppers = false,
   "aria-label": ariaLabel,
+  decrementAriaLabel,
+  incrementAriaLabel,
   className,
   fieldClassName,
   ...props
 }: NumberFieldProps) {
   const stepper = cx(STEPPER, size === "small" ? "size-5" : "size-6");
+  const resolvedAriaLabel = ariaLabel ?? (!label ? placeholder : undefined);
+  const labelText = extractText(label).trim();
+  const stepperTarget = (ariaLabel ?? "").trim() || labelText || (placeholder ?? "").trim();
+  const resolvedDecrementLabel =
+    decrementAriaLabel ?? (stepperTarget ? `Decrease ${stepperTarget}` : "Decrease");
+  const resolvedIncrementLabel =
+    incrementAriaLabel ?? (stepperTarget ? `Increase ${stepperTarget}` : "Increase");
 
   return (
     <AriaNumberField
       {...props}
-      aria-label={ariaLabel ?? (!label ? placeholder : undefined)}
+      aria-label={resolvedAriaLabel}
+      decrementAriaLabel={resolvedDecrementLabel}
+      incrementAriaLabel={resolvedIncrementLabel}
       className={cx("group flex w-full flex-col items-start gap-1", className)}
     >
       {({ isInvalid }) => (
@@ -88,10 +106,10 @@ export function NumberField({
             trailingAddon={
               hideSteppers ? undefined : (
                 <span className="-my-1 -me-1 flex shrink-0 items-center gap-0.5">
-                  <AriaButton slot="decrement" className={stepper}>
+                  <AriaButton slot="decrement" aria-label={resolvedDecrementLabel} className={stepper}>
                     <RiSubtractLine aria-hidden className="size-4" />
                   </AriaButton>
-                  <AriaButton slot="increment" className={stepper}>
+                  <AriaButton slot="increment" aria-label={resolvedIncrementLabel} className={stepper}>
                     <RiAddLine aria-hidden className="size-4" />
                   </AriaButton>
                 </span>
