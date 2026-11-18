@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { listInspirations, type ApiInspiration } from "@/lib/api";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
 import { useAppState } from "@/state/app-store";
+import { useStoreInternals } from "@/state/store-context";
 
 export interface InspirationsResult {
   status: "loading" | "ready" | "error";
@@ -13,6 +14,7 @@ export interface InspirationsResult {
 export function useInspirations(): InspirationsResult {
   const { spaces } = useAppState();
   const { viewFor } = useVibeImport();
+  const { onReset } = useStoreInternals();
   const [data, setData] = useState<ApiInspiration[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -44,6 +46,16 @@ export function useInspirations(): InspirationsResult {
       });
     return () => controller.abort();
   }, [spacesKey, doneKey, attempt]);
+
+  // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
+  useEffect(
+    () =>
+      onReset(() => {
+        setData([]);
+        setFailed(false);
+      }),
+    [onReset],
+  );
 
   const retry = useCallback(() => {
     setFailed(false);

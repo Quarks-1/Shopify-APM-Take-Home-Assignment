@@ -960,6 +960,7 @@ export function createAppStore(): AppStore {
         const current = await api.getState();
         for (const space of current.spaces) await ignoreMissing(() => api.deleteSpace(space.id));
         for (const object of current.objects) await ignoreMissing(() => api.deleteObject(object.id));
+        await api.resetState();
         await api.importState(seed);
         const snapshot = await api.getState();
         if (queue.hasOthersPending()) resync();

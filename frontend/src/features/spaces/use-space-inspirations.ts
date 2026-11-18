@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/base/toast/toast";
 import { ApiError, deleteSpaceInspiration, listSpaceInspirations, type ApiInspiration } from "@/lib/api";
 import { useVibeImport } from "@/features/spaces/use-vibe-import";
+import { useStoreInternals } from "@/state/store-context";
 
 export interface SpaceInspirationsResult {
   status: "loading" | "ready" | "error";
@@ -14,6 +15,7 @@ export interface SpaceInspirationsResult {
 /** One space's categorized pins. Refetches when its vibe import finishes (done or failed); keeps old data meanwhile. */
 export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   const { viewFor } = useVibeImport();
+  const { onReset } = useStoreInternals();
   const [loaded, setLoaded] = useState<{ spaceId: string; list: ApiInspiration[] } | null>(null);
   // Data from a previous space never shows for this one.
   const data = loaded?.spaceId === spaceId ? loaded.list : null;
@@ -48,6 +50,16 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
       });
     return () => controller.abort();
   }, [spaceId, doneKey, attempt, setData]);
+
+  // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
+  useEffect(
+    () =>
+      onReset(() => {
+        setData([]);
+        setFailed(false);
+      }),
+    [onReset, setData],
+  );
 
   const retry = useCallback(() => {
     setFailed(false);

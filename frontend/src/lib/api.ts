@@ -422,6 +422,10 @@ export const getState = (signal?: AbortSignal) => request<ApiStateSnapshot>("GET
 export const importState = (payload: ApiImportPayload) =>
   request<ApiImportResult>("POST", "/api/state/import/", { body: payload });
 
+/** Clears product votes and leftover vibe import folders (part of "Reset demo data"). */
+export const resetState = () =>
+  request<{ reset: { votes: number; importDirs: number } }>("POST", "/api/state/reset/");
+
 // ---------------------------------------------------------------------------
 // Spaces and placements
 // ---------------------------------------------------------------------------

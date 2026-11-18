@@ -8,6 +8,7 @@ urlpatterns = [
     path('health/', views.health_check, name='health'),
     path('overview/', views.workspace_overview, name='overview'),
     path('state/', state_views.state_snapshot, name='state'),
+    path('state/reset/', state_views.state_reset, name='state-reset'),
     path('state/import/', state_views.state_import, name='state-import'),
     path('spaces/', state_views.spaces_collection, name='spaces'),
     path('spaces/<str:space_id>/', state_views.space_detail, name='space-detail'),

@@ -15,11 +15,13 @@ from .models import (
     CartLine,
     Candidate,
     Placement,
+    ProductVote,
     RunStatus,
     SearchRun,
     Space,
     SpaceObject,
     Verdict,
+    VibeImport,
     default_search,
 )
 from .searcher.runner import cancel_run
@@ -266,6 +268,29 @@ def object_detail(request, object_id):
     if fields:
         obj.save(update_fields=list(fields))
     return JsonResponse(object_to_json(obj))
+
+
+# ---------------------------------------------------------------- reset
+
+@_json_view
+@require_http_methods(['POST'])
+def state_reset(request):
+    """Clear what outlives spaces and objects: product votes (they steer searches
+    globally) and vibe import work folders no import row owns any more."""
+    with transaction.atomic():
+        votes, _ = ProductVote.objects.all().delete()
+        root = vibe_paths.imports_dir()
+        known = {str(i) for i in VibeImport.objects.values_list('pk', flat=True)}
+        stale = []
+        if root.is_dir():
+            stale = [d for d in root.iterdir() if d.name not in known]
+
+        def purge():
+            for d in stale:
+                shutil.rmtree(d, ignore_errors=True)
+
+        transaction.on_commit(purge)
+    return JsonResponse({'reset': {'votes': votes, 'importDirs': len(stale)}})
 
 
 # ---------------------------------------------------------------- import
