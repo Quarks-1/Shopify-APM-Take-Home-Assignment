@@ -59,7 +59,7 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
   const state = useAppState();
   const actions = useAppActions();
   const { status } = useAppStatus();
-  const { getState, enqueue, onReset } = useStoreInternals();
+  const { getState, enqueue, onReset, onResetSettled, isResetting } = useStoreInternals();
 
   const entries = useRef(new Map<string, Entry>());
   // Bumped on every change so consumers re-render.
@@ -67,6 +67,8 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
 
   const engine = useMemo(() => {
     const bump = () => setVersion((v) => v + 1);
+    // Bumped on every reset, so a refresh that was in flight can tell its answer predates it.
+    let resetGeneration = 0;
 
     const remove = (spaceId: string) => {
       const entry = entries.current.get(spaceId);
@@ -78,6 +80,11 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     };
 
     const removeAll = () => [...entries.current.keys()].forEach(remove);
+
+    const handleReset = () => {
+      resetGeneration += 1;
+      removeAll();
+    };
 
     const schedule = (entry: Entry, delay: number) => {
       if (entry.stopped) return;
@@ -179,9 +186,14 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     };
 
     const refresh = () => {
+      // The backend is still being wiped: what it lists now is pre-reset. Settling refreshes again.
+      if (isResetting()) return;
+      const generation = resetGeneration;
       api
         .listPendingVibeImports()
         .then((imports) => {
+          // A reset started while this was in flight; its list holds imports the reset deleted.
+          if (generation !== resetGeneration) return;
           const spaceIds = new Set(getState().spaces.map((s) => s.id));
           for (const imp of imports) {
             if (imp.dismissed || !imp.spaceId || !spaceIds.has(imp.spaceId)) continue;
@@ -194,8 +206,8 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
         .catch(() => {});
     };
 
-    return { start, dismiss, hide, refresh, remove, removeAll };
-  }, [actions, enqueue, getState]);
+    return { start, dismiss, hide, refresh, remove, removeAll, handleReset };
+  }, [actions, enqueue, getState, isResetting]);
 
   // Pick up imports that are going without us once the store is loaded.
   useEffect(() => {
@@ -209,7 +221,10 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     for (const id of [...entries.current.keys()]) if (!ids.has(id)) engine.remove(id);
   }, [state.spaces, status.phase, engine]);
 
-  useEffect(() => onReset(engine.removeAll), [onReset, engine]);
+  useEffect(() => onReset(engine.handleReset), [onReset, engine]);
+
+  // Once the backend wipe finishes, pick up imports from its real post-reset state.
+  useEffect(() => onResetSettled(engine.refresh), [onResetSettled, engine]);
 
   useEffect(() => engine.removeAll, [engine]);
 
