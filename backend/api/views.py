@@ -219,6 +219,13 @@ def workspace_overview(_request):
                     'description': 'List imported Pinterest boards in the shared workspace library',
                     'status': 'operational',
                 },
+                {
+                    'id': 'vibe-imports-create',
+                    'method': 'POST',
+                    'path': '/api/vibe-imports/',
+                    'description': 'Import a public Pinterest board directly into the shared workspace library',
+                    'status': 'operational',
+                },
             ],
         }
     )

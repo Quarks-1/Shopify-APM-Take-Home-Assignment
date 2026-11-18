@@ -16,11 +16,12 @@ const MOTION = {
   transition: { duration: 0.15 },
 };
 
-/** Compact inline pill for the space header's button group. */
-export function VibeImportStatus({ spaceId }: { spaceId: string }) {
+/** Compact inline pill for a space or section header's button group. */
+export function VibeImportStatus({ spaceId = null }: { spaceId?: string | null }) {
   const vibes = useVibeImport();
   const view = vibes.viewFor(spaceId);
   const { dismiss } = vibes;
+  const isSpace = spaceId !== null;
 
   const doneId = view?.kind === "done" ? view.imp.id : undefined;
   useEffect(() => {
@@ -61,9 +62,15 @@ export function VibeImportStatus({ spaceId }: { spaceId: string }) {
         className="inline-flex h-8 max-w-full items-center gap-2 rounded-full bg-notification-success-background ps-2 pe-1"
       >
         <RiCheckboxCircleFill className="size-5 shrink-0 text-notification-success-foreground" aria-hidden />
-        <span className="text-body-medium text-text-primary">Your space&apos;s vibes are ready</span>
+        <span className="text-body-medium text-text-primary">
+          {isSpace ? "Your space's vibes are ready" : "Your vibes are ready"}
+        </span>
         <span className="text-caption-1-medium text-text-secondary">
-          {alreadyThere ? "· already in your space" : `· ${imp.pins.categorized} pins`}
+          {alreadyThere
+            ? isSpace
+              ? "· already in your space"
+              : "· already in your library"
+            : `· ${imp.pins.categorized} ${imp.pins.categorized === 1 ? "pin" : "pins"}`}
         </span>
         <CloseButton size="sm" aria-label="Dismiss" onClick={() => dismiss(spaceId)} />
       </motion.div>

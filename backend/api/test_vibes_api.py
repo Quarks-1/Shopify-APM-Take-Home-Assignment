@@ -122,21 +122,61 @@ class StartTests(VibeApiBase):
         self.assertEqual(body['imports'][0]['pins']['new'], 25)
 
 
+class StandaloneStartTests(VibeApiBase):
+    def start_library(self, board=BOARD):
+        return self.post({'boardUrl': board}, '/api/vibe-imports/')
+
+    def test_new_library_import_is_202_with_null_space(self):
+        res = self.start_library('pin.it/ABC123')
+        self.assertEqual(res.status_code, 202)
+        imp = res.json()['import']
+        self.assertEqual((imp['spaceId'], imp['boardId'], imp['boardUrl']),
+                         (None, None, 'https://pin.it/ABC123'))
+        self.assertEqual((imp['status'], imp['step']), ('running', 'reading-board'))
+        self.assertEqual(self.spawn.call_count, 1)
+
+    def test_same_url_again_is_200_and_different_url_is_409(self):
+        first = self.start_library().json()['import']
+        same = self.start_library(BOARD + '?utm=1')
+        self.assertEqual(same.status_code, 200)
+        self.assertEqual(same.json()['import']['id'], first['id'])
+        busy = self.start_library(OTHER)
+        self.assertEqual(busy.status_code, 409)
+        self.assertEqual(busy.json()['import']['id'], first['id'])
+
+    def test_library_import_does_not_dismiss_space_imports(self):
+        space_imp = VibeImport.objects.create(
+            space=self.space, board_url=BOARD, status=VibeImportStatus.DONE)
+        old_lib = VibeImport.objects.create(
+            space=None, board_url=BOARD, status=VibeImportStatus.DONE)
+        res = self.start_library(OTHER)
+        self.assertEqual(res.status_code, 202)
+        space_imp.refresh_from_db()
+        old_lib.refresh_from_db()
+        self.assertFalse(space_imp.dismissed)
+        self.assertTrue(old_lib.dismissed)
+
+    def test_bad_url_on_library_endpoint_is_400(self):
+        res = self.start_library('not a board')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['error'], 'validation_failed')
+
+
 class PollTests(VibeApiBase):
-    def test_pending_lists_newest_non_dismissed_per_space(self):
+    def test_pending_lists_newest_non_dismissed_per_space_and_library(self):
         other = make_space('space2')
         VibeImport.objects.create(space=self.space, board_url=BOARD, status=VibeImportStatus.DONE)
         newest = VibeImport.objects.create(space=self.space, board_url=OTHER, status=VibeImportStatus.DONE)
         dismissed = VibeImport.objects.create(
             space=other, board_url=BOARD, status=VibeImportStatus.DONE, dismissed=True)
-        spaceless = VibeImport.objects.create(
-            space=None, board_url=BOARD, status=VibeImportStatus.DONE)
+        VibeImport.objects.create(space=None, board_url=BOARD, status=VibeImportStatus.DONE)
+        newest_lib = VibeImport.objects.create(
+            space=None, board_url=OTHER, status=VibeImportStatus.DONE)
         res = self.client.get('/api/vibe-imports/?pending=1')
         self.assertEqual(res.status_code, 200)
         ids = [i['id'] for i in res.json()['imports']]
-        self.assertEqual(ids, [str(newest.pk)])
+        self.assertEqual(ids, [str(newest.pk), str(newest_lib.pk)])
         self.assertNotIn(str(dismissed.pk), ids)
-        self.assertNotIn(str(spaceless.pk), ids)
 
     def test_detail_and_404(self):
         imp = VibeImport.objects.create(space=self.space, board_url=BOARD, status=VibeImportStatus.DONE,
@@ -340,8 +380,9 @@ class SpaceDeleteAndListTests(VibeApiBase):
             res = self.client.delete('/api/spaces/space1/')
         self.assertEqual(res.status_code, 204)
         sig.assert_called_once_with(424242, signal.SIGTERM)
-        # Queued import was removed, while the finished shared board and its files remain.
+        # Queued import was removed, finished/running space imports were dismissed, while the shared board remains.
         self.assertFalse(VibeImport.objects.filter(status=VibeImportStatus.QUEUED).exists())
+        self.assertEqual(self.client.get('/api/vibe-imports/?pending=1').json(), {'imports': []})
         self.assertTrue(VibeBoard.objects.filter(pk=board.pk).exists())
         self.assertTrue((board_folder / 'p1.jpg').is_file())
 

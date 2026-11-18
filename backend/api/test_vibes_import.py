@@ -377,3 +377,18 @@ class RemoveFilesCropTests(TempVibes, TestCase):
         (d / 'b.jpg').write_bytes(jpeg_bytes())
         importer.remove_files(['s1/a.jpg', 's1/b.jpg', 's1/missing.jpg', ''])
         self.assertEqual(list(d.iterdir()), [])
+
+
+class StandaloneLibraryImportTests(ImportBase):
+    def test_executes_without_space_and_populates_library(self):
+        imp = VibeImport.objects.create(space=None, board_url=BOARD_URL)
+        importer.execute(imp.pk, client_factory=lambda: FakeClient(pins_for('p', 3)))
+        imp.refresh_from_db()
+        self.space.refresh_from_db()
+        self.assertEqual(imp.status, VibeImportStatus.DONE)
+        self.assertIsNone(imp.space_id)
+        self.assertIsNotNone(imp.board_id)
+        self.assertIsNone(self.space.vibe_board_id)
+        self.assertEqual(SpaceInspiration.objects.filter(board_id=imp.board_id).count(), 3)
+        boards = self.client.get('/api/vibe-boards/').json()['boards']
+        self.assertEqual([b['id'] for b in boards], [str(imp.board_id)])

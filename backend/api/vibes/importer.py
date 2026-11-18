@@ -98,7 +98,7 @@ class _Fail(Exception):
 # ------------------------------------------------------------------ queue
 
 def active_import(space):
-    """The space's oldest queued/running import, or None."""
+    """The target's oldest queued/running import (`space`, or `None` for library-only), or None."""
     return VibeImport.objects.filter(space=space, status__in=ACTIVE).order_by('created_at').first()
 
 
@@ -110,8 +110,9 @@ def active_import_for_board(board_id):
 
 
 def start_import(space, board_url):
-    """(import, created). Raises pinterest.PinterestError for a bad link and
-    ImportInProgress when a different board is already importing."""
+    """(import, created). `space` may be `None` for a standalone library import.
+    Raises pinterest.PinterestError for a bad link and ImportInProgress when a
+    different board is already importing for the same target."""
     url = pinterest.normalize_input_url(board_url)
     with transaction.atomic():
         active = active_import(space)
@@ -213,11 +214,13 @@ def _spawn_worker(import_id):
 
 
 def cancel_for_space(space_id):
-    """SIGTERM the worker of every running import of the space, and drop queued ones."""
+    """SIGTERM the worker of every running import of the space, drop queued ones,
+    and dismiss remaining rows before `space.delete()` nulls `space_id`."""
     pids = list(VibeImport.objects.filter(
         space_id=space_id, status=VibeImportStatus.RUNNING, worker_pid__isnull=False,
     ).values_list('worker_pid', flat=True))
     VibeImport.objects.filter(space_id=space_id, status=VibeImportStatus.QUEUED).delete()
+    VibeImport.objects.filter(space_id=space_id).update(dismissed=True)
     for pid in pids:
         claude_cli.signal_group(pid, signal.SIGTERM)
 

@@ -33,9 +33,9 @@ export function useInspirations(): InspirationsResult {
     .map((s) => `${s.id}:${s.vibeBoardId ?? ""}`)
     .sort()
     .join(",");
-  const doneKey = spaces
-    .map((s) => {
-      const view = viewFor(s.id);
+  const doneKey = [null, ...spaces.map((s) => s.id)]
+    .map((targetId) => {
+      const view = viewFor(targetId);
       if (view?.kind === "done") return view.imp.id;
       return view?.kind === "failed" && view.imp ? view.imp.id : "";
     })

@@ -222,6 +222,7 @@ export const VIBE_IMPORT_STEPS: readonly VibeImportStep[] = ["reading-board", "d
 
 /** The slice of an import that its label depends on (structurally satisfied by ApiVibeImport). */
 export interface VibeImportLabelInput {
+  spaceId?: string | null;
   status: "queued" | "running" | "done" | "failed";
   step: VibeImportStep | null;
   pins: { new: number; downloaded?: number };
@@ -240,6 +241,6 @@ export function vibeImportLabel(imp: VibeImportLabelInput | undefined, step?: Vi
     case "sorting":
       return `Sorting your vibes (batch ${Math.min(imp.batches.done + 1, imp.batches.total)} of ${imp.batches.total})`;
     case "saving":
-      return "Saving to your space";
+      return imp.spaceId === null ? "Saving your vibes" : "Saving to your space";
   }
 }

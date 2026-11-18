@@ -17,20 +17,23 @@ export type VibeImportView =
 export type VibeImportEntryView = VibeImportView & { hidden: boolean };
 
 export interface VibeImportApi {
-  /** Starts importing a (non-empty, already parsed) board link into the space. */
-  start(spaceId: string, url: string): void;
-  viewFor(spaceId: string): VibeImportEntryView | undefined;
-  /** True while an import for the space is starting or running. */
-  isActive(spaceId: string): boolean;
+  /** Starts importing a (non-empty, already parsed) board link into the space (or shared library when `null`). */
+  start(spaceId: string | null, url: string): void;
+  viewFor(spaceId: string | null): VibeImportEntryView | undefined;
+  /** True while an import for the space (or shared library when `null`) is starting or running. */
+  isActive(spaceId: string | null): boolean;
   /** Removes the status box and marks the import dismissed on the backend. */
-  dismiss(spaceId: string): void;
+  dismiss(spaceId: string | null): void;
   /** Hides the running box until the import finishes. */
-  hide(spaceId: string): void;
+  hide(spaceId: string | null): void;
   /** Picks up imports that are going (or finished unseen) without us: after a reload, or in another tab. */
   refresh(): void;
 }
 
 const VibeImportContext = createContext<VibeImportApi | null>(null);
+
+const LIBRARY_KEY = "__library__";
+const keyFor = (spaceId: string | null) => spaceId ?? LIBRARY_KEY;
 
 const POLL_MS = 1500;
 const QUEUED_POLL_MS = 3000;
@@ -40,7 +43,8 @@ const MAX_RETRY_MS = 10_000;
 const GENERIC_FAILURE = "Something went wrong while importing your board.";
 
 interface Entry {
-  spaceId: string;
+  key: string;
+  spaceId: string | null;
   view: VibeImportView;
   hidden: boolean;
   importId?: string;
@@ -70,12 +74,12 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     // Bumped on every reset, so a refresh that was in flight can tell its answer predates it.
     let resetGeneration = 0;
 
-    const remove = (spaceId: string) => {
-      const entry = entries.current.get(spaceId);
+    const remove = (key: string) => {
+      const entry = entries.current.get(key);
       if (!entry) return;
       entry.stopped = true;
       if (entry.timer !== undefined) clearTimeout(entry.timer);
-      entries.current.delete(spaceId);
+      entries.current.delete(key);
       bump();
     };
 
@@ -93,11 +97,11 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
 
     const observe = (entry: Entry, imp: ApiVibeImport) => {
       if (entry.stopped) return;
-      if (imp.boardId && (imp.status === "running" || imp.status === "done")) {
+      if (entry.spaceId !== null && imp.boardId && (imp.status === "running" || imp.status === "done")) {
         actions.setSpaceVibeBoard(entry.spaceId, imp.boardId);
       }
       if (imp.dismissed) {
-        remove(entry.spaceId);
+        remove(entry.key);
         return;
       }
       if (entry.importId !== imp.id) entry.highestStep = 0;
@@ -130,7 +134,7 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         if (entry.stopped) return;
         if (error instanceof ApiError && error.status === 404) {
-          remove(entry.spaceId);
+          remove(entry.key);
           return;
         }
         // A blip (backend restarting, network): keep the box as it is and try again.
@@ -139,15 +143,16 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const create = (spaceId: string, view: VibeImportView): Entry => {
-      remove(spaceId);
-      const entry: Entry = { spaceId, view, hidden: false, highestStep: 0, stopped: false, failures: 0 };
-      entries.current.set(spaceId, entry);
+    const create = (spaceId: string | null, view: VibeImportView): Entry => {
+      const key = keyFor(spaceId);
+      remove(key);
+      const entry: Entry = { key, spaceId, view, hidden: false, highestStep: 0, stopped: false, failures: 0 };
+      entries.current.set(key, entry);
       bump();
       return entry;
     };
 
-    const start = (spaceId: string, url: string) => {
+    const start = (spaceId: string | null, url: string) => {
       const entry = create(spaceId, { kind: "starting" });
       // Queued behind pending writes, so a just-created space reaches the backend first.
       enqueue(() => api.startVibeImport(spaceId, url))
@@ -172,14 +177,15 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
         });
     };
 
-    const dismiss = (spaceId: string) => {
-      const importId = entries.current.get(spaceId)?.importId;
-      remove(spaceId);
+    const dismiss = (spaceId: string | null) => {
+      const key = keyFor(spaceId);
+      const importId = entries.current.get(key)?.importId;
+      remove(key);
       if (importId) api.dismissVibeImport(importId).catch(() => {});
     };
 
-    const hide = (spaceId: string) => {
-      const entry = entries.current.get(spaceId);
+    const hide = (spaceId: string | null) => {
+      const entry = entries.current.get(keyFor(spaceId));
       if (!entry || entry.hidden) return;
       entry.hidden = true;
       bump();
@@ -196,8 +202,9 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
           if (generation !== resetGeneration) return;
           const spaceIds = new Set(getState().spaces.map((s) => s.id));
           for (const imp of imports) {
-            if (imp.dismissed || !imp.spaceId || !spaceIds.has(imp.spaceId)) continue;
-            const existing = entries.current.get(imp.spaceId);
+            if (imp.dismissed) continue;
+            if (imp.spaceId !== null && !spaceIds.has(imp.spaceId)) continue;
+            const existing = entries.current.get(keyFor(imp.spaceId));
             // Already followed (or being started right now): the tracker keeps its own pace.
             if (existing && (existing.importId === imp.id || existing.view.kind === "starting")) continue;
             observe(create(imp.spaceId, { kind: "starting" }), imp);
@@ -218,7 +225,9 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status.phase !== "ready") return;
     const ids = new Set(state.spaces.map((s) => s.id));
-    for (const id of [...entries.current.keys()]) if (!ids.has(id)) engine.remove(id);
+    for (const [key, entry] of [...entries.current.entries()]) {
+      if (entry.spaceId !== null && !ids.has(entry.spaceId)) engine.remove(key);
+    }
   }, [state.spaces, status.phase, engine]);
 
   useEffect(() => onReset(engine.handleReset), [onReset, engine]);
@@ -232,11 +241,11 @@ export function VibeImportProvider({ children }: { children: ReactNode }) {
     () => ({
       start: engine.start,
       viewFor: (spaceId) => {
-        const entry = entries.current.get(spaceId);
+        const entry = entries.current.get(keyFor(spaceId));
         return entry ? { ...entry.view, hidden: entry.hidden } : undefined;
       },
       isActive: (spaceId) => {
-        const kind = entries.current.get(spaceId)?.view.kind;
+        const kind = entries.current.get(keyFor(spaceId))?.view.kind;
         return kind === "starting" || kind === "active";
       },
       dismiss: engine.dismiss,

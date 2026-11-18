@@ -526,9 +526,13 @@ export interface ApiVibeImport {
   finishedAt: string | null;
 }
 
-/** Starts (or re-joins, when the same board is already importing) an import. 409 `import_in_progress` carries `payload.import`. */
-export const startVibeImport = (spaceId: string, boardUrl: string) =>
-  request<{ import: ApiVibeImport }>("POST", `/api/spaces/${seg(spaceId)}/vibe-imports/`, { body: { boardUrl } }).then((r) => r.import);
+/** Starts (or re-joins, when the same board is already importing) an import into a space or the shared library (`spaceId === null`). 409 `import_in_progress` carries `payload.import`. */
+export const startVibeImport = (spaceId: string | null, boardUrl: string) =>
+  request<{ import: ApiVibeImport }>(
+    "POST",
+    spaceId === null ? "/api/vibe-imports/" : `/api/spaces/${seg(spaceId)}/vibe-imports/`,
+    { body: { boardUrl } },
+  ).then((r) => r.import);
 
 /** Every import of a space, newest first (all statuses, dismissed included). */
 export const listSpaceVibeImports = (spaceId: string) =>
