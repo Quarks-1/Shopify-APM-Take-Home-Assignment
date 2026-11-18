@@ -14,10 +14,12 @@ export interface InspirationsResult {
 export function useInspirations(): InspirationsResult {
   const { spaces } = useAppState();
   const { viewFor } = useVibeImport();
-  const { onReset } = useStoreInternals();
+  const { onReset, onResetSettled, isResetting } = useStoreInternals();
   const [data, setData] = useState<ApiInspiration[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Bumped when a reset starts and when it settles, to abort and re-run the fetch effect.
+  const [resetEpoch, setResetEpoch] = useState(0);
 
   const spacesKey = spaces
     .map((s) => s.id)
@@ -35,9 +37,12 @@ export function useInspirations(): InspirationsResult {
     .join(",");
 
   useEffect(() => {
+    // The backend is mid-reset and would answer with the old pins; the settle refetch below covers it.
+    if (isResetting()) return;
     const controller = new AbortController();
     listInspirations(controller.signal)
       .then((list) => {
+        if (controller.signal.aborted) return;
         setData(list);
         setFailed(false);
       })
@@ -45,17 +50,23 @@ export function useInspirations(): InspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spacesKey, doneKey, attempt]);
+  }, [spacesKey, doneKey, attempt, resetEpoch, isResetting]);
 
-  // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
-  useEffect(
-    () =>
-      onReset(() => {
-        setData([]);
-        setFailed(false);
-      }),
-    [onReset],
-  );
+  // Reset demo data: the seed has no boards, so show an empty list at once. Any in-flight fetch is aborted
+  // (the epoch bump re-runs the effect, which skips fetching while the reset is pending); once the backend
+  // has finished, refetch so the list reflects its real state.
+  useEffect(() => {
+    const offReset = onReset(() => {
+      setData([]);
+      setFailed(false);
+      setResetEpoch((n) => n + 1);
+    });
+    const offSettled = onResetSettled(() => setResetEpoch((n) => n + 1));
+    return () => {
+      offReset();
+      offSettled();
+    };
+  }, [onReset, onResetSettled]);
 
   const retry = useCallback(() => {
     setFailed(false);

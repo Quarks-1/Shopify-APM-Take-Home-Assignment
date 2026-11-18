@@ -15,7 +15,7 @@ export interface SpaceInspirationsResult {
 /** One space's categorized pins. Refetches when its vibe import finishes (done or failed); keeps old data meanwhile. */
 export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   const { viewFor } = useVibeImport();
-  const { onReset } = useStoreInternals();
+  const { onReset, onResetSettled, isResetting } = useStoreInternals();
   const [loaded, setLoaded] = useState<{ spaceId: string; list: ApiInspiration[] } | null>(null);
   // Data from a previous space never shows for this one.
   const data = loaded?.spaceId === spaceId ? loaded.list : null;
@@ -30,6 +30,8 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   );
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Bumped when a reset starts and when it settles, to abort and re-run the fetch effect.
+  const [resetEpoch, setResetEpoch] = useState(0);
   const dataRef = useRef<ApiInspiration[] | null>(null);
   useEffect(() => {
     dataRef.current = data;
@@ -39,9 +41,12 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
   const doneKey = view?.kind === "done" ? view.imp.id : view?.kind === "failed" && view.imp ? view.imp.id : "";
 
   useEffect(() => {
+    // The backend is mid-reset and would answer with the old pins; the settle refetch below covers it.
+    if (isResetting()) return;
     const controller = new AbortController();
     listSpaceInspirations(spaceId, controller.signal)
       .then((list) => {
+        if (controller.signal.aborted) return;
         setData(list.filter((p) => p.categorized));
         setFailed(false);
       })
@@ -49,17 +54,23 @@ export function useSpaceInspirations(spaceId: string): SpaceInspirationsResult {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [spaceId, doneKey, attempt, setData]);
+  }, [spaceId, doneKey, attempt, resetEpoch, isResetting, setData]);
 
-  // Reset demo data: the seed has no boards, so show an empty list at once (no refetch; the backend is mid-reset).
-  useEffect(
-    () =>
-      onReset(() => {
-        setData([]);
-        setFailed(false);
-      }),
-    [onReset, setData],
-  );
+  // Reset demo data: the seed has no boards, so show an empty list at once. Any in-flight fetch is aborted
+  // (the epoch bump re-runs the effect, which skips fetching while the reset is pending); once the backend
+  // has finished, refetch so the list reflects its real state.
+  useEffect(() => {
+    const offReset = onReset(() => {
+      setData([]);
+      setFailed(false);
+      setResetEpoch((n) => n + 1);
+    });
+    const offSettled = onResetSettled(() => setResetEpoch((n) => n + 1));
+    return () => {
+      offReset();
+      offSettled();
+    };
+  }, [onReset, onResetSettled, setData]);
 
   const retry = useCallback(() => {
     setFailed(false);
